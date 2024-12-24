@@ -119,3 +119,8 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 2. Increment the first digit that isn't a 9 by checking for each digit individually
 3. Pad with a leading zero if there are no digits left
 4. Copy the digits in reverse to output
+
+### Miscellany
+
+- 5MAT programs can be made "readable" using the `~\n` directive, though the driver currently cannot parse these from STDIN.
+- Comments may be inserted via unreachable pathways, e.g. `~1[COMMENT HERE~]`.
