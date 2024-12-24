@@ -124,3 +124,22 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 
 - 5MAT programs can be made "readable" using the `~\n` directive, though the driver currently cannot parse these from STDIN.
 - Comments may be inserted via unreachable pathways, e.g. `~1[COMMENT HERE~]`.
+
+## Turing-Completeness
+
+A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCT's can emulate any cyclic tag system, which in turn can emulate Turing machines.
+
+```lisp
+~:[~%10100111~;~]~1[ The data string is stored in the output section of the tape, with a preceeding newline. ~]~
+~:*~{~
+  ~@{~v,'^~}~1[                       Navigate to the program section so we can check the leftmost bit. ~]~
+  ~<~v,'1^~1[                          Is the leftmost program bit a 0? ~]~
+    ~%~2@*~@{~v,'^~:*~a~}~1[         Delete the left most data bit. ~]~
+    ~*~@{~a~}0~>~^~1[                  Left cyclic shift the program once. ~]~
+  ~:*~<~v,'0^~1[                       Is the leftmost program bit a 1? ~]~
+    ~%~1@*~v,'0^                       Is the leftmost data bit a 1? ~]~
+      ~:*~@{~v,'^~:*~a~}~*~a~1[      Copy the new second program bit to the right end of the data. ~]~
+      ~@{~a~}1                         Copy the program with the leftmost 1 moved to the end. ~]~
+      ~@*~@{~v,'^~}~*~a~@{~*~}~>~^~1[ Tack on the bit after the leftmost 1. ~]~
+  ~%~@{~a~}~}~1[                       If the leftmost data bit was a 0, copy everything that's left. ~]~
+```
