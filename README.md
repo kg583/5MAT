@@ -11,6 +11,12 @@ Such formatters are usually quite terse and quite powerful[^1], and `format` is 
 
 > 22.3.7 FORMAT Control-Flow Operations
 
-Indeed, `format` is armed with the power to loop, backtrack, and dance wildly across its arguments. Further empowered with conditionals, break statements, and even external function calls, one might, nay *should*, naturally ask if `format` is Turing-complete. The answer is **yes... with a few modifications**.
+Indeed, `format` is armed with the power to loop, backtrack, and dance wildly across its arguments. Further empowered with conditionals, break statements, and even external function calls, one might, nay *should*, naturally ask if `format` is Turing-complete. The answer is **yes... with a few modifications**. These modifications grant us 5MAT, a Turing-complete esolang whose source is a single Common Lisp FORMAT string.
+
+## Running 5MAT
+
+Pass your program via STDIN to `src/driver.lisp` to run it. The driver currently cannot accept programs containing newlines.
+
+To debug your program, insert it into `src/debug.lisp` and tweak the debugging paramaters to your liking.
 
 [^1]: https://github.com/carlini/printf-tac-toe
