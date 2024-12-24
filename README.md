@@ -129,7 +129,7 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 
 A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCT's can emulate any cyclic tag system, which in turn can emulate Turing machines.
 
-```lisp
+```
 ~:[~%10100111~;~]~1[ The data string is stored in the output section of the tape, with a preceeding newline. ~]~
 ~:*~{~
   ~@{~v,'^~}~1[                       Navigate to the program section so we can check the leftmost bit. ~]~
