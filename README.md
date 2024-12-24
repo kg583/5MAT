@@ -34,13 +34,13 @@ Use `~[INIT-OUTPUTINIT-DATA~;~]~:*` at the start of your program to initialize 
 To identify a character on the tape, we employ a scantily-documented version of `~^`:
 > If two parameters are given, termination occurs if they are equal. If three parameters are given, termination occurs if the first is less than or equal to the second and the second is less than or equal to the third.
 
-The above applies to integers *and* characters, granting us `=` and `/=` for any one character:
+The above applies to integers *and* characters, granting us `/=` and `=` for any one character:
 ```lisp
-; Skip iff the current character is 'C'
-~v,'C^
+; Iff the current character is not 'C'
+~<~v,'C^STUFF~>
 
-; Continue iff the current character is 'C'
-~v,'B,'B^~:*~'D,'D,v^
+; Iff the current character is 'C'
+~<~v,'B,'B^~:*~'D,'D,v^STUFF~>
 ```
 
 Checking character ranges where possible can greatly shorten a program.
