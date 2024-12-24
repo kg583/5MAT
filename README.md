@@ -83,10 +83,10 @@ Here are some common idioms:
 ; Check how many characters remain
 ~#[ZERO~;ONE~;...~]
 
-; Exit if no characters remain
+; Break if no characters remain
 ~^
 
-; Exit uncondtionally
+; Break uncondtionally
 ~0^
 ```
 
