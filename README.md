@@ -138,8 +138,8 @@ A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can i
     ~*~@{~a~}0~>~^~1[                  Left cyclic shift the program once. ~]~
   ~:*~<~v,'0^~1[                       Is the leftmost program bit a 1? ~]~
     ~%~1@*~v,'0^                       Is the leftmost data bit a 1? ~]~
-      ~:*~@{~v,'^~:*~a~}~*~a~1[      Copy the new second program bit to the right end of the data. ~]~
-      ~@{~a~}1                         Copy the program with the leftmost 1 moved to the end. ~]~
-      ~@*~@{~v,'^~}~*~a~@{~*~}~>~^~1[ Tack on the bit after the leftmost 1. ~]~
+      ~:*~@{~v,'^~:*~a~}~*~a~1[      Copy the second program bit to the right end of the data. ~]~
+      ~@{~a~}1                         Copy the program with the first program bit moved to the end. ~]~
+      ~@*~@{~v,'^~}~*~a~@{~*~}~>~^~1[ Tack on the second program bit. ~]~
   ~%~@{~a~}~}~1[                       If the leftmost data bit was a 0, copy everything that's left. ~]~
 ```
