@@ -5,7 +5,7 @@
 (defvar *max-loops* 100)
 
 (defvar *program* "YOUR PROGRAM HERE")
-(setq data nil)
+(setq tape nil)
 
 (defun output(string)
   (if *debug*
@@ -13,7 +13,7 @@
       (format t "~{~v,'^~:*~a~}" string)))
 
 (defun driver()
-  (setq data (coerce (format nil *program* data) 'list)))
+  (setq tape (coerce (format nil *program* tape) 'list)))
 
 (if *max-loops*
     (dotimes' *max-loops* (output (driver)))
