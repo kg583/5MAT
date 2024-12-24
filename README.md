@@ -19,4 +19,93 @@ Pass your program via STDIN to `src/driver.lisp` to run it. The driver currently
 
 To debug your program, insert it into `src/debug.lisp` and tweak the debugging paramaters to your liking.
 
+## Writing 5MAT
+
+<sup><sub>This guide assumes familiarity with Common Lisp FORMAT strings for, ya know, normal use cases</sub></sup>
+
+Writing non-trivial 5MAT programs is tedious but doable, heavily using the `~{`, `~<`, `~[`, and `~^` directives.
+
+### Initialization
+
+Use `~[INIT-OUTPUTINIT-DATA~;~]~:*` at the start of your program to initialize the tape.
+
+### Conditionals
+
+#### Characters
+
+To identify a character on the tape, we employ a scantily-documented version of `~^`:
+> If two parameters are given, termination occurs if they are equal. If three parameters are given, termination occurs if the first is less than or equal to the second and the second is less than or equal to the third.
+
+The above applies to integers *and* characters, granting us `=` and `/=` for any one character:
+```lisp
+; Skip iff the current character is 'C'
+~v,'C^
+
+; Continue iff the current character is 'C'
+~v,'B,'B^~:*~'D,'D,v^
+```
+
+Checking character ranges where possible can greatly shorten a program.
+
+### Looping
+
+Since the tape is passed as a list, programs must use a containing `~{~}` to loop over it, even if all characters are exhausted in a single iteration.
+
+Here are some common idioms:
+```lisp
+; Go to the start of the tape
+~@*
+
+; Go to the end of the tape
+~@{~*~}
+
+; Go to the start of the data section
+~@{~v,'^~}
+
+; Print characters until <char>
+~@{~v,'<char>^~:*~a~}
+
+; Print characters in reverse
+~@{~a~2:*~}
+
+; Check how many characters remain
+~#[ZERO~;ONE~;...~]
+
+; Exit if no characters remain
+~^
+
+; Exit uncondtionally
+~0^
+```
+
+### Termination
+
+Since 5MAT programs run forever, only a runtime error can end execution. Here are a few easy options:
+```lisp
+; Next argument is not a list
+~{~}
+
+; Next argument is not an integer
+~[~]
+~v*
+
+; There are fewer than N args
+~N@*
+
+; There are fewer than N args remaining
+~N*
+
+; Fuck preconditions
+~@{~*~}~*
+```
+
+### Arithmetic
+
+Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/counter.5mat` for a replete example; its general approach is to store its value backwards, then increment as follows:
+
+1. Turn all trailing 9's to 0's
+2. Increment the first digit that isn't a 9 by checking for each digit individually
+3. Pad with a leading zero if there are no digits left
+4. Copy the digits in reverse to output
+
 [^1]: https://github.com/carlini/printf-tac-toe
