@@ -31,8 +31,6 @@ Use `~[INIT-OUTPUTINIT-DATA~;~]~:*` at the start of your program to initialize 
 
 ### Conditionals
 
-#### Characters
-
 To identify a character on the tape, we employ a scantily-documented version of `~^`:
 > If two parameters are given, termination occurs if they are equal. If three parameters are given, termination occurs if the first is less than or equal to the second and the second is less than or equal to the third.
 
