@@ -72,7 +72,7 @@ Here are some common idioms:
 ~@{~*~}
 
 ; Go to the start of the data section
-~@{~v,'^~}
+~@*~@{~v,'^~}
 
 ; Print characters until <char>
 ~@{~v,'<char>^~:*~a~}
