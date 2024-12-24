@@ -17,7 +17,7 @@ Indeed, `format` is armed with the power to loop, backtrack, and dance wildly ac
 
 ## Making 5MAT
 
-Unlike `printf`, `format` is unable to write arbitrary data (and, in particular, modify its own arguments); the only output we can snatch is the final formatted string. Thus, we'll have 5MAT operate by indefinitely passing the output of a `format` call back into itself, terminating by crashing. This keeps the premise of 5MAT fairly "pure"; all the logic still lives in the FORMAT string itself.
+Unlike `printf`, `format` is unable to write arbitrary data (and, in particular, modify its own arguments); the only output we can snatch is the final formatted string. Thus, we'll have 5MAT operate by indefinitely passing the output of a `format` call back into itself, starting from `nil` and terminating by crashing. This keeps the premise of 5MAT fairly "pure"; all the logic still lives in the FORMAT string itself.
 
 To make this setup viable, though, we need one other concession. While there *are* FORMAT directives which operate on strings, they can't operate on strings character-by-character. We'll thus allow a slightly more flexible version of `~{` which iterates over strings as if they were lists[^2].
 
