@@ -13,6 +13,20 @@ Such formatters are usually quite terse and quite powerful[^1], and `format` is 
 
 Indeed, `format` is armed with the power to loop, backtrack, and dance wildly across its arguments. Further empowered with conditionals, break statements, and even external function calls, one might, nay *should*, naturally ask if `format` is Turing-complete. The answer is **yes... with a few modifications**. These modifications grant us 5MAT, a Turing-complete esolang whose source is a single Common Lisp FORMAT string.
 
+[^1]: https://github.com/carlini/printf-tac-toe
+
+## Making 5MAT
+
+Unlike `printf`, `format` is unable to write arbitrary data (and, in particular, modify its own arguments); the only output we can snatch is the final formatted string. Thus, we'll have 5MAT operate by indefinitely passing the output of a `format` call back into itself, terminating by crashing. This keeps the premise of 5MAT fairly "pure"; all the logic still lives in the FORMAT string itself.
+
+To make this setup viable, though, we need one other concession. While there *are* FORMAT directives which operate on strings, they can't operate on strings character-by-character. We'll thus allow a slightly more flexible version of `~{` which iterates over strings as if they were lists[^2].
+
+In all, we find ourselves with a *tape* of characters that is repeatedly passed through a FORMAT string, processing each character to make a new copy of the tape. While a Turing machine doesn't care about "output" in the human sense, leaving meaningful answers to computations to live on the tape in some particular place, it'd be nice for 5MAT to actually print things to STDOUT.
+
+We accomplish this by dividing the tape in two: an output section, which is always printed, and a data section, which is not. Since output could presumably be any printable text, we'll use `` (`0x07`), the [End of Transmission Block](https://en.m.wikipedia.org/wiki/End-of-Transmission-Block_character?useskin=vector) (ETB) control character, to separate the sections. Programs can place the ETB wherever they like, in particular placing it at the front of the tape to output nothing (perhaps during a lengthy computation step). Only the first ETB is checked by the driver, allowing the program to use future copies to further conveniently divide their data sections.
+
+[^2]: This is accomplished in the driver via `coerce`.
+
 ## Running 5MAT
 
 Pass your program via STDIN to `src/driver.lisp` to run it. The driver currently cannot accept programs containing newlines.
@@ -105,5 +119,3 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 2. Increment the first digit that isn't a 9 by checking for each digit individually
 3. Pad with a leading zero if there are no digits left
 4. Copy the digits in reverse to output
-
-[^1]: https://github.com/carlini/printf-tac-toe
