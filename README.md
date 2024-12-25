@@ -86,7 +86,7 @@ Here are some common idioms:
 ; Break if no characters remain
 ~^
 
-; Break uncondtionally
+; Break unconditionally
 ~0^
 ```
 
@@ -113,14 +113,14 @@ Since 5MAT programs run forever, only a runtime error can end execution. Here ar
 
 ### Arithmetic
 
-Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/counter.5mat` for a replete example; its general approach is to store its value backwards, then increment as follows:
+Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/counter.5mat` for a replete example; its general approach is to store a counter backwards, then increment as follows:
 
 1. Turn all trailing 9's to 0's
 2. Increment the first digit that isn't a 9 by checking for each digit individually
 3. Pad with a leading zero if there are no digits left
 4. Copy the digits in reverse to output
 
-The above works just as well for any base and any system of digits.
+The above generalizes easily to any base and any system of digits.
 
 ### Miscellany
 
