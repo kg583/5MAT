@@ -92,7 +92,7 @@ Here are some common idioms:
 
 ### Termination
 
-Since 5MAT programs run forever, only a runtime error can end execution. The easiest option is `~v*`, which requires an integer parameter, but `~[~]`, `~{~}` (inside the main loop), and `~*` (if no characters remain) also suffice.
+Since 5MAT programs run forever, only a runtime error can end execution. The easiest option is `~v*`, which requires an integer parameter, but `~[~]`, `~{~}` (inside the main loop), and `~a` (if no characters remain) also suffice.
 
 ### Arithmetic
 
