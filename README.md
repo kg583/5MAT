@@ -92,24 +92,7 @@ Here are some common idioms:
 
 ### Termination
 
-Since 5MAT programs run forever, only a runtime error can end execution. Here are a few easy options:
-```lisp
-; Next argument is not a list
-~{~}
-
-; Next argument is not an integer
-~[~]
-~v*
-
-; There are fewer than N args
-~N@*
-
-; There are fewer than N args remaining
-~N*
-
-; Fuck preconditions
-~@{~*~}~*
-```
+Since 5MAT programs run forever, only a runtime error can end execution. The easiest option is `~v*`, which requires an integer parameter, but `~[~]`, `~{~}` (inside the main loop), and `~*` (if no characters remain) also suffice.
 
 ### Arithmetic
 
