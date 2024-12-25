@@ -134,14 +134,13 @@ A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can i
 ```
 ~:[~%10100111~;~]~1[ The data string is stored in the output section of the tape, with a preceding newline. ~]~
 ~:*~{~
-  ~@{~v,'^~}~1[                       Navigate to the program section so we can check the first bit. ~]~
-  ~<~v,'1^~1[                          Is the first program bit a 0? ~]~
-    ~%~2@*~@{~v,'^~:*~a~}~1[         Delete the first data bit. ~]~
-    ~*~@{~a~}0~>~^~1[                  Left cyclic shift the program once. ~]~
-  ~:*~<~v,'0^~1[                       Is the first program bit a 1? ~]~
-    ~%~1@*~v,'0^~1[                    Is the first data bit a 1? ~]~
-      ~:*~@{~v,'^~:*~a~}~*~a~1[      Copy the second program bit to the right end of the data. ~]~
-      ~@{~a~}1~1[                      Copy the program with the first program bit moved to the end. ~]~
-      ~@*~@{~v,'^~}~*~a~@{~*~}~>~^~1[ Tack on the second program bit. ~]~
-    ~%~@{~a~}~}~1[                     If the first data bit was a 0, copy everything that's left. ~]
+  ~@{~v,'^~}~1[                     Navigate to the program section so we can check the first bit. ~]~
+  ~<~v,'1^~1[                        Is the first program bit a 0? ~]~
+    ~%~2@*~@{~v,'^~:*~a~}~1[       Delete the first data bit. ~]~
+    ~*~@{~a~}0~>~^~1[                Left cyclic shift the program once. ~]~
+  ~:*~<~%~1@*~v,'0^~1[               Is the first data bit a 1? ~]~
+    ~:*~@{~v,'^~:*~a~}~*~a~1[      Copy the second program bit to the right end of the data. ~]~
+    ~@{~a~}1~1[                      Copy the program with the first program bit moved to the end. ~]~
+    ~@*~@{~v,'^~}~*~a~@{~*~}~>~^~1[ Tack on the second program bit. ~]~
+  ~%~@{~a~}~}~1[                     If the first data bit was a 0, copy everything that's left. ~]
 ```
