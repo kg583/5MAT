@@ -120,6 +120,8 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 3. Pad with a leading zero if there are no digits left
 4. Copy the digits in reverse to output
 
+The above works just as well for any base and any system of digits.
+
 ### Miscellany
 
 - 5MAT programs can be made "readable" using the `~\n` directive, though the driver currently cannot parse these from STDIN.
@@ -127,7 +129,7 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 
 ## Turing-Completeness
 
-A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCT's can emulate any cyclic tag system, which in turn can emulate Turing machines.
+A proof of 5MAT's Turing-completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCTs can emulate any cyclic tag system, which in turn can emulate Turing machines.
 
 ```
 ~:[~%10100111~;~]~1[ The data string is stored in the output section of the tape, with a preceding newline. ~]~
