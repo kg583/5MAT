@@ -1,5 +1,6 @@
-; Read program from STDIN (single line only)
-(defvar *program* (read-line))
+; Read program from STDIN
+; Make sure to use ~ before aesthetic newlines
+(defvar *program* (do ((program "" (format nil "~a~&~a" program line)) (line "" (read-line t nil))) ((null line) program)))
 
 ; Initial tape is nil
 (setq tape nil)
