@@ -29,7 +29,7 @@ We accomplish this by dividing the tape in two: an output section, which is alwa
 
 ## Running 5MAT
 
-Pass your program via STDIN to `src/driver.lisp` to run it. The driver currently cannot accept programs containing newlines.
+Pass your program via STDIN to `src/driver.lisp` to run it.
 
 To debug your program, insert it into `src/debug.lisp` and tweak the debugging paramaters to your liking.
 
@@ -107,7 +107,7 @@ The above generalizes easily to any base and any system of digits.
 
 ### Miscellany
 
-- 5MAT programs can be made "readable" using the `~\n` directive, though the driver currently cannot parse these from STDIN.
+- 5MAT programs can be made "readable" using the `~\n` directive.
 - Comments may be inserted via unreachable pathways, e.g. `~1[COMMENT HERE~]`.
 
 ## Turing Completeness
