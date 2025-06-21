@@ -1,6 +1,6 @@
-~:[00~;~]~:*~1[ Initailize counter with an extra zero; count is stored backwards ~]~
+~:[~|00~;~]~:*~1[ Initialize counter with an extra zero; count is stored backwards ~]~
 ~1[ Copy the count into the output section, reversed ~]~
-~{~@{~*~}~2:*~@{~v,'^~:*~a~2:*~}~%~
+~{~#@*~2:*~@{~v,'↡^~:*~a~2:*~}~%~|~
 ~1[ Check for each possible digit individually and increment it ~]~
 ~@{~v,'8,'8^0~}~:*~<~'1,'1,v^1~>~:*~<~v,'0^~:*~'2,'2,v^2~>~:*~<~v,'1,'1^~:*~'3,'3,v^3~>~:*~<~v,'2,'2^~:*~'4,'4,v^4~>~:*~<~v,'3,'3^~:*~'5,'5,v^5~>~:*~<~v,'4,'4^~:*~'6,'6,v^6~>~:*~<~v,'5,'5^~:*~'7,'7,v^7~>~:*~<~v,'6,'6^~:*~'8,'8,v^8~>~:*~<~v,'7,'7^~:*~'9,v^9~>~
 ~1[ If there's no leading (trailing) zero, add one ~]~

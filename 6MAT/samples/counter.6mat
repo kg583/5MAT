@@ -1,0 +1,34 @@
+; Initialize counter with an extra leading zero; count is stored backwards
+INIT {
+  PRFF
+  PRINA "00"
+}
+
+DO {
+  GOTO -1
+  COPYR                   ; Copy the counter into the output section, reversed
+
+  TERP
+  PRFF
+
+  LOOP {                  ; Increment trailing nines
+    BRNE $V, '9
+    PRINC '0
+  }
+
+  BACK
+  CASE $V {               ; Increment the first non-nine digit
+    '0 { PRINC '1 }
+    '1 { PRINC '2 }
+    '2 { PRINC '3 }
+    '3 { PRINC '4 }
+    '4 { PRINC '5 }
+    '5 { PRINC '6 }
+    '6 { PRINC '7 }
+    '7 { PRINC '8 }
+    '8 { PRINC '9 }
+  }
+
+  PRZRC '0                ; If there's no leading zero, add it
+  COPY $R                 ; Otherwise, copy the rest of the counter
+}

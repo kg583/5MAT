@@ -1,4 +1,4 @@
 ~1[ Wrap the input in '~(~)' to make the check case-insensitive ~]~
-~:[HannaH~;~]~:*~
+~:[~2|HannaH~;~]~:*~
 ~1[ If the first and last chars are the same, trim and repeat; otherwise, it's not a palindrome. ~]~
-~{~#[~;~;True~%~:;~<~v,'^~{~}~>~<~v,'^~:*~<~v,v^False~%~@{~*~}~>~@{~a~}~>~^~a~@{~*~}~:*~a~3@*~@{~a~#,1^~}~]~0^~}
+~{~#[~;~;True~%~|~:;~<~v,'↡^~{~}~>~<~v,'↡^~:*~<~v,v^False~%~|~@{~*~}~>~|~@{~a~}~>~^~|~a~@{~*~}~:*~a~|~3@*~@{~a~#,1^~}~]~0^~}
