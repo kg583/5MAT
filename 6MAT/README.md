@@ -32,6 +32,7 @@ Instruction arguments are denoted using the following placeholders.
 
 Default values for arguments are denoted like `_I = default`. Passing `NIL` as an argument is equivalent to passing the default value. If an instruction has adjacent defaulted arguments of the same type, they are bound from left to right; e.g. if `FOO %N = 1, %M = 2` is called with `FOO 3`, then `3` is bound to `%N`.
 
+
 ## Control Flow
 
 ### Breaking
@@ -136,18 +137,6 @@ Repeatedly execute the block, terminating if the tape is exhausted at the top of
 #### `LOOP +N { ... }`
 Execute the block at most `N` times, terminating if the tape is exhausted at the top of the block.
 
-#### `LOWER { ... }`
-Fold all characters printed within the block to lowercase.
-
-#### `TITLE { ... }`
-Capitalize all words separated by spaces printed within the block; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
-
-#### `TITLE 1 { ... }`
-Capitalize the first word beginning with an alphabetical character printed within the block.
-
-#### `UPPER { ... }`
-Fold all characters printed within the block to uppercase.
-
 ### Nested Blocks
 
 #### `CASE +N { ... }`
@@ -211,6 +200,7 @@ Move the tape pointer past the `N`th appearance of `C`. Negative values count fr
 #### `GOTOS %N = 1`
 Move the tape pointer past the `N`th appearance of `↡`. Negative values count from the end of the tape.
 
+
 ## Printing
 
 **Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current cycle if it appears before the first `↡` character. Printed characters cannot be overwritten or undone within a cycle.
@@ -266,14 +256,34 @@ Print `N` newlines (`\n`).
 #### `TILDE +N = 1`
 Print `N` tildes (`~`).
 
+
 ## Special Forms
 
 #### `FORMAT ""`
 Insert the contents of `""` directly into the assembled 5MAT.
 
-#### `JUST +N, +M, +L, !V { ... }`
-I'm not even gonna begin to explain this one yet.
+#### `JUSTz +N = 0, +M = 1, +L = 0, !V = Space { ... }`
+Justify the subsequent blocks by padding each block's content with at least `L` copies of `V` (with left-to-right precedence if padding must be unevenly allotted), arranged within a field of width `N+k*M` for the smallest possible choice of `k`.
 
+The value of `z` dictates padding options at the edges of the field.
+
+| Instruction | Effect                                           |
+|-------------|--------------------------------------------------|
+| `JUST`      | No padding may be added at the edges             |
+| `JUSTL`     | Padding may be added after the last clause       |
+| `JUSTR`     | Padding may be added before the first clause     |
+| `JUSTC`     | Padding may be added at either edge of the field |
+
+If any block is broken out of, the entire `JUSTz` instruction is canceled. Only previously processed blocks' contents are justified.
+
+An `OVER` instruction may be included as the first clause (see below).
+
+#### `OVER +P = 0, +O = 72 { ... }`
+Create a temporary tape "buffer" by executing the block. If the output of the containing `JUST` instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
+
+Since the block is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
+
+Thus, the most general syntax for `JUST` is given below.
 ```
 JUST +N, +M, +L, !V {
     OVER +P, +O { ... }
@@ -283,8 +293,22 @@ JUST +N, +M, +L, !V {
 }
 ```
 
+See the [HyperSpec Section on Justification](https://www.lispworks.com/documentation/HyperSpec/Body/22_cfb.htm) for a full specification of these instructions' target directives' behavior.
+
+#### `LOWER { ... }`
+Fold all characters printed within the block to lowercase.
+
+#### `TITLE { ... }`
+Capitalize all words separated by spaces printed within the block; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
+
+#### `TITLE 1 { ... }`
+Capitalize the first word beginning with an alphabetical character printed within the block.
+
 #### `TABA +N = 1, +M = 1`
-Print spaces (` `) until `N+k*M` characters have been printed for the smallest possible choice of `k`.
+Print spaces (` `) until at least `N+k*M` characters have been printed this cycle for the smallest possible choice of `k`.
 
 #### `TABR +N = 1, +M = 1`
-Print `N` spaces (` `), then print spaces until `k*M` characters have been printed for the smallest choice of `k`.
+Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this cycle for the smallest choice of `k`.
+
+#### `UPPER { ... }`
+Fold all characters printed within the block to uppercase.

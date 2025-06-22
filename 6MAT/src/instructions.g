@@ -135,19 +135,61 @@ LOOP    1   {...}               ~<...~>
 LOOP    +N  {...}               ~N@{...~}
 LOOP    {...}                   ~@{...~}
 
-JUST    +N  +M  +L  ?V  {...}   ~N,M,L,v~<~:*...~>
-JUST    +N  +M      ?V  {...}   ~N,M,,v~<~:*...~>
-JUST    +N          ?V  {...}   ~N,,,v~<~:*...~>
-JUST    +N  +M  +L  $V  {...}   ~N,M,L,v~<...~>
-JUST    +N  +M      $V  {...}   ~N,M,,v~<...~>
-JUST    +N          $V  {...}   ~N,,,v~<...~>
-JUST    +N  +M  +L  'C  {...}   ~N,M,L,'C~<...~>
-JUST    +N  +M      'C  {...}   ~N,M,,'C~<...~>
-JUST    +N          'C  {...}   ~N,,,'C~<...~>
-JUST    +N  +M  +L      {...}   ~N,M,L~<...~>
-JUST    +N  +M          {...}   ~N,M~<...~>
-JUST    +N              {...}   ~N~<...~>
+JUST    +N  +M  +L  ?V  {...}   ~N,M,L,v<~:*...~>
+JUST    +N  +M      ?V  {...}   ~N,M,,v<~:*...~>
+JUST    +N          ?V  {...}   ~N,,,v<~:*...~>
+JUST    +N  +M  +L  $V  {...}   ~N,M,L,v<...~>
+JUST    +N  +M      $V  {...}   ~N,M,,v<...~>
+JUST    +N          $V  {...}   ~N,,,v<...~>
+JUST    +N  +M  +L  'C  {...}   ~N,M,L,'C<...~>
+JUST    +N  +M      'C  {...}   ~N,M,,'C<...~>
+JUST    +N          'C  {...}   ~N,,,'C<...~>
+JUST    +N  +M  +L      {...}   ~N,M,L<...~>
+JUST    +N  +M          {...}   ~N,M<...~>
+JUST    +N              {...}   ~N<...~>
 JUST                    {...}   ~<...~>
+
+JUSTC   +N  +M  +L  ?V  {...}   ~N,M,L,v:@<~:*...~>
+JUSTC   +N  +M      ?V  {...}   ~N,M,,v:@<~:*...~>
+JUSTC   +N          ?V  {...}   ~N,,,v:@<~:*...~>
+JUSTC   +N  +M  +L  $V  {...}   ~N,M,L,v:@<...~>
+JUSTC   +N  +M      $V  {...}   ~N,M,,v:@<...~>
+JUSTC   +N          $V  {...}   ~N,,,v:@<...~>
+JUSTC   +N  +M  +L  'C  {...}   ~N,M,L,'C:@<...~>
+JUSTC   +N  +M      'C  {...}   ~N,M,,'C:@<...~>
+JUSTC   +N          'C  {...}   ~N,,,'C:@<...~>
+JUSTC   +N  +M  +L      {...}   ~N,M,L:@<...~>
+JUSTC   +N  +M          {...}   ~N,M:@<...~>
+JUSTC   +N              {...}   ~N:@<...~>
+JUSTC                   {...}   ~:@<...~>
+
+JUSTL   +N  +M  +L  ?V  {...}   ~N,M,L,v@<~:*...~>
+JUSTL   +N  +M      ?V  {...}   ~N,M,,v@<~:*...~>
+JUSTL   +N          ?V  {...}   ~N,,,v@<~:*...~>
+JUSTL   +N  +M  +L  $V  {...}   ~N,M,L,v@<...~>
+JUSTL   +N  +M      $V  {...}   ~N,M,,v@<...~>
+JUSTL   +N          $V  {...}   ~N,,,v@<...~>
+JUSTL   +N  +M  +L  'C  {...}   ~N,M,L,'C@<...~>
+JUSTL   +N  +M      'C  {...}   ~N,M,,'C@<...~>
+JUSTL   +N          'C  {...}   ~N,,,'C@<...~>
+JUSTL   +N  +M  +L      {...}   ~N,M,L@<...~>
+JUSTL   +N  +M          {...}   ~N,M@<...~>
+JUSTL   +N              {...}   ~N@<...~>
+JUSTL                   {...}   ~@<...~>
+
+JUSTR   +N  +M  +L  ?V  {...}   ~N,M,L,v:<~:*...~>
+JUSTR   +N  +M      ?V  {...}   ~N,M,,v:<~:*...~>
+JUSTR   +N          ?V  {...}   ~N,,,v:<~:*...~>
+JUSTR   +N  +M  +L  $V  {...}   ~N,M,L,v:<...~>
+JUSTR   +N  +M      $V  {...}   ~N,M,,v:<...~>
+JUSTR   +N          $V  {...}   ~N,,,v:<...~>
+JUSTR   +N  +M  +L  'C  {...}   ~N,M,L,'C:<...~>
+JUSTR   +N  +M      'C  {...}   ~N,M,,'C:<...~>
+JUSTR   +N          'C  {...}   ~N,,,'C:<...~>
+JUSTR   +N  +M  +L      {...}   ~N,M,L:<...~>
+JUSTR   +N  +M          {...}   ~N,M:<...~>
+JUSTR   +N              {...}   ~N:<...~>
+JUSTR                   {...}   ~:<...~>
 
 LOWER   {...}                   ~(...~)
 
