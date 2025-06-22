@@ -22,16 +22,16 @@ DO {
         { PRINC ?V }
     }
 
-    LOWER { PRINA "FOO BAR" }
-    UPPER { PRINA "foo bar" }
-    TITLE { PRINA "fOO bAR" }
-    TITLE 1 { PRINA "fOO BAR" }
+    LOWER { PRINA "foo bar" }
+    UPPER { PRINA "FOO BAR" }
+    TITLE { PRINA "Foo Bar" }
+    TITLE 1 { PRINA "Foo bar" }
 
     JUST 9, 8, 7, ?V {
         OVER 6, 5 { SKIPS }
         { BACKS }
+        { GOTOS }
         { COPYS }
-        { COPYR }
     }
 
     IFFF {
@@ -39,4 +39,6 @@ DO {
         CRFF
         BRFF
     }
+
+    COPYR 5
 }
