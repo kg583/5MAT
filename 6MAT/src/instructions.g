@@ -262,8 +262,12 @@ SKIPS       +N                  `SKIPC '\f, N`
 SKIPS                           `SKIPC '\f`
 
 TABA    +N  +M                  ~N,Mt
+TABA    +N                      ~Nt
+TABA                            ~t
 
 TABR    +N  +M                  ~N,M@t
+TABR    +N                      ~N@t
+TABR                            ~@t
 
 TERP    +N                      ~N%
 TERP                            ~%
