@@ -10,6 +10,23 @@ class Token(namedtuple("Token", ["type", "value", "pos"])):
         return self.value.upper()
 
     @property
+    def out(self):
+        match self.type:
+            case "char":
+                return self.value[1]
+
+            case "read":
+                return "v"
+
+            case "pos" | "neg":
+                return int(self.value)
+
+            case "string":
+                return self.value[1:-1]
+
+        return self.value
+
+    @property
     def pattern(self) -> str:
         return {
             "open": r"\{\.\.\.\}",
@@ -18,7 +35,6 @@ class Token(namedtuple("Token", ["type", "value", "pos"])):
             "read": r"\$V",
             "peek": r"\?V",
             "nil": r".*",
-            "const": r"'C",
             "pos": r"[%+]\w",
             "neg": r"[%-]\w",
             "string": r'""'
@@ -102,9 +118,16 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
             continue
 
         remaining = tokens[len(spec):]
-        for arg, name in typed_args:
+        for index, (arg, name) in enumerate(typed_args):
             if re.fullmatch(r"_\w", name):
-                code = code.replace(name, arg.value)
+                if arg.type == "peek":
+                    if str(instruction).startswith("BR"):
+                        raise AssemblerError(arg, "peek used in breaking instruction")
+
+                    if index != len(typed_args) - 1:
+                        raise AssemblerError(arg, "non-terminal peek")
+
+                code = code.replace(name, str(arg.out))
                 continue
 
             if name.isnumeric():
@@ -124,9 +147,9 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
 
                 case "pos" if str(arg) != "$R":
                     context = {
-                        f"{name[1]}-1": str(int(arg.value) - 1),
-                        f"{name[1]}+1": str(int(arg.value) + 1),
-                        f"{name[1]}": str(int(arg.value))
+                        f"{name[1]}-1": str(arg.out - 1),
+                        f"{name[1]}+1": str(arg.out + 1),
+                        f"{name[1]}": str(arg.out)
                     }
 
                 case "pos" if str(arg) == "$R":
@@ -134,21 +157,20 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
 
                 case "neg":
                     context = {
-                        f"+{name[1]}": str(abs(int(arg.value))),
-                        f"{name[1]}": str(int(arg.value))
+                        f"+{name[1]}": str(abs(arg.out)),
+                        f"{name[1]}": str(arg.out)
                     }
 
                 case "char":
                     context = {
-                        f"'{chr(ord(name[1]) - 1)}": f"'{chr(ord(arg.value[1]) - 1)}",
-                        f"'{chr(ord(name[1]) + 1)}": f"'{chr(ord(arg.value[1]) + 1)}",
+                        f"'{chr(ord(name[1]) - 1)}": f"'{chr(ord(arg.out) - 1)}",
+                        f"'{chr(ord(name[1]) + 1)}": f"'{chr(ord(arg.out) + 1)}",
                         name: arg.value,
-                        name[1]: arg.value[1]
+                        f"`{name[1]}`": arg.out
                     }
 
                 case "string":
-                    string = arg.value[1:-1]
-                    context = {'""': string.replace("~~", "~") if str(instruction) != "FORMAT" else string}
+                    context = {'""': arg.out.replace("~~", "~") if str(instruction) != "FORMAT" else arg.out}
 
                 case "open":
                     inner, remaining = assemble(remaining, block=str(instruction), **flags)
@@ -283,6 +305,11 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
         raise AssemblerError(token, "incomplete input following '{value}'")
 
     return assembled, []
+
+
+if __name__ == "__main__":
+    with open("../samples/tests.6mat", "r") as infile:
+        print(assemble(parse(infile.read()))[0])
 
 
 __all__ = ["Token", "AssemblerError", "parse", "assemble"]

@@ -199,12 +199,12 @@ OVER    +P              {...}   ...~P:;
 PRINA   ""                      ""
 PRINA   ?V                      ~a~:*
 PRINA   $V                      ~a
-PRINA   'C                      C
+PRINA   'C                      `C`
 PRINA   %N                      N
 
 PRINC   ?V                      ~c~:*
 PRINC   $V                      ~c
-PRINC   'C                      C
+PRINC   'C                      `C`
 
 PRINL   +N  +M  +L  $V  $V      ~N,M,L,v@a
 PRINL   +N  +M      $V  $V      ~N,M,,v@a
