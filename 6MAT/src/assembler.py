@@ -21,24 +21,28 @@ class Token(namedtuple("Token", ["type", "value", "pos"])):
             case "pos" | "neg":
                 return int(self.value)
 
+            case "remain":
+                return "#"
+
             case "string":
                 return self.value[1:-1]
 
         return self.value
 
     @property
-    def pattern(self) -> str:
+    def pattern(self) -> re.Pattern:
         return {
-            "open": r"\{\.\.\.\}",
-            "sep": r",",
-            "char": r"'C",
-            "read": r"\$V",
-            "peek": r"\?V",
-            "nil": r"[%+-]\w|'C",
-            "pos": r"[%+]\w",
-            "neg": r"[%-]\w",
-            "string": r'""'
-        }.get(self.type, "!?")
+            "open": re.compile(r"\{\.\.\.}"),
+            "sep": re.compile(r","),
+            "char": re.compile(r"'C"),
+            "read": re.compile(r"\$V"),
+            "peek": re.compile(r"\?V"),
+            "pos": re.compile(r"[%+]\w"),
+            "neg": re.compile(r"[%-]\w"),
+            "remain": re.compile(r"[%+]\w|\$R"),
+            "nil": re.compile(r"[%+-]\w|'C"),
+            "string": re.compile(r'""')
+        }.get(self.type, re.compile(r"::"))
 
 
 TOKENS = re.compile(
@@ -50,10 +54,11 @@ TOKENS = re.compile(
     r"(?P<char>'.|\\f|\\n)|"
     r"(?P<read>\$V)|"
     r"(?P<peek>\?V)|"
-    r"(?P<default>DEFAULT)|"
     r"(?P<nil>NIL)|"
-    r"(?P<pos>\+?[0-9]+|\$R)|"
+    r"(?P<pos>\+?[0-9]+)|"
     r"(?P<neg>-[0-9]+)|"
+    r"(?P<remain>\$R)|"
+    r"(?P<default>DEFAULT)|"
     r'(?P<string>"(?:[^"]|\\.)*")|'
     r"(?P<instr>\w+)|"
     r"(?P<error>\S+)", flags=re.IGNORECASE)
@@ -137,7 +142,7 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
                 continue
 
             else:
-                if not re.fullmatch(arg.pattern, name):
+                if not arg.pattern.fullmatch(name):
                     break
 
             context = {}
@@ -145,21 +150,21 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
                 case "nil":
                     context = {name[1]: ""}
 
-                case "pos" if str(arg) != "$R":
+                case "pos":
                     context = {
                         f"{name[1]}-1": str(arg.out - 1),
                         f"{name[1]}+1": str(arg.out + 1),
                         f"{name[1]}": str(arg.out)
                     }
 
-                case "pos" if str(arg) == "$R":
-                    context = {name[1]: "#"}
-
                 case "neg":
                     context = {
                         f"+{name[1]}": str(abs(arg.out)),
                         f"{name[1]}": str(arg.out)
                     }
+
+                case "remain":
+                    context = {name[1]: arg.out}
 
                 case "char":
                     context = {
@@ -271,9 +276,6 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
                     assembled += code + "~:*"
 
                 case "pos" | "default" if block == "CASR!":
-                    if str(token) == "$R":
-                        raise AssemblerError(token, "illegal numeric CASE key '{value}'")
-
                     if int(token.value) != count:
                         raise AssemblerError(token, "non-sequential numeric CASE key '{value}'")
 
