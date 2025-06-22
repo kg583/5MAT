@@ -1,0 +1,7 @@
+INIT {
+    PRINA "Hello, World!"
+}
+
+DO {
+    CRASH
+}
