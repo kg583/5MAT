@@ -41,26 +41,22 @@ BREAK_OPTIMIZATIONS = {
     re.compile(r"~'.\^"): "",
 
     # Constant binary number breaks
-    re.compile(r"~([-+]?\d+),([-+]?\d+)\^"):
-        lambda match: "~0^" if int(match[1]) == int(match[2]) else "",
+    re.compile(r"~([-+]?\d+)?,([-+]?\d+)?\^"):
+        lambda match: "~0^" if all(match.groups()) and int(match[1]) == int(match[2])
+                      or not any(match.groups()) else "",
 
     # Constant binary character breaks
-    re.compile(r"~('.),('.)\^"):
+    re.compile(r"~('.)?,('.)?\^"):
         lambda match: "~0^" if match[1] == match[2] else "",
 
     # Constant ternary number breaks
-    re.compile(r"~([-+]?\d+),([-+]?\d+),([-+]?\d+)\^"):
-        lambda match: "~0^" if int(match[1]) <= int(match[2]) <= int(match[3]) else "",
+    re.compile(r"~([-+]?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^"):
+        lambda match: "~0^" if all(match.groups()) and int(match[1]) <= int(match[2]) <= int(match[3])
+                      or not any(match.groups()) else "",
 
     # Constant ternary character breaks
-    re.compile(r"~('.),('.),('.)\^"):
+    re.compile(r"~('.)?,('.)?,('.)?\^"):
         lambda match: "~0^" if match[1] <= match[2] <= match[3] else "",
-
-    # Type mismatch
-    re.compile(r"~([-+]?\d+|#|'.|v),([-+]?\d+|#|'.|v)(,([-+]?\d+|#|'.|v))?\^", flags=re.IGNORECASE):
-        lambda match: match[0] if all(not g or g[0] in "'vV"
-                                      for g in match.groups()) or all(not g or g[0] not in "'vV"
-                                                                      for g in match.groups()) else "",
 
     # Unreachable code
     re.compile(r"~0\^.*?(~[}>]|$)"):

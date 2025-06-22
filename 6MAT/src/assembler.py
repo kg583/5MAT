@@ -34,7 +34,7 @@ class Token(namedtuple("Token", ["type", "value", "pos"])):
             "char": r"'C",
             "read": r"\$V",
             "peek": r"\?V",
-            "nil": r".*",
+            "nil": r"[%+-]\w|'C",
             "pos": r"[%+]\w",
             "neg": r"[%-]\w",
             "string": r'""'

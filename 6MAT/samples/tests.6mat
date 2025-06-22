@@ -14,12 +14,16 @@ DO {
     }
 
     {
-        PRINA "This -> "
-        { PRINC $V
-        BACK }
+        PRINA "This ↓ "
+        {
+            PRINC $V
+            BACK
+        }
 
-        PRINA "Is this -> "
-        { PRINC ?V }
+        PRINA "Is this ↓ "
+        {
+            PRINC ?V
+        }
     }
 
     LOWER { PRINA "foo bar" }
@@ -27,7 +31,7 @@ DO {
     TITLE { PRINA "Foo Bar" }
     TITLE 1 { PRINA "Foo bar" }
 
-    JUST 9, 8, 7, ?V {
+    JUST 9, NIL, 7, ?V {
         OVER 6, 5 { SKIPS }
         { BACKS }
         { GOTOS }
