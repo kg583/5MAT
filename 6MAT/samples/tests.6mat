@@ -1,0 +1,42 @@
+INIT {
+    PRINA "Beginning tests"
+    LOOP 3 {
+        PRINC '.
+    }
+    PRFF
+}
+
+DO {
+    PRINL 1, 2, $R, '4, $V
+
+    LOOP 0 {
+        PRINA "LOOP 0 test failed!"
+    }
+
+    {
+        PRINA "This -> "
+        { PRINC $V
+        BACK }
+
+        PRINA "Is this -> "
+        { PRINC ?V }
+    }
+
+    LOWER { PRINA "FOO BAR" }
+    UPPER { PRINA "foo bar" }
+    TITLE { PRINA "fOO bAR" }
+    TITLE 1 { PRINA "fOO BAR" }
+
+    JUST 9, 8, 7, ?V {
+        OVER 6, 5 { SKIPS }
+        { BACKS }
+        { COPYS }
+        { COPYR }
+    }
+
+    IFFF {
+        PRFF
+        CRFF
+        BRFF
+    }
+}
