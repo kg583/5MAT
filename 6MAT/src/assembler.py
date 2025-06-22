@@ -147,7 +147,8 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
                     }
 
                 case "string":
-                    context = {'""': arg.value[1:-1].replace("~~", "~")}
+                    string = arg.value[1:-1]
+                    context = {'""': string.replace("~~", "~") if str(instruction) != "FORMAT" else string}
 
                 case "open":
                     inner, remaining = assemble(remaining, block=str(instruction), **flags)
