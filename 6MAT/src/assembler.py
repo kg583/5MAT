@@ -217,7 +217,7 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
 
                     continue
 
-                case "open" if block == "JUST":
+                case "open" if block.startswith("JUST"):
                     code, tokens = assemble(tokens, block="JUST!", **flags)
                     assembled += code + "~;"
 
@@ -226,6 +226,10 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
                     assembled += f"~<{code}~>"
 
                 case "close" if block:
+                    if block.startswith("JUST"):
+                        # Silly str.rreplace
+                        assembled = assembled[::-1].replace(";~", "", 1)[::-1]
+
                     return assembled, tokens
 
                 case "close":
@@ -245,8 +249,8 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
                                 raise AssemblerError(arg, "illegal CASE switch '{value}'")
 
                     elif str(token) == "OVER":
-                        if count != 0 or block != "JUST":
-                            raise AssemblerError(token, "non-initial OVER clause in JUSTIFY")
+                        if count != 0 or not block.startswith("JUST"):
+                            raise AssemblerError(token, "non-initial OVER clause in JUSTz")
 
                     try:
                         code, tokens = match_args(token, *tokens, **flags)
