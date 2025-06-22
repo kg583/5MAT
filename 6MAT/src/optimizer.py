@@ -74,7 +74,7 @@ BREAK_OPTIMIZATIONS = {
 
 BLOCK_OPTIMIZATIONS = {
     # Blocks that are never broken out of
-    re.compile(r"~<(?P<body>(~[^~<]|.)*?)~>", flags=re.DOTALL):
+    re.compile(r"~<(?P<body>(~[^~<]|[^~])*?)~>", flags=re.DOTALL):
         lambda match: match[0] if re.search(r"~([-+]?\d+|#|'.|v)(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^",
                                             match["body"]) else match["body"],
 
