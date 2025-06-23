@@ -172,10 +172,6 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
 
         remaining = tokens[len(spec):]
         for index, (arg, name) in enumerate(typed_args):
-            if arg.type == "peek":
-                if str(instruction).startswith("BR"):
-                    raise AssemblerError(arg, "peek used in breaking instruction")
-
             if re.fullmatch(r"_\w", name):
                 code = code.replace(name, str(arg.out))
                 continue

@@ -235,12 +235,18 @@ PRINC   ?V                          ~c~:*
 PRINC   $V                          ~c
 PRINC   'C                          "C"
 
+PRINL   %N  %M  %L  $V  ?V          ~%N,%M,%L,v@a~:*
+PRINL   %N  %M      $V  ?V          ~%N,%M,,v@a~:*
+PRINL   %N          $V  ?V          ~%N,,,v@a~:*
+PRINL   %N  %M  %L  'C  ?V          ~%N,%M,%L,'C@a~:*
+PRINL   %N  %M      'C  ?V          ~%N,%M,,'C@a~:*
+PRINL   %N          'C  ?V          ~%N,,,'C@a~:*
+PRINL   %N  %M  %L      ?V          ~%N,%M,%L@a~:*
+PRINL   %N  %M          ?V          ~%N,%M@a~:*
+PRINL   %N              ?V          ~%N@a~:*
 PRINL   %N  %M  %L  $V  $V          ~%N,%M,%L,v@a
 PRINL   %N  %M      $V  $V          ~%N,%M,,v@a
 PRINL   %N          $V  $V          ~%N,,,v@a
-PRINL   %N  %M  %L      $V          ~%N,%M,%L@a
-PRINL   %N  %M          $V          ~%N,+M@a
-PRINL   %N              $V          ~%N@a
 PRINL   %N  %M  %L  'C  $V          ~%N,%M,%L,'C@a
 PRINL   %N  %M      'C  $V          ~%N,%M,,'C@a
 PRINL   %N          'C  $V          ~%N,,,'C@a
@@ -251,12 +257,18 @@ PRINL   %N              $V          ~%N@a
 PRINN   ?V                          ~:c~:*
 PRINN   $V                          ~:c
 
+PRINR   %N  %M  %L  $V  ?V          ~%N,%M,%L,va~:*
+PRINR   %N  %M      $V  ?V          ~%N,%M,,va~:*
+PRINR   %N          $V  ?V          ~%N,,,va~:*
+PRINR   %N  %M  %L  'C  ?V          ~%N,%M,%L,'Ca~:*
+PRINR   %N  %M      'C  ?V          ~%N,%M,,'Ca~:*
+PRINR   %N          'C  ?V          ~%N,,,'Ca~:*
+PRINR   %N  %M  %L      ?V          ~%N,%M,%La~:*
+PRINR   %N  %M          ?V          ~%N,%Ma~:*
+PRINR   %N              ?V          ~%Na~:*
 PRINR   %N  %M  %L  $V  $V          ~%N,%M,%L,va
 PRINR   %N  %M      $V  $V          ~%N,%M,,va
 PRINR   %N          $V  $V          ~%N,,,va
-PRINR   %N  %M  %L      $V          ~%N,%M,%La
-PRINR   %N  %M          $V          ~%N,%Ma
-PRINR   %N              $V          ~%Na
 PRINR   %N  %M  %L  'C  $V          ~%N,%M,%L,'Ca
 PRINR   %N  %M      'C  $V          ~%N,%M,,'Ca
 PRINR   %N          'C  $V          ~%N,,,'Ca
