@@ -298,10 +298,10 @@ JUST +N, +M, +L, !V {
 }
 ```
 
-An `OVER` instruction may be included as the first clause (see below).
+An `OVER` instruction may be included as the first clause (see below). Each clause, including `OVER`, acts a buffer block.
 
 #### `OVER +P = 0, +O = 72 { ... }`
-Create a temporary tape "buffer" by executing the block. If the output of the containing `JUST` instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
+Create a buffer by executing the block. If the output of the containing `JUST` instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
 
 Since the block is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
 
