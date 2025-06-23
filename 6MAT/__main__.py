@@ -12,8 +12,9 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("filename", help="the file to assemble; output will be <filename>.5mat")
 parser.add_argument("-o", action="store_true", help="apply optimizations to output")
-parser.add_argument("--preserve-indents", action="store_true", help="preserve indentation when assembling")
-parser.add_argument("--preserve-comments", action="store_true", help="preserve comments when assembling")
+parser.add_argument("--preserve-comments", action="store_true", help="preserve comments")
+parser.add_argument("--preserve-groups", action="store_true", help="preserve non-semantic groups")
+parser.add_argument("--preserve-indents", action="store_true", help="preserve indentation")
 
 
 if __name__ == "__main__":
