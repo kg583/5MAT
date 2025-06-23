@@ -34,7 +34,7 @@ DO {
     JUST 9, NIL, 7, ?V {
         OVER 6, 5 { SKIPS }
         { BACKS }
-        { GOTOS }
+        [ GOTOS ]
         { COPYS }
     }
 
@@ -45,4 +45,13 @@ DO {
     }
 
     COPYR 5
+
+    CASER {
+        0 [ TABR ]
+        DEFAULT { TABA }
+    }
+
+    CASEV {
+        'F { FORMAT "~:p" }
+    }
 }

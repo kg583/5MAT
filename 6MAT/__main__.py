@@ -20,7 +20,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with open(args.filename, "r") as infile:
-        tokens = parse(infile.read())
+        tokens = parse(infile.read(), **vars(args))
         assembled, _ = assemble(tokens, **vars(args))
 
         if args.o:

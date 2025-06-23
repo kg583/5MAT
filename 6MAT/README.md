@@ -32,15 +32,24 @@ Instruction arguments are denoted using the following placeholders.
 
 Default values for arguments are denoted like `_I = default`. Passing `NIL` as an argument is equivalent to passing the default value. If an instruction has adjacent defaulted arguments of the same type, they are bound from left to right; e.g. if `FOO %N = 1, %M = 2` is called with `FOO 3`, then `3` is bound to `%N`.
 
-
 ## Control Flow
+
+### Blocks
+
+**Blocks** and **groups** are lists of instructions whose execution can be terminated early using **break** instructions.
+
+#### `{ ... }`
+Create a block and execute it. Breaking instructions terminate *this* block's execution. Block argument placeholders are denoted by `{ ... }`.
+
+#### `[ ... ]`
+Create a group and execute it. Breaking instructions terminate the *containing* block's execution. Group argument placeholders are denoted by `[ ... ]`, with `[{ ... }]` meaning a block or a group is permitted.
+
+#### `BUFFER { ... }`
+Create a buffer block and execute it. Prints which occur inside buffer blocks do *not* succeed if the block is broken out of at any point.
 
 ### Breaking
 
-**Blocks** are groups of instructions whose execution can be terminated early using **break** instructions. Breaking is the central tool for almost all control flow in 5MAT. Though 6MAT provides additional abstractions, it's mostly breaks all the way down, which dictates the legality of certain argument combinations (see below). In particular, peeking is not permitted in any break instruction.
-
-#### `{ ... }`
-Create a bare block and execute it. Execution can be terminated early using break instructions.
+Breaking is the central tool for almost all control flow in 5MAT. Though 6MAT provides additional abstractions, it's mostly breaks all the way down, which dictates the legality of certain argument combinations. In particular, peeking is *not* permitted in any break instruction.
 
 #### `BREAK`
 Break out of the current block. The tape pointer is unaltered.
@@ -70,34 +79,6 @@ Mismatched argument types are not permitted. Furthermore, the following calls ar
 #### `BRINC _I, _J, _K`
 Break out of the current block if `_I <= _J <= _K`. Mismatched argument types are not permitted.
 
-### Crashing
-
-All 5MAT (and thus 6MAT) programs cycle indefinitely, using the previous tape contents to produce the next. Thus, ending a program can only be accomplished via an illegal formatting operation which crashes the entire Common Lisp REPL.
-
-**Crash** instructions insert a format operation guaranteed to error given the structure of a 5MAT program. Crashing will also occur if a character is read past the end of the tape, so the lack of a crash instruction does not guarantee the program will continue indefinitely.
-
-#### `CRASH`
-Irrecoverably terminate execution immediately. All output produced during the current cycle is discarded.
-
-#### `CRFF`
-Read a character from the tape and crash if it is `↡`.
-
-#### `CRZR`
-Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`).
-
-#### `CRyy _I, _J`
-Crash if condition `yy` holds for `_I` and `_J`.
-
-- `EQ <-> NE`
-- `GE <-> LT`
-- `GT <-> LE`
-
-As such, the following calls are disallowed.
-- `CREQ $V, !V`
-- `CRGE $V, !V`
-- `CRLE $V, !V`
-- `CRLT $V, !V`
-
 ### Outer Blocks
 
 The outermost scope may consist only of the following blocks, each at most once.
@@ -115,8 +96,11 @@ All inner scopes may include the following blocks, with arbitrary nesting.
 #### `IFFF { ... }`
 Read a character from the tape and execute the block if it is `↡`.
 
-#### `IFZR { ... }`
-Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`).
+#### `IFNR +N [{ ... }]`
+Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+
+#### `IFZR [{ ... }]`
+Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `IFNR 0 [{ ... }]`.
 
 #### `IFyy _I, _J { ... }`
 Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BRxx _I, _J` at the top of the block, where `xx` is the negation of `yy`.
@@ -137,25 +121,25 @@ Repeatedly execute the block, terminating if the tape is exhausted at the top of
 #### `LOOP +N { ... }`
 Execute the block at most `N` times, terminating if the tape is exhausted at the top of the block.
 
-### Nested Blocks
+### Case Blocks
 
-#### `CASE +N { ... }`
-Conditionally execute blocks based on the value of `N`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a default block may be provided.
+#### `CASER { ... }`
+Conditionally execute blocks based on the value of `R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `R` is not equal to any listed value.
 ```
-CASE +N {
-    0 { ... }
-    1 { ... }
-    2 { ... }
+CASER {
+    0 [{ ... }]
+    1 [{ ... }]
+    2 [{ ... }]
     ...
-    n { ... }
-    DEFAULT { ... }
+    n [{ ... }]
+    DEFAULT [{ ... }]
 }
 ```
 
-#### `CASE $V { ... }`
+#### `CASEV { ... }`
 Conditionally execute blocks based on the value of `V`, which may be tested against any set of characters.
 ```
-CASE $V {
+CASEV {
     'A { ... }
     'B { ... }
     'D { ... }
@@ -163,7 +147,10 @@ CASE $V {
     'Z { ... }
 }
 ```
-Each block must advance the tape pointer by the same amount in all circumstances to prevent unexpected fallthrough.
+Each block must advance the tape pointer by the same amount in all circumstances to prevent unexpected fallthrough. Breaking instructions break out of a single clause.
+
+
+## Tape Movement
 
 ### Relative Tape Movement
 
@@ -199,6 +186,35 @@ Move the tape pointer past the `N`th appearance of `C`. Negative values count fr
 
 #### `GOTOS %N = 1`
 Move the tape pointer past the `N`th appearance of `↡`. Negative values count from the end of the tape.
+
+
+## Crashing
+
+All 5MAT (and thus 6MAT) programs cycle indefinitely, using the previous tape contents to produce the next. Thus, ending a program can only be accomplished via an illegal formatting operation which crashes the entire Common Lisp REPL.
+
+**Crash** instructions insert a format operation guaranteed to error given the structure of a 5MAT program. Crashing will also occur if a character is read past the end of the tape, so the lack of a crash instruction does not guarantee the program will continue indefinitely.
+
+#### `CRASH`
+Irrecoverably terminate execution immediately. All output produced during the current cycle is discarded.
+
+#### `CRFF`
+Read a character from the tape and crash if it is `↡`.
+
+#### `CRZR`
+Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`).
+
+#### `CRyy _I, _J`
+Crash if condition `yy` holds for `_I` and `_J`.
+
+- `EQ <-> NE`
+- `GE <-> LT`
+- `GT <-> LE`
+
+As such, the following calls are disallowed.
+- `CREQ $V, !V`
+- `CRGE $V, !V`
+- `CRLE $V, !V`
+- `CRLT $V, !V`
 
 
 ## Printing
@@ -274,7 +290,13 @@ The value of `z` dictates padding options at the edges of the field.
 | `JUSTR`     | Padding may be added before the first clause     |
 | `JUSTC`     | Padding may be added at either edge of the field |
 
-If any block is broken out of, the entire `JUSTz` instruction is canceled. Only previously processed blocks' contents are justified.
+```
+JUST +N, +M, +L, !V {
+    [{ ... }]
+    [{ ... }]
+    ...
+}
+```
 
 An `OVER` instruction may be included as the first clause (see below).
 
@@ -283,12 +305,11 @@ Create a temporary tape "buffer" by executing the block. If the output of the co
 
 Since the block is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
 
-Thus, the most general syntax for `JUST` is given below.
 ```
 JUST +N, +M, +L, !V {
-    OVER +P, +O { ... }
-    { ... }
-    { ... }
+    OVER +P, +O [{ ... }]
+    [{ ... }]
+    [{ ... }]
     ...
 }
 ```

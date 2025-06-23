@@ -31,37 +31,64 @@ class Token(namedtuple("Token", ["type", "value", "pos"])):
 
     @property
     def pattern(self) -> re.Pattern:
-        return {
-            "open": re.compile(r"\{\.\.\.}"),
-            "sep": re.compile(r","),
-            "char": re.compile(r"'C"),
-            "read": re.compile(r"\$V"),
-            "peek": re.compile(r"\?V"),
-            "pos": re.compile(r"[%+]\w"),
-            "neg": re.compile(r"[%-]\w"),
-            "remain": re.compile(r"[%+]\w|\$R"),
-            "nil": re.compile(r"[%+-]\w|'C"),
-            "string": re.compile(r'""')
-        }.get(self.type, re.compile(r"::"))
+        match self.type:
+            case "lbrace":
+                return re.compile(r"\{\.\.\.}")
+
+            case "lbracket":
+                return re.compile(r"\[\.\.\.]")
+
+            case "nil":
+                return re.compile(r"[%+-]\w|'C")
+
+            case "char":
+                return re.compile(r"'C")
+
+            case "read":
+                return re.compile(r"\$V")
+
+            case "peek":
+                return re.compile(r"\?V")
+
+            case "pos":
+                return re.compile(r"[%+]\w")
+
+            case "neg":
+                return re.compile(r"[%-]\w")
+
+            case "remain":
+                return re.compile(r"[%+]\w|\$R")
+
+            case "string":
+                return re.compile(r'""')
+
+            case "instr":
+                return re.compile(self.value, re.IGNORECASE)
+
+            case _:
+                return re.compile(r"$.")
 
 
 TOKENS = re.compile(
     r"(?P<newline>[\r\n]\s*)|"
     r"(?P<comment>;[^\r\n]*)|"
-    r"(?P<open>\{)|"
-    r"(?P<close>})|"
+    r"(?P<lbrace>\{)|"
+    r"(?P<rbrace>})|"
+    r"(?P<lbracket>\[)|"
+    r"(?P<rbracket>])|"
     r"(?P<sep>,)|"
+    r"(?P<nil>NIL)|"
     r"(?P<char>'.|\\f|\\n)|"
     r"(?P<read>\$V)|"
     r"(?P<peek>\?V)|"
-    r"(?P<nil>NIL)|"
     r"(?P<pos>\+?[0-9]+)|"
     r"(?P<neg>-[0-9]+)|"
     r"(?P<remain>\$R)|"
-    r"(?P<default>DEFAULT)|"
     r'(?P<string>"(?:[^"]|\\.)*")|'
     r"(?P<instr>\w+)|"
     r"(?P<error>\S+)", flags=re.IGNORECASE)
+
+ARG_TYPES = {"nil", "char", "read", "peek", "pos", "neg", "remain", "string"}
 
 ESCAPES = re.compile(
     r"\\U........|"
@@ -85,10 +112,6 @@ with open(os.path.join(os.path.dirname(__file__), "instructions.g")) as instruct
 
         instr, *arg_spec, template = re.split(r"\t+| {2,}", line.strip())
 
-        arg_spec = [value for pair in zip(arg_spec, "," * len(arg_spec)) for value in pair][:-1]
-        if len(arg_spec) > 2 and "{...}" in arg_spec:
-            arg_spec.pop(-2)
-
         for print_type in "ACLNR":
             INSTRUCTIONS[instr.replace("x", print_type)] |= {tuple(arg_spec): template.replace("x", print_type)}
 
@@ -104,13 +127,38 @@ def decode_escapes(string: str) -> str:
     return ESCAPES.sub(decode_match, string)
 
 
-def parse(string: str, *, offset: int = 0) -> list[Token]:
+def parse(string: str, *, offset: int = 0, **flags) -> list[Token]:
     # Escape sequences
     string = decode_escapes(string)
     string = string.replace("↡", "\f")
 
-    return [next(Token(k, v, token.start() + offset) for k, v in token.groupdict().items() if v)
-            for token in TOKENS.finditer(string)]
+    all_tokens = [next(Token(k, v, token.start() + offset) for k, v in token.groupdict().items() if v)
+                  for token in TOKENS.finditer(string)]
+
+    # Preprocess separators
+    tokens = []
+
+    prev = Token("", "", 0)
+    for token in all_tokens:
+        if token.type == "sep":
+            if prev.type not in ARG_TYPES:
+                raise AssemblerError(token, "invalid separator")
+
+        elif token.type not in ARG_TYPES and prev.type == "sep":
+            raise AssemblerError(prev, "invalid separator")
+
+        elif token.type == "newline" and not flags.get("preserve_indents"):
+            pass
+
+        elif token.type == "comment" and not flags.get("preserve_comments"):
+            pass
+
+        else:
+            tokens.append(token)
+
+        prev = token
+
+    return tokens
 
 
 def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[Token]]:
@@ -124,14 +172,11 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
 
         remaining = tokens[len(spec):]
         for index, (arg, name) in enumerate(typed_args):
+            if arg.type == "peek":
+                if str(instruction).startswith("BR"):
+                    raise AssemblerError(arg, "peek used in breaking instruction")
+
             if re.fullmatch(r"_\w", name):
-                if arg.type == "peek":
-                    if str(instruction).startswith("BR"):
-                        raise AssemblerError(arg, "peek used in breaking instruction")
-
-                    if index != len(typed_args) - 1:
-                        raise AssemblerError(arg, "non-terminal peek")
-
                 code = code.replace(name, str(arg.out))
                 continue
 
@@ -148,37 +193,37 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
             context = {}
             match arg.type:
                 case "nil":
-                    context = {name[1]: ""}
+                    context = {name: ""}
 
-                case "pos":
+                case "pos" | "neg":
                     context = {
-                        f"{name[1]}-1": str(arg.out - 1),
-                        f"{name[1]}+1": str(arg.out + 1),
-                        f"{name[1]}": str(arg.out)
-                    }
-
-                case "neg":
-                    context = {
+                        f"%{name[1]}-1": str(arg.out - 1),
+                        f"%{name[1]}+1": str(arg.out + 1),
+                        f"%{name[1]}": str(arg.out),
                         f"+{name[1]}": str(abs(arg.out)),
-                        f"{name[1]}": str(arg.out)
+                        f"-{name[1]}": str(-abs(arg.out))
                     }
 
                 case "remain":
-                    context = {name[1]: arg.out}
+                    context = {name: arg.out}
 
                 case "char":
                     context = {
                         f"'{chr(ord(name[1]) - 1)}": f"'{chr(ord(arg.out) - 1)}",
                         f"'{chr(ord(name[1]) + 1)}": f"'{chr(ord(arg.out) + 1)}",
                         name: arg.value,
-                        f"`{name[1]}`": arg.out
+                        f'"{name[1]}"': arg.out
                     }
 
                 case "string":
                     context = {'""': arg.out.replace("~~", "~") if str(instruction) != "FORMAT" else arg.out}
 
-                case "open":
-                    inner, remaining = assemble(remaining, block=str(instruction), **flags)
+                case "lbrace":
+                    inner, remaining = assemble(remaining, block=f"{instruction} {{", **flags)
+                    context = {"...": inner}
+
+                case "lbracket":
+                    inner, remaining = assemble(remaining, block=f"{instruction} [", **flags)
                     context = {"...": inner}
 
             for sub, value in context.items():
@@ -192,6 +237,10 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
                 elif match[1] == "ERR":
                     raise AssemblerError(instruction, "invalid signature for instruction '{value}'")
 
+                # Kinda yucky and only need once for IFNR
+                elif repeat := re.fullmatch(r"(?P<snippet>.*)\*(?P<count>\d+)", match[1]):
+                    return repeat["snippet"] * int(repeat["count"])
+
                 else:
                     return match_args(*parse(match[1], offset=instruction.pos), **flags)[0]
 
@@ -201,17 +250,21 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
     raise AssemblerError(instruction, "could not match signature of instruction '{value}'")
 
 
-def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, list[Token]]:
+def assemble(tokens: list[Token], *, block: str = "", **flags) -> tuple[str, list[Token]]:
     assembled = ""
-    count = 0
+    clauses = 0
 
+    if not tokens:
+        return "", []
+
+    start = tokens[0]
     try:
         while tokens:
             token = tokens.pop(0)
 
             match token.type:
                 case "newline":
-                    if flags.get("preserve_indents") and block != "INIT":
+                    if flags.get("preserve_indents"):
                         assembled += f"~{token.value}"
 
                     continue
@@ -222,41 +275,30 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
 
                     continue
 
-                case "open" if block.startswith("JUST"):
-                    code, tokens = assemble(tokens, block="JUST!", **flags)
-                    assembled += code + "~;"
+                case "rbrace" if not block.endswith("{"):
+                    raise AssemblerError(token, "mismatched closing brace")
 
-                case "open" if block not in ("CASV!", "CASR!"):
-                    code, tokens = assemble(tokens, block="BLOCK", **flags)
-                    assembled += f"~<{code}~>"
+                case "rbracket" if not block.endswith("["):
+                    raise AssemblerError(token, "mismatched closing bracket")
 
-                case "close" if block:
-                    if block.startswith("JUST"):
-                        # Silly str.rreplace
-                        assembled = assembled[::-1].replace(";~", "", 1)[::-1]
-
-                    return assembled, tokens
-
-                case "close":
+                case "rbrace" if not block:
                     raise AssemblerError(token, "unmatched closing brace")
 
-                case "instr" if block not in ("CASV!", "CASR!"):
-                    if str(token) == "CASE":
-                        # CASE specialization
-                        match arg := tokens[0].type:
-                            case "read":
-                                token = token._replace(value="CASV!")
+                case "rbracket" if not block:
+                    raise AssemblerError(token, "unmatched closing bracket")
 
-                            case "pos":
-                                token = token._replace(value="CASR!")
+                case "rbrace" | "rbracket":
+                    return assembled, tokens
 
-                            case _:
-                                raise AssemblerError(arg, "illegal CASE switch '{value}'")
+                case _ if "!" not in block and f"{block[:4]}!" in INSTRUCTIONS and not str(token).endswith("!"):
+                    tokens = [Token("instr", f"{block[:4]}!", token.pos),
+                              Token("pos", str(clauses), token.pos),
+                              token,
+                              *tokens]
 
-                    elif str(token) == "OVER":
-                        if count != 0 or not block.startswith("JUST"):
-                            raise AssemblerError(token, "non-initial OVER clause in JUSTz")
+                    clauses += 1
 
+                case "instr":
                     try:
                         code, tokens = match_args(token, *tokens, **flags)
                         assembled += code
@@ -264,40 +306,18 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
                     except KeyError:
                         raise AssemblerError(token, "unknown instruction '{value}'")
 
-                case "char" if block == "CASV!":
-                    if tokens[0].type != "open":
-                        raise AssemblerError(token, "missing CASE clause for key '{value}'")
+                case "lbrace":
+                    code, tokens = assemble(tokens, block="{", **flags)
+                    assembled += f"~1@{{{code}~:}}"
 
-                    code, tokens = match_args(Token("instr", "IFEQ", token.pos),
-                                              Token("read", "$V", token.pos),
-                                              Token("sep", ",", token.pos),
-                                              token, *tokens, **flags)
+                case "lbracket":
+                    code, tokens = assemble(tokens, block="[", **flags)
 
-                    assembled += code + "~:*"
+                    if flags.get("preserve_groups"):
+                        assembled += f"~0[{code}~]"
 
-                case "pos" | "default" if block == "CASR!":
-                    if int(token.value) != count:
-                        raise AssemblerError(token, "non-sequential numeric CASE key '{value}'")
-
-                    if count < 0:
-                        raise AssemblerError(token, "numeric CASE key '{value}' after DEFAULT")
-
-                    match str(token), count > 0:
-                        case "DEFAULT", True:
-                            assembled += "~:;"
-                            count = -99
-
-                        case "DEFAULT", False:
-                            raise AssemblerError(token, "DEFAULT clause is sole clause in CASE")
-
-                        case _, True:
-                            assembled += "~;"
-
-                    if tokens.pop(0).type != "open":
-                        raise AssemblerError(token, "missing CASE clause for key '{value}'")
-
-                    code, tokens = assemble(tokens, block="CASE!", **flags)
-                    assembled += code
+                    else:
+                        assembled += code
 
                 case "error":
                     raise AssemblerError(token, "unrecognized input '{value}'")
@@ -305,10 +325,11 @@ def assemble(tokens: list[Token], *, block: str = None, **flags) -> tuple[str, l
                 case _:
                     raise AssemblerError(token, "unexpected token '{value}'")
 
-            count += 1
-
     except IndexError:
         raise AssemblerError(token, "incomplete input following '{value}'")
+
+    if block:
+        raise AssemblerError(start, "unclosed block")
 
     return assembled, []
 

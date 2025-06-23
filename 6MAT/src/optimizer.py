@@ -68,11 +68,12 @@ BREAK_OPTIMIZATIONS = {
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
 }
 
+_break_pattern = re.compile(r"~([-+]?\d+|#|'.|v)?(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^", flags=re.DOTALL)
+
 BLOCK_OPTIMIZATIONS = {
     # Blocks that are never broken out of
-    re.compile(r"~<(?P<body>(~[^~<]|[^~])*?)~>", flags=re.DOTALL):
-        lambda match: match[0] if re.search(r"~([-+]?\d+|#|'.|v)(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^",
-                                            match["body"]) else match["body"],
+    re.compile(r"(~<|~1@\{)(?P<body>(~:?@?[^~<{]|[^~])*?)(~>|~:})"):
+        lambda match: match[0] if re.search(_break_pattern, match["body"]) else match["body"],
 
     # Comments
     re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
