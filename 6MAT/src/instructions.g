@@ -154,60 +154,60 @@ LOOP    0   {...}                   ``
 LOOP    +N  {...}                   ~+N@{...~}
 LOOP    {...}                       ~@{...~}
 
-JUST    +N  +M  +L  ?V  {...}       ~+N,+M,+L,v<~:*...~>
-JUST    +N  +M      ?V  {...}       ~+N,+M,,v<~:*...~>
-JUST    +N          ?V  {...}       ~+N,,,v<~:*...~>
-JUST    +N  +M  +L  $V  {...}       ~+N,+M,+L,v<...~>
-JUST    +N  +M      $V  {...}       ~+N,+M,,v<...~>
-JUST    +N          $V  {...}       ~+N,,,v<...~>
-JUST    +N  +M  +L  'C  {...}       ~+N,+M,+L,'C<...~>
-JUST    +N  +M      'C  {...}       ~+N,+M,,'C<...~>
-JUST    +N          'C  {...}       ~+N,,,'C<...~>
-JUST    +N  +M  +L      {...}       ~+N,+M,+L<...~>
-JUST    +N  +M          {...}       ~+N,+M<...~>
-JUST    +N              {...}       ~+N<...~>
+JUST    %N  %M  %L  ?V  {...}       ~%N,%M,%L,v<~:*...~>
+JUST    %N  %M      ?V  {...}       ~%N,%M,,v<~:*...~>
+JUST    %N          ?V  {...}       ~%N,,,v<~:*...~>
+JUST    %N  %M  %L  $V  {...}       ~%N,%M,%L,v<...~>
+JUST    %N  %M      $V  {...}       ~%N,%M,,v<...~>
+JUST    %N          $V  {...}       ~%N,,,v<...~>
+JUST    %N  %M  %L  'C  {...}       ~%N,%M,%L,'C<...~>
+JUST    %N  %M      'C  {...}       ~%N,%M,,'C<...~>
+JUST    %N          'C  {...}       ~%N,,,'C<...~>
+JUST    %N  %M  %L      {...}       ~%N,%M,%L<...~>
+JUST    %N  %M          {...}       ~%N,%M<...~>
+JUST    %N              {...}       ~%N<...~>
 JUST                    {...}       ~<...~>
 
-JUSTC   +N  +M  +L  ?V  {...}       ~+N,+M,+L,v:@<~:*...~>
-JUSTC   +N  +M      ?V  {...}       ~+N,+M,,v:@<~:*...~>
-JUSTC   +N          ?V  {...}       ~+N,,,v:@<~:*...~>
-JUSTC   +N  +M  +L  $V  {...}       ~+N,+M,+L,v:@<...~>
-JUSTC   +N  +M      $V  {...}       ~+N,+M,,v:@<...~>
-JUSTC   +N          $V  {...}       ~+N,,,v:@<...~>
-JUSTC   +N  +M  +L  'C  {...}       ~+N,+M,+L,'C:@<...~>
-JUSTC   +N  +M      'C  {...}       ~+N,+M,,'C:@<...~>
-JUSTC   +N          'C  {...}       ~+N,,,'C:@<...~>
-JUSTC   +N  +M  +L      {...}       ~+N,+M,+L:@<...~>
-JUSTC   +N  +M          {...}       ~+N,+M:@<...~>
-JUSTC   +N              {...}       ~+N:@<...~>
+JUSTC   %N  %M  %L  ?V  {...}       ~%N,%M,%L,v:@<~:*...~>
+JUSTC   %N  %M      ?V  {...}       ~%N,%M,,v:@<~:*...~>
+JUSTC   %N          ?V  {...}       ~%N,,,v:@<~:*...~>
+JUSTC   %N  %M  %L  $V  {...}       ~%N,%M,%L,v:@<...~>
+JUSTC   %N  %M      $V  {...}       ~%N,%M,,v:@<...~>
+JUSTC   %N          $V  {...}       ~%N,,,v:@<...~>
+JUSTC   %N  %M  %L  'C  {...}       ~%N,%M,%L,'C:@<...~>
+JUSTC   %N  %M      'C  {...}       ~%N,%M,,'C:@<...~>
+JUSTC   %N          'C  {...}       ~%N,,,'C:@<...~>
+JUSTC   %N  %M  %L      {...}       ~%N,%M,%L:@<...~>
+JUSTC   %N  %M          {...}       ~%N,%M:@<...~>
+JUSTC   %N              {...}       ~%N:@<...~>
 JUSTC                   {...}       ~:@<...~>
 
-JUSTL   +N  +M  +L  ?V  {...}       ~+N,+M,+L,v@<~:*...~>
-JUSTL   +N  +M      ?V  {...}       ~+N,+M,,v@<~:*...~>
-JUSTL   +N          ?V  {...}       ~+N,,,v@<~:*...~>
-JUSTL   +N  +M  +L  $V  {...}       ~+N,+M,+L,v@<...~>
-JUSTL   +N  +M      $V  {...}       ~+N,+M,,v@<...~>
-JUSTL   +N          $V  {...}       ~+N,,,v@<...~>
-JUSTL   +N  +M  +L  'C  {...}       ~+N,+M,+L,'C@<...~>
-JUSTL   +N  +M      'C  {...}       ~+N,+M,,'C@<...~>
-JUSTL   +N          'C  {...}       ~+N,,,'C@<...~>
-JUSTL   +N  +M  +L      {...}       ~+N,+M,+L@<...~>
-JUSTL   +N  +M          {...}       ~+N,+M@<...~>
-JUSTL   +N              {...}       ~+N@<...~>
+JUSTL   %N  %M  %L  ?V  {...}       ~%N,%M,%L,v@<~:*...~>
+JUSTL   %N  %M      ?V  {...}       ~%N,%M,,v@<~:*...~>
+JUSTL   %N          ?V  {...}       ~%N,,,v@<~:*...~>
+JUSTL   %N  %M  %L  $V  {...}       ~%N,%M,%L,v@<...~>
+JUSTL   %N  %M      $V  {...}       ~%N,%M,,v@<...~>
+JUSTL   %N          $V  {...}       ~%N,,,v@<...~>
+JUSTL   %N  %M  %L  'C  {...}       ~%N,%M,%L,'C@<...~>
+JUSTL   %N  %M      'C  {...}       ~%N,%M,,'C@<...~>
+JUSTL   %N          'C  {...}       ~%N,,,'C@<...~>
+JUSTL   %N  %M  %L      {...}       ~%N,%M,%L@<...~>
+JUSTL   %N  %M          {...}       ~%N,%M@<...~>
+JUSTL   %N              {...}       ~%N@<...~>
 JUSTL                   {...}       ~@<...~>
 
-JUSTR   +N  +M  +L  ?V  {...}       ~+N,+M,+L,v:<~:*...~>
-JUSTR   +N  +M      ?V  {...}       ~+N,+M,,v:<~:*...~>
-JUSTR   +N          ?V  {...}       ~+N,,,v:<~:*...~>
-JUSTR   +N  +M  +L  $V  {...}       ~+N,+M,+L,v:<...~>
-JUSTR   +N  +M      $V  {...}       ~+N,+M,,v:<...~>
-JUSTR   +N          $V  {...}       ~+N,,,v:<...~>
-JUSTR   +N  +M  +L  'C  {...}       ~+N,+M,+L,'C:<...~>
-JUSTR   +N  +M      'C  {...}       ~+N,+M,,'C:<...~>
-JUSTR   +N          'C  {...}       ~+N,,,'C:<...~>
-JUSTR   +N  +M  +L      {...}       ~+N,+M,+L:<...~>
-JUSTR   +N  +M          {...}       ~+N,+M:<...~>
-JUSTR   +N              {...}       ~+N:<...~>
+JUSTR   %N  %M  %L  ?V  {...}       ~%N,%M,%L,v:<~:*...~>
+JUSTR   %N  %M      ?V  {...}       ~%N,%M,,v:<~:*...~>
+JUSTR   %N          ?V  {...}       ~%N,,,v:<~:*...~>
+JUSTR   %N  %M  %L  $V  {...}       ~%N,%M,%L,v:<...~>
+JUSTR   %N  %M      $V  {...}       ~%N,%M,,v:<...~>
+JUSTR   %N          $V  {...}       ~%N,,,v:<...~>
+JUSTR   %N  %M  %L  'C  {...}       ~%N,%M,%L,'C:<...~>
+JUSTR   %N  %M      'C  {...}       ~%N,%M,,'C:<...~>
+JUSTR   %N          'C  {...}       ~%N,,,'C:<...~>
+JUSTR   %N  %M  %L      {...}       ~%N,%M,%L:<...~>
+JUSTR   %N  %M          {...}       ~%N,%M:<...~>
+JUSTR   %N              {...}       ~%N:<...~>
 JUSTR                   {...}       ~:<...~>
 
 LOWER   {...}                       ~(...~)
@@ -216,10 +216,10 @@ JUST!   0                   {...}   ~1@{...~:}
 JUST!   +N                  {...}   ~;~1@{...~:}
 JUST!   0                   [...]   ...
 JUST!   +N                  [...]   ~;...
-JUST!   0   OVER    +P  +O  {...}   ~1@{...~:}~+P,+O:;
-JUST!   0   OVER    +P      {...}   ~1@{...~:}~+P:;
-JUST!   0   OVER    +P  +O  [...]   ...~+P,+O:;
-JUST!   0   OVER    +P      [...]   ...~+P:;
+JUST!   0   OVER    %P  %O  {...}   ~1@{...~:}~%P,%O:;
+JUST!   0   OVER    %P      {...}   ~1@{...~:}~%P:;
+JUST!   0   OVER    %P  %O  [...]   ...~%P,%O:;
+JUST!   0   OVER    %P      [...]   ...~%P:;
 JUST!   +N  OVER    +P  +O  {...}   `ERR`
 JUST!   +N  OVER    +P      {...}   `ERR`
 JUST!   +N  OVER    +P  +O  [...]   `ERR`
@@ -235,34 +235,34 @@ PRINC   ?V                          ~c~:*
 PRINC   $V                          ~c
 PRINC   'C                          "C"
 
-PRINL   +N  +M  +L  $V  $V          ~+N,+M,+L,v@a
-PRINL   +N  +M      $V  $V          ~+N,+M,,v@a
-PRINL   +N          $V  $V          ~+N,,,v@a
-PRINL   +N  +M  +L      $V          ~+N,+M,+L@a
-PRINL   +N  +M          $V          ~+N,+M@a
-PRINL   +N              $V          ~+N@a
-PRINL   +N  +M  +L  'C  $V          ~+N,+M,+L,'C@a
-PRINL   +N  +M      'C  $V          ~+N,+M,,'C@a
-PRINL   +N          'C  $V          ~+N,,,'C@a
-PRINL   +N  +M  +L      $V          ~+N,+M,+L@a
-PRINL   +N  +M          $V          ~+N,+M@a
-PRINL   +N              $V          ~+N@a
+PRINL   %N  %M  %L  $V  $V          ~%N,%M,%L,v@a
+PRINL   %N  %M      $V  $V          ~%N,%M,,v@a
+PRINL   %N          $V  $V          ~%N,,,v@a
+PRINL   %N  %M  %L      $V          ~%N,%M,%L@a
+PRINL   %N  %M          $V          ~%N,+M@a
+PRINL   %N              $V          ~%N@a
+PRINL   %N  %M  %L  'C  $V          ~%N,%M,%L,'C@a
+PRINL   %N  %M      'C  $V          ~%N,%M,,'C@a
+PRINL   %N          'C  $V          ~%N,,,'C@a
+PRINL   %N  %M  %L      $V          ~%N,%M,%L@a
+PRINL   %N  %M          $V          ~%N,%M@a
+PRINL   %N              $V          ~%N@a
 
 PRINN   ?V                          ~:c~:*
 PRINN   $V                          ~:c
 
-PRINR   +N  +M  +L  $V  $V          ~+N,+M,+L,va
-PRINR   +N  +M      $V  $V          ~+N,+M,,va
-PRINR   +N          $V  $V          ~+N,,,va
-PRINR   +N  +M  +L      $V          ~+N,+M,+La
-PRINR   +N  +M          $V          ~+N,+Ma
-PRINR   +N              $V          ~+Na
-PRINR   +N  +M  +L  'C  $V          ~+N,+M,+L,'Ca
-PRINR   +N  +M      'C  $V          ~+N,+M,,'Ca
-PRINR   +N          'C  $V          ~+N,,,'Ca
-PRINR   +N  +M  +L      $V          ~+N,+M,+La
-PRINR   +N  +M          $V          ~+N,+Ma
-PRINR   +N              $V          ~+Na
+PRINR   %N  %M  %L  $V  $V          ~%N,%M,%L,va
+PRINR   %N  %M      $V  $V          ~%N,%M,,va
+PRINR   %N          $V  $V          ~%N,,,va
+PRINR   %N  %M  %L      $V          ~%N,%M,%La
+PRINR   %N  %M          $V          ~%N,%Ma
+PRINR   %N              $V          ~%Na
+PRINR   %N  %M  %L  'C  $V          ~%N,%M,%L,'Ca
+PRINR   %N  %M      'C  $V          ~%N,%M,,'Ca
+PRINR   %N          'C  $V          ~%N,,,'Ca
+PRINR   %N  %M  %L      $V          ~%N,%M,%La
+PRINR   %N  %M          $V          ~%N,%Ma
+PRINR   %N              $V          ~%Na
 
 PREQx   _I  _J  _K                  ~<`BRNE _I, _J``PRINx _K`~>
 

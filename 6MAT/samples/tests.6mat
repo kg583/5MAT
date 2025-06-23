@@ -7,7 +7,7 @@ INIT {
 }
 
 DO {
-    PRINL 1, 2, $R, '4, $V
+    PRINL 1, -2, $R, '4, $V
 
     LOOP 0 {
         PRINA "LOOP 0 test failed!"
@@ -32,7 +32,7 @@ DO {
     TITLE 1 { PRINA "Foo bar" }
 
     JUST 9, NIL, 7, ?V {
-        OVER 6, 5 { SKIPS }
+        OVER -6, 5 { SKIPS }
         { BACKS }
         [ GOTOS ]
         { COPYS }
