@@ -200,8 +200,12 @@ def match_args(instruction: Token, *tokens: Token, **flags) -> tuple[str, list[T
                         f"%{name[1]}-1": str(arg.out - 1),
                         f"%{name[1]}+1": str(arg.out + 1),
                         f"%{name[1]}": str(arg.out),
+                        f"+{name[1]}-1": str(abs(arg.out) - 1),
+                        f"+{name[1]}+1": str(abs(arg.out) + 1),
                         f"+{name[1]}": str(abs(arg.out)),
-                        f"-{name[1]}": str(-abs(arg.out))
+                        f"-{name[1]}-1": str(-abs(arg.out) - 1),
+                        f"-{name[1]}+1": str(-abs(arg.out) + 1),
+                        f"-{name[1]}": str(-abs(arg.out)),
                     }
 
                 case "remain":
