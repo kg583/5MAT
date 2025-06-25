@@ -36,6 +36,8 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~#:?@\*"): "~#*",
 }
 
+_break_pattern = re.compile(r"~([-+]?\d+|#|'.|v)?(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^", flags=re.DOTALL)
+
 BREAK_OPTIMIZATIONS = {
     # Constant unary number breaks
     re.compile(r"~([-+]?\d+)\^"):
@@ -74,7 +76,10 @@ BREAK_OPTIMIZATIONS = {
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
 }
 
-_break_pattern = re.compile(r"~([-+]?\d+|#|'.|v)?(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^", flags=re.DOTALL)
+DETECTABLE_CRASHES = {
+    # Loops which do not move the tape pointer
+    re.compile(r"~@?\{(?P<body>[^~]*?)~}", flags=re.DOTALL): "~?",
+}
 
 BLOCK_OPTIMIZATIONS = {
     # Nested blocks
@@ -83,11 +88,7 @@ BLOCK_OPTIMIZATIONS = {
 
     # Blocks that are never broken out of
     re.compile(r"(~<|~1@\{)(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})"):
-        lambda match: match[0] if re.search(_break_pattern, match["body"]) else match["body"],
-
-    # Comments
-    re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
-        lambda match: match[0] if int(match[1]) == 0 else ""
+        lambda match: match[0] if re.search(_break_pattern, match["body"]) else match["body"]
 }
 
 LAYOUT_OPTIMIZATIONS = {
@@ -95,21 +96,25 @@ LAYOUT_OPTIMIZATIONS = {
     re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$"):
         lambda match: f"~:[{match['init']}~;{match['body']}~]",
 
+    # Comments
+        re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
+            lambda match: match[0] if int(match[1]) == 0 else "",
+
     # Newlines
     re.compile(r"~\n\s*"): ""
 }
 
-DETECTABLE_CRASHES = {
-    # Loops which do not move the tape pointer
-    re.compile(r"~@?\{(?P<body>[^~]*?)~}", flags=re.DOTALL): "~?",
-}
-
-ALL_OPTIMIZATIONS = {
+OPTIMIZE = {
     **MOVE_OPTIMIZATIONS,
     **BREAK_OPTIMIZATIONS,
-    **BLOCK_OPTIMIZATIONS,
-    **LAYOUT_OPTIMIZATIONS,
     **DETECTABLE_CRASHES
+}
+
+
+COMPRESS = {
+    **OPTIMIZE,
+    **BLOCK_OPTIMIZATIONS,
+    **LAYOUT_OPTIMIZATIONS
 }
 
 
@@ -138,10 +143,4 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     return program
 
 
-if __name__ == "__main__":
-    with open("../../counter.5mat", "r") as infile:
-        print(optimize(infile.read(), ALL_OPTIMIZATIONS))
-
-
-__all__ = ["MOVE_OPTIMIZATIONS", "BREAK_OPTIMIZATIONS", "BLOCK_OPTIMIZATIONS", "DETECTABLE_CRASHES",
-           "ALL_OPTIMIZATIONS", "optimize"]
+__all__ = ["OPTIMIZE", "COMPRESS", "optimize"]
