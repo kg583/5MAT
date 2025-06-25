@@ -70,10 +70,6 @@ BREAK_OPTIMIZATIONS = {
 }
 
 BLOCK_OPTIMIZATIONS = {
-    # Nested blocks
-    re.compile(r"(?P<left>(~<|~1@\{))(~<|~1@\{)+(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})+(?P<right>(~>|~:}))"):
-        lambda match: match['left'] + match['body'] + match['right'],
-
     # Blocks that are never broken out of
     re.compile(r"(~<|~1@\{)(?P<body>[^^]*?)(~>|~:})"):
         lambda match: match["body"],

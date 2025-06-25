@@ -124,7 +124,7 @@ CASE!   0   'C          {...}       ~1@{`BRNE $V, 'C'`...~:}
 CASE!   +N  'C          {...}       ~:*~1@{`BRNE $V, 'C'`...~:}
 CASE!   +N  "X          {...}       `CASE! +N, ?n, "X |...|`
 CASE!   +N  ?0  "X      |...|       ~1@{...~:}
-CASE!   +N  ?n  "X      |...|       ~<`BRNE $V, 'X'``CASE! +N, ?n-1, .X |...|`~:*~>
+CASE!   +N  ?n  "X      |...|       ~<`BRNE $V, 'X'``CASE! +N, ?n-1, .X |...|`~>~:*
 
 COPY        1                       `COPY`
 COPY        $R                      ~@{~c~}
