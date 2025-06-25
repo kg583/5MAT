@@ -12,6 +12,7 @@
 # Generic types may only substitute into templates
 # Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
 # Instructions with a '!' cannot appear in user code and are used internally
+# A lowercase 'z' is a placeholder for any of the print types (ACLNR)
 
 BACK        0                       ``
 BACK        1                       `BACK`
@@ -102,6 +103,10 @@ BRNE!   $n  "X                      `BRNE $V, 'X'``BRNE! $n-1, .X`
 BRNE!   "X  $n                      `BRNE 'X', $V``BRNE! .X, $n-1`
 BRNE!   "X  "Y                      `BRNE 'X', 'Y'``BRNE! .X, .Y`
 
+BRNR    +N                          `BREQ $R, +N`
+
+BRNZ                                `BRNE $R, 0`
+
 BRZR                                ~^
 
 BUFFER  {...}                       ~<...~>
@@ -167,6 +172,10 @@ CRLT    _I  _J                      ~<`BRGE _I, _J``CRASH`~>
 CRNE    _I  ?V                      `CRNE _I, $V`~:*
 CRNE    _I  _J                      ~<`BREQ _I, _J``CRASH`~>
 
+CRNR    +N                          ~<`BRNE $R, +N``CRASH`~>
+
+CRNZ                                ~#[~:;`CRASH`~]
+
 CRZR                                ~#[`CRASH`~]
 
 DO      {...}                       ~1{...~}
@@ -207,6 +216,9 @@ IFNR    +N  [...]                   ~#[`IFNR! +N`...~]
 
 IFNR!   0                           ``
 IFNR!   +N                          ~;`IFNR! +N-1`
+
+IFNZ        {...}                   ~1@{~^...~:}
+IFNZ        [...]                   ~#[~:;...~]
 
 IFZR        {...}                   ~1@{~1,1,#^...~:}
 IFZR        [...]                   ~#[...~]
@@ -346,22 +358,26 @@ PRINR   %N  %M  %L      $V          ~%N,%M,%La
 PRINR   %N  %M          $V          ~%N,%Ma
 PRINR   %N              $V          ~%Na
 
-PREQx   _I  _J  _K                  ~<`BRNE _I, _J``PRINx _K`~>
+PREQz   _I  _J  _K                  ~<`BRNE _I, _J``PRINz _K`~>
 
 PRFF    +N                          ~+N|
 PRFF                                ~|
 
-PRGEx   _I  _J  _K                  ~<`BRLT _I, _J``PRINx _K`~>
+PRGEz   _I  _J  _K                  ~<`BRLT _I, _J``PRINz _K`~>
 
-PRGTx   _I  _J  _K                  ~<`BRLE _I, _J``PRINx _K`~>
+PRGTz   _I  _J  _K                  ~<`BRLE _I, _J``PRINz _K`~>
 
-PRLEx   _I  _J  _K                  ~<`BRGT _I, _J``PRINx _K`~>
+PRLEz   _I  _J  _K                  ~<`BRGT _I, _J``PRINz _K`~>
 
-PRLTx   _I  _J  _K                  ~<`BRGE _I, _J``PRINx _K`~>
+PRLTz   _I  _J  _K                  ~<`BRGE _I, _J``PRINz _K`~>
 
-PRNEx   _I  _J  _K                  ~<`BREQ _I, _J``PRINx _K`~>
+PRNEz   _I  _J  _K                  ~<`BREQ _I, _J``PRINz _K`~>
 
-PRZRx           _K                  ~#[`PRINx _K`~]
+PRNRz   +N      _K                  ~<`BREQ $R, +N``PRINz _K`~>
+
+PRNZz           _K                  ~#[~:;`PRINz _K`~]
+
+PRZRz           _K                  ~#[`PRINz _K`~]
 
 SKIP        0                       ``
 SKIP        1                       `SKIP`

@@ -4,7 +4,7 @@
 
 6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh). Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
 
-On a single **cycle** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear before the first **form feed** character (`\f`) are **output** to STDOUT once the current cycle is completed.
+On a single **cycle** or **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear before the first **form feed** character (`\f`) are **output** to STDOUT once the current cycle is completed.
 
 This loop continues indefinitely, terminating only by a **crash**. This execution model, along with FORMAT's surprising control flow capabilities, enable 5MAT and 6MAT to be Turing-complete.
 
@@ -71,8 +71,14 @@ Break out of the current block. The tape pointer is unaltered.
 #### `BRFF`
 Read a character from the tape and break if it is `\f`.
 
+#### `BRNR`
+Break out of the current block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+
+#### `BRNZ`
+Break out of the current block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+
 #### `BRZR`
-Break out of the current block if the tape pointer is at the end of the tape (i.e. `$R = 0`).
+Break out of the current block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR 0`.
 
 #### `BRxx _I, _J`
 Break out of the current block if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
@@ -114,6 +120,9 @@ Read a character from the tape and execute the block if it is `\f`.
 
 #### `IFNR +N [{ ... }]`
 Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+
+#### `IFZR [{ ... }]`
+Execute the block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `IFZR [{ ... }]`
 Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `IFNR 0 [{ ... }]`.
@@ -243,8 +252,14 @@ Irrecoverably terminate execution immediately. All output produced during the cu
 #### `CRFF`
 Read a character from the tape and crash if it is `\f`.
 
+#### `CRNR`
+Crash if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+
+#### `CRNZ`
+Crash if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+
 #### `CRZR`
-Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`).
+Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `CRNR 0`.
 
 #### `CRyy _I, _J`
 Crash if condition `yy` holds for `_I` and `_J`. Equivalent to `{ BRxx _I, _J | CRASH }`, where `xx` is the negation of `yy`.
@@ -291,8 +306,14 @@ Read or peek a character from the tape and print it with `k*M + L` copies of `W`
 
 ### Conditional Printing
 
+#### `PRNRz _K`
+Print `_K` using `PRINz _K` if the tape pointer is `N` characters from the end of the tape (i.e. `$R /= N`).
+
+#### `PRNZz _K`
+Print `_K` using `PRINz _K` if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+
 #### `PRZRz _K`
-Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`).
+Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `PRNRz 0 _K`.
 
 #### `PRyyz _I, _J, _K`
 Print `_K` using `PRINz _K` if condition `yy` holds for `_I` and `_J`. Equivalent to `{ BRxx _I, _J | PRINz _K }`, where `xx` is the negation of `yy`.
