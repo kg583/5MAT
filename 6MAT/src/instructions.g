@@ -157,7 +157,7 @@ CRNE    _I  _J                      ~<`BREQ _I, _J``CRASH`~>
 
 CRZR                                ~#[`CRASH`~]
 
-DO      {...}                       ~{...~}
+DO      {...}                       ~{...~0^~}
 
 FRESH   +N                          ~+N&
 FRESH                               ~&
