@@ -12,11 +12,6 @@ def dist_to_arg(dist: int) -> str:
 
 
 MOVE_OPTIMIZATIONS = {
-    # Any forward move followed by a relative move
-    re.compile(r"~(?P<arg_1>(\+?\d+)?)(?P<absolute>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
-        lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}"
-                      f"{'@' if match['absolute'] else ''}*",
-
     # Any move followed by an absolute move
     re.compile(r"~(?:#|(?:\+?\d+)?):?@?\*~(\d*):?@\*"):
         lambda match: f"~{int(match[1])}@*",
@@ -74,11 +69,6 @@ BREAK_OPTIMIZATIONS = {
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
 }
 
-DETECTABLE_CRASHES = {
-    # Loops which do not move the tape pointer
-    re.compile(r"~@?\{(?P<body>[^~]*?)~}", flags=re.DOTALL): "~?",
-}
-
 BLOCK_OPTIMIZATIONS = {
     # Nested blocks
     re.compile(r"(?P<left>(~<|~1@\{))(~<|~1@\{)+(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})+(?P<right>(~>|~:}))"):
@@ -88,35 +78,53 @@ BLOCK_OPTIMIZATIONS = {
     re.compile(r"(~<|~1@\{)(?P<body>[^^]*?)(~>|~:})"):
         lambda match: match["body"],
 
-    # Empty blocks
-    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): ""
-}
+    # Constant blocks
+    re.compile(r"~(?P<count>[1-6])@?\{(?P<body>(~~|[^~])*?)~}"):
+        lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
-LAYOUT_OPTIMIZATIONS = {
-    # INIT - DO compression
+    # Empty blocks
+    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): "",
+
+    # INIT - DO rearranging
     re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$", flags=re.DOTALL):
         lambda match: f"~:[{match['init']}~;{match['body']}~]",
-
-    # Comments
-        re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
-            lambda match: match[0] if int(match[1]) == 0 else "",
-
-    # Newlines
-    re.compile(r"~\n\s*"): ""
 }
 
-OPTIMIZE = {
+DETECTABLE_CRASHES = {
+    # Loops which do not move the tape pointer
+    re.compile(r"~@?\{(?P<body>[^~]*?)~}", flags=re.DOTALL): "~?",
+}
+
+BOUNDEDNESS_OPTIMIZATIONS = {
+    # Any move followed by a relative move
+    re.compile(r"~(?P<arg_1>(\+?\d+)?:?)(?P<absolute>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
+        lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}"
+                      f"{'@' if match['absolute'] else ''}*",
+
+    # Short loops
+    re.compile(r"~(?P<count>[1-3])@?\{(?P<body>(~:?@?[^:@~<{]|[^~])*?)~}"):
+        lambda match: min(match['body'] * int(match['count']), match[0], key=len),
+}
+
+FORMATTING = {
+    # Comments
+    re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
+        lambda match: match[0] if int(match[1]) == 0 else "",
+
+    # Newlines
+    re.compile(r"~\n\s*"): "",
+}
+
+O1 = {
     **MOVE_OPTIMIZATIONS,
     **BREAK_OPTIMIZATIONS,
     **BLOCK_OPTIMIZATIONS,
     **DETECTABLE_CRASHES
 }
 
-
-COMPRESS = {
-    **OPTIMIZE,
-    **BLOCK_OPTIMIZATIONS,
-    **LAYOUT_OPTIMIZATIONS
+O2 = {
+    **O1,
+    **BOUNDEDNESS_OPTIMIZATIONS
 }
 
 
@@ -145,4 +153,4 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     return program
 
 
-__all__ = ["OPTIMIZE", "COMPRESS", "optimize"]
+__all__ = ["FORMATTING", "O1", "O2", "optimize"]

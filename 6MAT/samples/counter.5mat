@@ -4,8 +4,8 @@
     00~
 ~;~]~:*~
 
-~{~
-    ~#*~1:*~
+~1{~
+    ~#*~:*~
     ~:*~@{~v,'\f^~:*~c~2:*~}~1[ Copy the counter into the output section, reversed ~]~
 
     ~%~
@@ -30,5 +30,5 @@
     ~
 
     ~#[0~]~1[ If there's no leading zero, add it ~]~
-    ~#@{~c~}~1[ Otherwise, copy the rest of the counter ~]~
-~0^~}
+    ~@{~c~}~1[ Otherwise, copy the rest of the counter ~]~
+~}

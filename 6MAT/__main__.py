@@ -10,12 +10,18 @@ parser = argparse.ArgumentParser(
     description="Assembles 6MAT programs into 5MAT with optional formatting and optimizations"
 )
 
-parser.add_argument("filename", help="the file to assemble; output will be <filename>.5mat")
-parser.add_argument("-o", "--optimize", action="store_true", help="apply logic optimizations to output")
-parser.add_argument("-c", "--compress", action="store_true", help="apply logic and size optimizations to output")
-parser.add_argument("--preserve-comments", action="store_true", help="preserve comments")
-parser.add_argument("--preserve-groups", action="store_true", help="preserve non-semantic groups")
-parser.add_argument("--preserve-indents", action="store_true", help="preserve indentation")
+parser.add_argument("filename",
+                    help="the file to assemble; output will be <filename>.5mat")
+parser.add_argument("-O1", "-O", action="store_true",
+                    help="apply optimizations to output, reducing code size and improving execution speed")
+parser.add_argument("-O2", action="store_true",
+                    help="O1 + optimizations that assume the tape pointer is never moved off the tape")
+parser.add_argument("--preserve-comments", action="store_true",
+                    help="preserve comments")
+parser.add_argument("--preserve-groups", action="store_true",
+                    help="preserve non-semantic groups")
+parser.add_argument("--preserve-indents", action="store_true",
+                    help="preserve newlines and indentation")
 
 
 if __name__ == "__main__":
@@ -24,11 +30,11 @@ if __name__ == "__main__":
     with open(args.filename, "r") as infile:
         assembled = assemble(infile.read(), **vars(args))
 
-        if args.optimize:
-            assembled = optimize(assembled, OPTIMIZE)
+        if args.O1:
+            assembled = optimize(assembled, O1)
 
-        if args.compress:
-            assembled = optimize(assembled, COMPRESS)
+        elif args.O2:
+            assembled = optimize(assembled, O2)
 
         with open(os.path.splitext(args.filename)[0] + ".5mat", "w+") as outfile:
             outfile.write(assembled)
