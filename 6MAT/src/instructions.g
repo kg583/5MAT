@@ -30,7 +30,7 @@ BREQ    'C  $V                      ~'C,v^
 BREQ    'C  'F                      ~'C,'F^
 BREQ    %N  %M                      ~%N,%M^
 
-BRFF                                ~v,'\f'^
+BRFF                                ~v,'\f^
 
 BRGE    $V  $V                      `ERR`
 BRGE    $V  'C                      ~'C,'C,v^
