@@ -26,15 +26,24 @@ parser.add_argument("--preserve-indents", action="store_true",
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    path, ext = os.path.splitext(args.filename)
 
     with open(args.filename, "r") as infile:
-        assembled = assemble(infile.read(), **vars(args))
+        match ext:
+            case ".6mat":
+                code = assemble(infile.read(), **vars(args))
+
+            case ".5mat":
+                code = infile.read()
+
+            case _:
+                raise ValueError(f"unrecognized file extension: '{args.filename}'")
 
         if args.O1:
-            assembled = optimize(assembled, O1)
+            code = optimize(code, O1)
 
         elif args.O2:
-            assembled = optimize(assembled, O2)
+            code = optimize(code, O2)
 
-        with open(os.path.splitext(args.filename)[0] + ".5mat", "w+") as outfile:
-            outfile.write(assembled)
+        with open(path + ".5mat", "w+") as outfile:
+            outfile.write(code)

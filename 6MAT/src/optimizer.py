@@ -11,6 +11,8 @@ def dist_to_arg(dist: int) -> str:
     return str(abs(dist)) + (":" if dist < 0 else "")
 
 
+CONST = r"~[%&|.]|~\n\s*|[^~]"
+
 MOVE_OPTIMIZATIONS = {
     # Any move followed by an absolute move
     re.compile(r"~(?:#|(?:\+?\d+)?):?@?\*~(\d*):?@\*"):
@@ -65,6 +67,7 @@ BREAK_OPTIMIZATIONS = {
 
     # '#' optimizations
     re.compile(r"~#\^"): "~^",
+    re.compile(r"~\^~}"): "~}",
     re.compile(r"~#,(-.*?)\^|~(-.*?),#\^"): "",
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
 }
@@ -75,7 +78,7 @@ BLOCK_OPTIMIZATIONS = {
         lambda match: match["body"],
 
     # Constant blocks
-    re.compile(r"~(?P<count>[1-6])@?\{(?P<body>(~~|[^~])*?)~}"):
+    re.compile(rf"~(?P<count>[1-6])@?\{{(?P<body>({CONST})*?)~}}"):
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Empty blocks
@@ -88,7 +91,10 @@ BLOCK_OPTIMIZATIONS = {
 
 DETECTABLE_CRASHES = {
     # Loops which do not move the tape pointer
-    re.compile(r"~@?\{(?P<body>[^~]*?)~}", flags=re.DOTALL): "~?",
+    re.compile(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", flags=re.DOTALL): "~?",
+
+    # Reading past the end of the tape
+    re.compile(rf"~#\[({CONST})*?~\w(~[^\[]|[^~])*~]"): "~#[~?~]"
 }
 
 BOUNDEDNESS_OPTIMIZATIONS = {
@@ -147,6 +153,10 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
     return program
+
+
+if __name__ == "__main__":
+    print(optimize("~#[blah~a~{2~^~}~b~]", O2))
 
 
 __all__ = ["FORMATTING", "O1", "O2", "optimize"]

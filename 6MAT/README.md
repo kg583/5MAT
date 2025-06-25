@@ -349,7 +349,7 @@ Print `N` tildes (`~`).
 #### `|...|`
 Insert the contents of `|...|`, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.
 
-<sup><sub>This syntax should be used sparingly, if at all.</sub></sup>
+*This syntax should be used sparingly, if at all. No checks are performed on the syntactic or semantic validity of injected code.*
 
 #### `JUSTz %N = 0, %M = 1, %L = 0, !V = Space { ... }`
 Justify the subsequent blocks by padding each block's content with at least `L` copies of `V` (with left-to-right precedence if padding must be unevenly allotted), arranged within a field of width `N+k*M` for the smallest possible choice of `k`.
