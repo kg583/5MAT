@@ -143,7 +143,10 @@ with open(os.path.join(os.path.dirname(__file__), "instructions.g")) as instruct
         if line.isspace():
             continue
 
-        instr, *arg_spec, template = re.split(r"\t+| {2,}", line.strip())
+        if line.startswith("#"):
+            continue
+
+        instr, *arg_spec, template = re.split(r" {2,}", line.strip())
 
         for print_type in "ACLNR":
             INSTRUCTIONS[instr.replace("x", print_type)] |= {tuple(arg_spec): template.replace("x", print_type)}
@@ -423,6 +426,10 @@ def assemble(program: str, **flags) -> str:
             # Sequester strings
             strings.add(token.value[1:-1])
             token.value = strings.last_key()
+
+        elif token.type == "instr" and "!" in token.value:
+            # No ! instructions from users
+            raise AssemblerError(token, "illegal instruction '{value}'")
 
         tokens.append(token)
 

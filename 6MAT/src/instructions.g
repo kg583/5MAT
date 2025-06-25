@@ -1,3 +1,17 @@
+# 6MAT assembler grammar file
+# Instruction : arguments : code; each column is separated by at least two spaces
+
+# Literals are substituted using the name of the corresponding argument
+# Numbers support setting the sign and adding/subtracting one
+# Characters support getting either adjacent character in ASCII
+# Strings support car/cdr to build code recursively
+# Blocks can only substitute their own assembled code
+
+# Templates are wrapped in backticks `` and must contain valid 6MAT after substituting arguments
+# Generic types may only substitute into templates
+# Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
+# Instructions with a '!' cannot appear in user code and are used internally
+
 BACK        +N                      ~+N:*
 BACK                                ~:*
 
@@ -122,24 +136,24 @@ COPYR                               ~:*~@{`BRFF`~:*`COPY`~2:*~}
 CRASH                               ~?
 
 CREQ    _I  ?V                      `CREQ _I, $V`~:*
-CREQ    _I  _J                      ~1@{`BRNE _I, _J``CRASH`~:}
+CREQ    _I  _J                      ~<`BRNE _I, _J``CRASH`~>
 
-CRFF                                ~1@{`BRNE $V, '\f'``CRASH`~:}
+CRFF                                ~<`BRNE $V, '\f'``CRASH`~>
 
 CRGE    _I  ?V                      `CRGE _I, $V`~:*
-CRGE    _I  _J                      ~1@{`BRLT _I, _J``CRASH`~:}
+CRGE    _I  _J                      ~<`BRLT _I, _J``CRASH`~>
 
 CRGT    _I  ?V                      `CRGT _I, $V`~:*
-CRGT    _I  _J                      ~1@{`BRLE _I, _J``CRASH`~:}
+CRGT    _I  _J                      ~<`BRLE _I, _J``CRASH`~>
 
 CRLE    _I  ?V                      `CRLE _I, $V`~:*
-CRLE    _I  _J                      ~1@{`BRGT _I, _J``CRASH`~:}
+CRLE    _I  _J                      ~<`BRGT _I, _J``CRASH`~>
 
 CRLT    _I  ?V                      `CRLT _I, $V`~:*
-CRLT    _I  _J                      ~1@{`BRGE _I, _J``CRASH`~:}
+CRLT    _I  _J                      ~<`BRGE _I, _J``CRASH`~>
 
 CRNE    _I  ?V                      `CRNE _I, $V`~:*
-CRNE    _I  _J                      ~1@{`BREQ _I, _J``CRASH`~:}
+CRNE    _I  _J                      ~<`BREQ _I, _J``CRASH`~>
 
 CRZR                                ~#[`CRASH`~]
 
