@@ -158,7 +158,7 @@ CASER [
 ```
 
 #### `CASES { ... }`
-Conditionally execute blocks based on the value of `$n`, where `n` characters are read to test against a string of length `n`. If a test would read past the end of the tape, crash.
+Conditionally execute blocks based on the value of `?n`, where `n` characters are read to test against a string of length `n`. If a test would read past the end of the tape, crash.
 ```
 CASES {
     "FOO" { ... }
@@ -168,7 +168,7 @@ CASES {
     "QUX" { ... }
 }
 ```
-All clauses which match `$n` are executed. For example, if `$3 = "FOO"`, the following prints `ABC`.
+All clauses which match `?n` are executed. For example, if `?3 = "FOO"`, the following prints `ABC`.
 ```
 CASES {
     "F"   { PRINC 'A' }
@@ -176,7 +176,6 @@ CASES {
     "FOO" { PRINC 'C' }
 }
 ```
-
 
 Each clause must advance the tape pointer by the same amount in all circumstances to prevent unexpected additional fallthrough. 
 
