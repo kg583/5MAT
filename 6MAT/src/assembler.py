@@ -93,8 +93,10 @@ class Token:
 @dataclass
 class Block:
     name: str = ""
-    args: tuple[Token, ...] = ()
     open: str = ""
+
+    def __bool__(self) -> bool:
+        return bool(self.open)
 
     @property
     def close(self) -> str:
@@ -219,7 +221,6 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
 
     for spec, code in INSTRUCTIONS[str(instruction)].items():
         matched_args = [*zip(tokens, spec)]
-        args = []
 
         if len(matched_args) < len(spec):
             continue
@@ -297,7 +298,7 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     }
 
                 case "lbrace" | "lbracket":
-                    block = Block(str(instruction), tuple(args), arg.type)
+                    block = Block(str(instruction), arg.type)
 
                     inner, remaining = match_tokens(remaining, strings, block, **flags)
                     context = {"...": inner}
@@ -314,8 +315,6 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     repl = encode_escapes(repl)
 
                 code = code.replace(sub, repl)
-
-            args.append(arg)
 
         else:
             def match_template(match: re.Match) -> str:
@@ -378,11 +377,11 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
                         raise AssemblerError(token, "unknown instruction '{value}'")
 
                 case "lbrace":
-                    code, tokens = match_tokens(tokens, strings, Block("", (), "lbrace"), **flags)
+                    code, tokens = match_tokens(tokens, strings, Block("", "lbrace"), **flags)
                     assembled += f"~1@{{{code}~:}}"
 
                 case "lbracket":
-                    code, tokens = match_tokens(tokens, strings, Block("", (), "lbracket"), **flags)
+                    code, tokens = match_tokens(tokens, strings, Block("", "lbracket"), **flags)
 
                     if flags.get("preserve_groups"):
                         assembled += f"~0[{code}~]"
