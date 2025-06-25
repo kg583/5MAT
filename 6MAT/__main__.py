@@ -11,8 +11,8 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument("filename", help="the file to assemble; output will be <filename>.5mat")
-parser.add_argument("--optimize", action="store_true", help="apply logic optimizations to output")
-parser.add_argument("--compress", action="store_true", help="apply logic and size optimizations to output")
+parser.add_argument("-o", "--optimize", action="store_true", help="apply logic optimizations to output")
+parser.add_argument("-c", "--compress", action="store_true", help="apply logic and size optimizations to output")
 parser.add_argument("--preserve-comments", action="store_true", help="preserve comments")
 parser.add_argument("--preserve-groups", action="store_true", help="preserve non-semantic groups")
 parser.add_argument("--preserve-indents", action="store_true", help="preserve indentation")
