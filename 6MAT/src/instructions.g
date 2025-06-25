@@ -121,15 +121,19 @@ CASE!   +N  "X          {...}       `CASE! +N, ?n, "X |...|`
 CASE!   +N  ?0  "X      |...|       ~1@{...~:}
 CASE!   +N  ?n  "X      |...|       ~<`BRNE $V, 'X'``CASE! +N, ?n-1, .X |...|`~:*~>
 
+COPY        $R                      ~@{~c~}
 COPY        +N                      ~+N@{~c~}
 COPY                                ~c
 
+COPYC   'C  $R                      `ERR`
 COPYC   'C  +N                      ~+N-1@{`COPYC 'C'`C~}`COPYC 'C'`
 COPYC   'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
 
+COPYF       $R                      `ERR`
 COPYF       +N                      `COPYC '\f', +N`
 COPYF                               `COPYC '\f'`
 
+COPYR       $R                      `ERR`
 COPYR       +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~}~@{`BRFF`~:*`COPY`~2:*~}
 COPYR                               ~:*~@{`BRFF`~:*`COPY`~2:*~}
 
