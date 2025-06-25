@@ -164,10 +164,10 @@ def encode_escapes(string: str) -> str:
     for char in range(1, 32):
         match char:
             case 9:
-                continue
+                repl = "\\t"
 
             case 10:
-                continue
+                repl = "\\n"
 
             case 12:
                 repl = "\\f"
@@ -306,7 +306,11 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     raise AssemblerError(arg, "unrecognized input '{value}'")
 
             for sub, value in context.items():
-                code = code.replace(sub, str(value))
+                repl = str(value)
+                if sub != "...":
+                    repl = encode_escapes(repl)
+
+                code = code.replace(sub, repl)
 
             args.append(arg)
 
@@ -427,7 +431,7 @@ def assemble(program: str, **flags) -> str:
     # Insert strings
     assembled = re.sub(r'"\d+:\d+"', lambda match: strings[match[0]].replace("~", "~~"), assembled)
 
-    return encode_escapes(assembled)
+    return assembled
 
 
 if __name__ == "__main__":
