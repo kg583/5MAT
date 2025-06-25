@@ -36,15 +36,13 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~#:?@\*"): "~#*",
 }
 
-_break_pattern = re.compile(r"~([-+]?\d+|#|'.|v)?(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^", flags=re.DOTALL)
-
 BREAK_OPTIMIZATIONS = {
     # Constant unary number breaks
     re.compile(r"~([-+]?\d+)\^"):
         lambda match: "~0^" if int(match[1]) == 0 else "",
 
     # Constant unary character breaks
-    re.compile(r"~'.\^"): "",
+    re.compile(r"~'.\^", flags=re.DOTALL): "",
 
     # Constant binary number breaks
     re.compile(r"~([-+]?\d+)?,([-+]?\d+)?\^"):
@@ -52,7 +50,7 @@ BREAK_OPTIMIZATIONS = {
                       or not any(match.groups()) else "",
 
     # Constant binary character breaks
-    re.compile(r"~('.)?,('.)?\^"):
+    re.compile(r"~('.)?,('.)?\^", flags=re.DOTALL):
         lambda match: "~0^" if match[1] == match[2] else "",
 
     # Constant ternary number breaks
@@ -61,11 +59,11 @@ BREAK_OPTIMIZATIONS = {
                       or not any(match.groups()) else "",
 
     # Constant ternary character breaks
-    re.compile(r"~('.)?,('.)?,('.)?\^"):
+    re.compile(r"~('.)?,('.)?,('.)?\^", flags=re.DOTALL):
         lambda match: "~0^" if match[1] <= match[2] <= match[3] else "",
 
     # Unreachable code
-    re.compile(r"(~0\^|~\?).+?(~>|~:?})"):
+    re.compile(r"(~0\^|~\?).*?(~>|~:?})", flags=re.DOTALL):
         lambda match: match[1] + match[2],
 
     re.compile(r"~0(~:?[^:>}])*?\^$"): "",
@@ -87,13 +85,16 @@ BLOCK_OPTIMIZATIONS = {
         lambda match: match['left'] + match['body'] + match['right'],
 
     # Blocks that are never broken out of
-    re.compile(r"(~<|~1@\{)(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})"):
-        lambda match: match[0] if re.search(_break_pattern, match["body"]) else match["body"]
+    re.compile(r"(~<|~1@\{)(?P<body>[^^]*?)(~>|~:})"):
+        lambda match: match["body"],
+
+    # Empty blocks
+    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): ""
 }
 
 LAYOUT_OPTIMIZATIONS = {
     # INIT - DO compression
-    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$"):
+    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$", flags=re.DOTALL):
         lambda match: f"~:[{match['init']}~;{match['body']}~]",
 
     # Comments
@@ -107,6 +108,7 @@ LAYOUT_OPTIMIZATIONS = {
 OPTIMIZE = {
     **MOVE_OPTIMIZATIONS,
     **BREAK_OPTIMIZATIONS,
+    **BLOCK_OPTIMIZATIONS,
     **DETECTABLE_CRASHES
 }
 

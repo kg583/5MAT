@@ -328,7 +328,7 @@ Copy characters up to but not including the `N`th succeeding appearance of `C`.
 Copy characters up to but not including the `N`th succeeding appearance of `\f`. Equivalent to `COPYC '\f', +N'`.
 
 #### `COPYR +N = 1`
-Copy characters in reverse up to but not including the `N`th previous appearance of `\f`.
+Copy characters in reverse up to but not including the `N`th previous appearance of `\f`. `$R` is not permitted.
 
 ### Special Output
 

@@ -28,9 +28,9 @@ DO {
         }
 
         PRINA "Is this ↓ "
-        {
+        [
             PRINC ?V
-        }
+        ]
     }
 
     LOWER { PRINA "foo bar" }
@@ -52,6 +52,7 @@ DO {
     }
 
     COPYR 5
+    COPYF 1
 
     CASER [
         0 [ TABR ]

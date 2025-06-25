@@ -1,5 +1,6 @@
 # 6MAT assembler grammar file
 # Instruction : arguments : code; each column is separated by at least two spaces
+# Instruction signatures are matched top to bottom, so more specific signatures must appear first
 
 # Literals are substituted using the name of the corresponding argument
 # Numbers support setting the sign and adding/subtracting one
@@ -12,14 +13,18 @@
 # Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
 # Instructions with a '!' cannot appear in user code and are used internally
 
+BACK        0                       ``
+BACK        1                       `BACK`
 BACK        +N                      ~+N:*
 BACK                                ~:*
 
-BACKF   'C  +N                      ~:*~+N@{~@{`BREQ $V, 'C'`~:2*~}~2:*~}
+BACKC   'C  0                       ``
+BACKC   'C  1                       `BACKC 'C'`
+BACKC   'C  +N                      ~:*~+N@{~@{`BREQ $V, 'C'`~:2*~}~2:*~}
 BACKC   'C                          ~:*~@{`BREQ $V, 'C'`~2:*~}
 
-BACKF       +N                      ~:*~+N@{~@{`BRFF`~2:*~}~2:*~}
-BACKF                               ~:*~@{`BRFF`~2:*~}
+BACKF       +N                      `BACKC '\f', +N`
+BACKF                               `BACKC '\f'`
 
 BREAK                               ~0^
 
@@ -121,20 +126,23 @@ CASE!   +N  "X          {...}       `CASE! +N, ?n, "X |...|`
 CASE!   +N  ?0  "X      |...|       ~1@{...~:}
 CASE!   +N  ?n  "X      |...|       ~<`BRNE $V, 'X'``CASE! +N, ?n-1, .X |...|`~:*~>
 
+COPY        1                       `COPY`
 COPY        $R                      ~@{~c~}
 COPY        +N                      ~+N@{~c~}
 COPY                                ~c
 
-COPYC   'C  $R                      `ERR`
+COPYC   'C  1                       `COPYC 'C'`
+COPYC   'C  $R                      `COPY $R`
 COPYC   'C  +N                      ~+N-1@{`COPYC 'C'`C~}`COPYC 'C'`
 COPYC   'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
 
-COPYF       $R                      `ERR`
+COPYF       $R                      `COPY $R`
 COPYF       +N                      `COPYC '\f', +N`
 COPYF                               `COPYC '\f'`
 
+COPYR       1                       `COPYR`
 COPYR       $R                      `ERR`
-COPYR       +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~}~@{`BRFF`~:*`COPY`~2:*~}
+COPYR       +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~}`COPYR`
 COPYR                               ~:*~@{`BRFF`~:*`COPY`~2:*~}
 
 CRASH                               ~?
@@ -166,10 +174,12 @@ DO      {...}                       ~{...~0^~}
 FRESH   +N                          ~+N&
 FRESH                               ~&
 
+GOTO        0                       `GOTO`
 GOTO        +N                      ~+N@*
 GOTO        -N                      `GOTO $R``BACK +N`
 GOTO                                ~@*
 
+GOTOC   'C  0                       `GOTO`
 GOTOC   'C  $R                      `GOTO $R`
 GOTOC   'C  +N                      `GOTO``SKIP 'C', +N`
 GOTOC   'C  -N                      `GOTO $R``BACKC 'C', +N`
@@ -353,9 +363,13 @@ PRNEx   _I  _J  _K                  ~<`BREQ _I, _J``PRINx _K`~>
 
 PRZRx           _K                  ~#[`PRINx _K`~]
 
+SKIP        0                       ``
+SKIP        1                       `SKIP`
 SKIP        +N                      ~+N*
 SKIP                                ~*
 
+SKIPC   'C  0                       ``
+SKIPC   'C  1                       `SKIPC 'C'`
 SKIPC   'C  +N                      ~+N@{`SKIPC 'C'`~}
 SKIPC   'C                          ~@{`BREQ $V, 'C'`~}
 
