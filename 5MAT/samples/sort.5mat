@@ -1,0 +1,19 @@
+~1[  string to sort    F=not sorted~]~
+~:[~|bahrqorwkrlamsne~~F~;~]~:*~
+
+~{~*~
+        ~@{~v,'↡^~}~1[                 Find the next FF ~]~
+        ~#[~:;~?~]~1[                  If one is found, we just printed output, so crash ~]~
+        ~:*~<~v,'F^~1[                 If the last character isn't F, we're done sorting ~]~
+                ~1@*~@{~#,1^~c~}~%~1[  So print the string, with a newline ~]~
+        ~>~1@*~|~
+        ~@{~
+                ~#,2^~1[               The end of the tape is for control flow, so stop before it ~]~
+                ~<~' ,v,v^~1[          Is A <= B? ~]~
+                        ~:*~c~2:*~c~1[ If not, swap them ~]~
+                        ~*~@{~a~}~1[   And print the rest of the tape ~]~
+                ~>~
+                ~#[~:;~2:*~c~]~1[      If we didn't swap, print A, then loop again ~]~
+        ~}~
+        ~#[~:;T~]~1[                   If we didn't swap at all, we're done (T=sorted) ~]~
+~0^~}

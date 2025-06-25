@@ -21,8 +21,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     with open(args.filename, "r") as infile:
-        tokens = parse(infile.read(), **vars(args))
-        assembled, _ = assemble(tokens, **vars(args))
+        assembled = assemble(infile.read(), **vars(args))
 
         if args.o:
             assembled = optimize(assembled, ALL_OPTIMIZATIONS)
