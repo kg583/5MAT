@@ -1,0 +1,24 @@
+INIT {
+  PRINA "█ "
+  TERP
+}
+
+DO {
+  PRINC '█'
+  LOOP {
+    BREQ $R, 3
+    CASES {
+      "   " { PRINA " " }
+      "█  " { PRINA "█" }
+      " █ " { PRINA "█" }
+      "██ " { PRINA "█" }
+      "  █" { PRINA " " }
+      "█ █" { PRINA "█" }
+      " ██" { PRINA "█" }
+      "███" { PRINA " " }
+    }
+    SKIP
+  }
+  PRINA "█ "
+  TERP
+}

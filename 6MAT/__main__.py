@@ -28,7 +28,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     path, ext = os.path.splitext(args.filename)
 
-    with open(args.filename, "r") as infile:
+    with open(args.filename, "r", encoding="utf8") as infile:
         match ext:
             case ".6mat":
                 code = assemble(infile.read(), **vars(args))
@@ -45,5 +45,5 @@ if __name__ == "__main__":
         elif args.O2:
             code = optimize(code, O2)
 
-        with open(path + ".5mat", "w+") as outfile:
+        with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)

@@ -441,7 +441,7 @@ def assemble(program: str, **flags) -> str:
 
 
 if __name__ == "__main__":
-    with open("../samples/tests.6mat", "r") as infile:
+    with open("../samples/rule124.6mat", "r", encoding="utf8") as infile:
         print(assemble(infile.read()))
 
 
