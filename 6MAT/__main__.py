@@ -30,5 +30,5 @@ if __name__ == "__main__":
         if args.compress:
             assembled = optimize(assembled, COMPRESS)
 
-        with open(os.path.splitext(os.path.basename(args.filename))[0] + ".5mat", "w+") as outfile:
+        with open(os.path.splitext(args.filename)[0] + ".5mat", "w+") as outfile:
             outfile.write(assembled)
