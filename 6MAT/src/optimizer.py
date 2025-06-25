@@ -13,13 +13,17 @@ def dist_to_arg(dist: int) -> str:
 
 MOVE_OPTIMIZATIONS = {
     # Any forward move followed by a relative move
-    re.compile(r"(~(?P<arg_1>(\+?\d+)?)(?P<absolute>@?)\*)(~(?P<arg_2>(\+?\d+)?:?)\*)"):
+    re.compile(r"~(?P<arg_1>(\+?\d+)?)(?P<absolute>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}"
                       f"{'@' if match['absolute'] else ''}*",
 
     # Any move followed by an absolute move
-    re.compile(r"~(?:#|(\+?\d+)?):?@?\*~(\d*):?@\*"):
+    re.compile(r"~(?:#|(?:\+?\d+)?):?@?\*~(\d*):?@\*"):
         lambda match: f"~{int(match[1])}@*",
+
+    # Repeated unidirectional moves
+    re.compile(r"~(?P<arg_1>(\+?\d+)?(?P<back>:)?)\*~(?P<arg_2>(\+?\d+)?(?(back):|))\*"):
+        lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}*",
 
     # Using loops to move
     re.compile(r"~#?@\{~\*~}"): "~#*",
@@ -59,8 +63,10 @@ BREAK_OPTIMIZATIONS = {
         lambda match: "~0^" if match[1] <= match[2] <= match[3] else "",
 
     # Unreachable code
-    re.compile(r"~0\^.*?(~[}>]|$)"):
-        lambda match: f"~0^{match[1]}" if match[1] else "",
+    re.compile(r"(~0\^|~\?).+?(?:~>|~:?})"):
+        lambda match: match[1],
+
+    re.compile(r"~0(~:?[^:>}])*?\^$"): "",
 
     # '#' optimizations
     re.compile(r"~#\^"): "~^",
@@ -71,13 +77,26 @@ BREAK_OPTIMIZATIONS = {
 _break_pattern = re.compile(r"~([-+]?\d+|#|'.|v)?(,([-+]?\d+|#|'.|v))?(,([-+]?\d+|#|'.|v))?\^", flags=re.DOTALL)
 
 BLOCK_OPTIMIZATIONS = {
+    # Nested blocks
+    re.compile(r"(?P<left>(~<|~1@\{))(~<|~1@\{)+(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})+(?P<right>(~>|~:}))"):
+        lambda match: match['left'] + match['body'] + match['right'],
+
     # Blocks that are never broken out of
-    re.compile(r"(~<|~1@\{)(?P<body>(~:?@?[^~<{]|[^~])*?)(~>|~:})"):
+    re.compile(r"(~<|~1@\{)(?P<body>(~:?@?[^:@~<{]|[^~])*?)(~>|~:})"):
         lambda match: match[0] if re.search(_break_pattern, match["body"]) else match["body"],
 
     # Comments
     re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
-        lambda match: match[0] if int(match[0]) == 0 else ""
+        lambda match: match[0] if int(match[1]) == 0 else ""
+}
+
+LAYOUT_OPTIMIZATIONS = {
+    # INIT - DO compression
+    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$"):
+        lambda match: f"~:[{match['init']}~;{match['body']}~]",
+
+    # Newlines
+    re.compile(r"~\n\s*"): ""
 }
 
 DETECTABLE_CRASHES = {
@@ -89,6 +108,7 @@ ALL_OPTIMIZATIONS = {
     **MOVE_OPTIMIZATIONS,
     **BREAK_OPTIMIZATIONS,
     **BLOCK_OPTIMIZATIONS,
+    **LAYOUT_OPTIMIZATIONS,
     **DETECTABLE_CRASHES
 }
 
@@ -97,11 +117,16 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     # Sequester escaped tildes
     program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
 
-    replaced = None
-    while replaced != 0:
+    done = False
+    while not done:
         try:
+            done = True
             for regex, repl in optimizations.items():
-                program, replaced = regex.subn(repl, program)
+                new = regex.sub(repl, program)
+
+                if new != program:
+                    done = False
+                    program = new
 
         except Exception:
             warn("optimizer ran into an error during execution; partial optimization was returned", UserWarning)
@@ -111,6 +136,11 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
     return program
+
+
+if __name__ == "__main__":
+    with open("../../counter.5mat", "r") as infile:
+        print(optimize(infile.read(), ALL_OPTIMIZATIONS))
 
 
 __all__ = ["MOVE_OPTIMIZATIONS", "BREAK_OPTIMIZATIONS", "BLOCK_OPTIMIZATIONS", "DETECTABLE_CRASHES",
