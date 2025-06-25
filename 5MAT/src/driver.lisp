@@ -1,16 +1,35 @@
-; Read program from STDIN
-; Make sure to use ~ before aesthetic newlines
-(defvar *program* (do ((program "" (format nil "~a~&~a" program line)) (line "" (read-line t nil)))
-                      ((null line) (substitute #\FF #\↡ program))))
+; Read program from *args*
+(defvar *program* (car *args*))
+
+; Decode escape sequences
+(defun decode (string)
+  (with-input-from-string (stream string)
+    (coerce
+      (loop while (listen stream) collect
+        (case (setq char (read-char stream))
+          (#\\
+            (case (read-char stream)
+              (#\x (int-char (+ (* (digit-char-p (read-char stream) 16) 16)
+                                   (digit-char-p (read-char stream) 16))))
+              (#\t #\tab)
+              (#\n #\nl)
+              (#\f #\ff)
+              (#\r #\cr)))
+          (#\↡ #\ff)
+          (t char)))
+      'string)))
+
+; Output up to the first form feed
+(defun output (string)
+  (format t (format nil "~~{~~v,'~|^~~:*~~a~~}") string))
 
 ; Initial tape is nil
 (setq tape nil)
+(setq *program* (decode *program*))
 
 ; Loop forever (until error)
-(defun output(string)
-  (format t (format nil "~~{~~v,'~|^~~:*~~a~~}") string))
-
 (loop
-  (output (setq tape (coerce
-                       (format nil *program* tape) ; Write the new tape
-                       'list))))                   ; Coerce to a list since FORMAT can't loop over strings
+  (output (setq tape
+    (coerce
+      (format nil *program* tape) ; Write the new tape
+      'list))))                   ; Coerce to a list since FORMAT can't loop over strings
