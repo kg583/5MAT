@@ -185,13 +185,13 @@ FRESH                               ~&
 
 GOTO        0                       `GOTO`
 GOTO        +N                      ~+N@*
-GOTO        -N                      `GOTO $R``BACK +N`
+GOTO        -N                      `SKIP $R``BACK +N`
 GOTO                                ~@*
 
 GOTOC!  'C  0                       `GOTO`
-GOTOC!  'C  $R                      `GOTO $R`
+GOTOC!  'C  $R                      `ERR`
 GOTOC!  'C  +N                      `GOTO``SKIP 'C', +N`
-GOTOC!  'C  -N                      `GOTO $R``BACKC! 'C', +N`
+GOTOC!  'C  -N                      `SKIP $R``BACKC! 'C', +N`
 GOTOC!  'C                          `GOTO``SKIPC! 'C'`
 
 GOTOF!      %N                      `GOTOC! '\f', %N`
