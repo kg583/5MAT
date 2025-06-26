@@ -371,7 +371,7 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
                 case block.close:
                     return assembled, tokens
 
-                case _ if block.name.startswith(("CASE", "JUST")) and "#" not in block.name and "#" not in str(token):
+                case _ if block.name.startswith(("CASE", "JUST")) and "#" not in str(token):
                     tokens = [Token("instr", f"#{block.name[:4]}", token.pos),
                               Token("pos", str(clauses), token.pos),
                               token,
