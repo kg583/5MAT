@@ -4,7 +4,7 @@
 
 6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh). Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
 
-On a single **cycle** or **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear before the first **form feed** character (`\f`) are **output** to STDOUT once the current cycle is completed.
+On a single **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear before the first **form feed** character (`\f`) are **output** to STDOUT once the current lifetime is completed.
 
 This loop continues indefinitely, terminating only by a **crash**. This execution model, along with FORMAT's surprising control flow capabilities, enable 5MAT and 6MAT to be Turing-complete.
 
@@ -18,6 +18,12 @@ This loop continues indefinitely, terminating only by a **crash**. This executio
 - `; Blah`: A comment
 
 Escape sequences `\0`-`\9`, `\t`, `\n`, `\f`, `\r` and `\"` are recognized. `↡`, the Unicode symbol for a form feed, is also recognized as a replacement for `\f`.
+
+### Instruction Types
+
+Some instructions compile (nearly) directly to only a few FORMAT directives, representing the primitives of 5MAT; others, however, assemble into long sequences or nestings of directives. These are called **macros**, and are denoted with an ending `!`. While convenient, macros present greater abstraction and reduced efficiency over other instructions. If optimizing for 5MAT size, more primitive instructions may yield better results.
+
+All instructions are expanded into FORMAT directives by matching signatures defined in a grammar file (see `instructions.g`), which serves as a viable at-a-glance reference of all available instructions. To enable certain recursive expansions and other macros, additional internal instructions beginning with a `#` are defined; these cannot be used in user code.
 
 ### Argument Types
 
@@ -80,7 +86,7 @@ Break out of the current block if the tape pointer is not at the end of the tape
 #### `BRZR`
 Break out of the current block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR 0`.
 
-#### `BRxx _I, _J`
+#### `BRxx? _I, _J`
 Break out of the current block if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
 
 | Condition | Comparison | Supported Types |
@@ -90,13 +96,13 @@ Break out of the current block if condition `xx` holds for `_I` and `_J`. The fo
 | `GT`      | `>`        | `%N`, `$V`      |
 | `LE`      | `<=`       | `%N`, `$V`      |
 | `LT`      | `<`        | `%N`, `$V`      |
-| `NE`      | `/=`       | `%N`, `$n`      |
+| `NE!`     | `/=`       | `%N`, `$n`      |
 
 Mismatched argument types are not permitted. Furthermore, the following calls are disallowed.
 - `BRGE $V, $V`
 - `BRGT $V, $V`
 - `BRLT $V, $V`
-- `BRNE $V, $V`
+- `BRNE! $V, $V`
 
 #### `BRINC _I, _J, _K`
 Break out of the current block if `_I <= _J <= _K` holds for numbers or characters. Mismatched argument types are not permitted.
@@ -115,10 +121,10 @@ If the tape is empty, set its contents by executing the block.
 
 All inner scopes may include the following blocks, with arbitrary nesting.
 
-#### `IFFF { ... }`
+#### `IFFF! { ... }`
 Read a character from the tape and execute the block if it is `\f`.
 
-#### `IFNR +N [{ ... }]`
+#### `IFNR! +N [{ ... }]`
 Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `IFZR [{ ... }]`
@@ -127,23 +133,23 @@ Execute the block if the tape pointer is not at the end of the tape (i.e. `$R /=
 #### `IFZR [{ ... }]`
 Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `IFNR 0 [{ ... }]`.
 
-#### `IFyy _I, _J { ... }`
+#### `IFyy! _I, _J { ... }`
 Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BRxx _I, _J` at the top of the block, where `xx` is the negation of `yy`.
 
-| Condition | Break  | Supported Types |
-|-----------|--------|-----------------|
-| `EQ`      | `BRNE` | `%N`, `$nV`     |
-| `GE`      | `BRLT` | `%N`, `$V`      |
-| `GT`      | `BRLE` | `%N`, `$V`      |
-| `LE`      | `BRGT` | `%N`, `$V`      |
-| `LT`      | `BRGE` | `%N`, `$V`      |
-| `NE`      | `BREQ` | `%N`, `$V`      |
+| Condition | Break   | Supported Types |
+|-----------|---------|-----------------|
+| `EQ!`     | `BRNE!` | `%N`, `$nV`     |
+| `GE!`     | `BRLT`  | `%N`, `$V`      |
+| `GT!`     | `BRLE`  | `%N`, `$V`      |
+| `LE!`     | `BRGT`  | `%N`, `$V`      |
+| `LT!`     | `BRGE`  | `%N`, `$V`      |
+| `NE!`     | `BREQ`  | `%N`, `$V`      |
 
 As such, the following calls are disallowed.
-- `IFEQ $V, $V { ... }`
-- `IFGE $V, $V { ... }`
-- `IFLE $V, $V { ... }`
-- `IFLT $V, $V { ... }`
+- `IFEQ! $V, $V { ... }`
+- `IFGE! $V, $V { ... }`
+- `IFLE! $V, $V { ... }`
+- `IFLT! $V, $V { ... }`
 
 #### `LOOP { ... }`
 Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the tape pointer does *not* move by default at any stage in a `LOOP`, and thus failing to cause net movement of the tape pointer during execution will result in a crash.
@@ -153,10 +159,10 @@ Execute the block at most `N` times, terminating if the tape is exhausted at the
 
 ### Case Blocks
 
-#### `CASER { ... }`
+#### `CASER! { ... }`
 Conditionally execute blocks based on the value of `$R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `$R` is not equal to any listed value.
 ```
-CASER [
+CASER! [
     0 [{ ... }]
     1 [{ ... }]
     2 [{ ... }]
@@ -166,10 +172,10 @@ CASER [
 ]
 ```
 
-#### `CASES { ... }`
+#### `CASES! { ... }`
 Conditionally execute blocks based on the value of `?n`, where `n` characters are read to test against a string of length `n`. If a test would read past the end of the tape, crash.
 ```
-CASES {
+CASES! {
     "FOO" { ... }
     "BAR" { ... }
     "BAZ" { ... }
@@ -179,7 +185,7 @@ CASES {
 ```
 All clauses which match `?n` are executed. For example, if `?3 = "FOO"`, the following prints `ABC`.
 ```
-CASES {
+CASES! {
     "F"   { PRINC 'A' }
     "FO"  { PRINC 'B' }
     "FOO" { PRINC 'C' }
@@ -188,10 +194,10 @@ CASES {
 
 Each clause must advance the tape pointer by the same amount in all circumstances to prevent unexpected additional fallthrough. 
 
-#### `CASEV { ... }`
+#### `CASEV! { ... }`
 Conditionally execute blocks based on the value of `$V`, which may be tested against any set of characters.
 ```
-CASEV {
+CASEV! {
     'A' { ... }
     'B' { ... }
     'D' { ... }
@@ -211,20 +217,20 @@ Whenever a character is read from the tape, the tape pointer automatically advan
 #### `BACK +N = 1`
 Move the tape pointer backward by `N` characters.
 
-#### `BACKC 'C, +N = 1`
+#### `BACKC! 'C, +N = 1`
 Move the tape pointer backward to after the `N`th preceding appearance of `C`.
 
-#### `BACKF +N = 1`
-Move the tape pointer backward to after the `N`th preceding appearance of `\f`. Equivalent to `BACKC '\f', +N`.
+#### `BACKF! +N = 1`
+Move the tape pointer backward to after the `N`th preceding appearance of `\f`. Equivalent to `BACKC! '\f', +N`.
 
 #### `SKIP +N = 1`
 Move the tape pointer forward by `N` characters.
 
-#### `SKIPC 'C, +N = 1`
+#### `SKIPC! 'C, +N = 1`
 Move the tape pointer forward past the `N`th succeeding appearance of `C`.
 
-#### `SKIPF +N = 1`
-Move the tape pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to `SKIPC '\f', +N`.
+#### `SKIPF! +N = 1`
+Move the tape pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to `SKIPC! '\f', +N`.
 
 ### Absolute Tape Movement
 
@@ -233,10 +239,10 @@ Absolute position of the tape pointer is counted from the front of the tape, pos
 #### `GOTO %N = 1`
 Move the tape pointer to position `N`. Negative values count from the end of the tape.
 
-#### `GOTOC 'C, %N = 1`
+#### `GOTOC! 'C, %N = 1`
 Move the tape pointer past the `N`th appearance of `C`. Negative values count from the end of the tape.
 
-#### `GOTOF %N = 1`
+#### `GOTOF! %N = 1`
 Move the tape pointer past the `N`th appearance of `\f`. Negative values count from the end of the tape.
 
 
@@ -247,12 +253,12 @@ All 5MAT (and thus 6MAT) programs cycle indefinitely, using the previous tape co
 **Crash** instructions insert a format operation guaranteed to error given the structure of a 5MAT program. Crashing will also occur if a character is read past the end of the tape, so the lack of a crash instruction does not guarantee the program will continue indefinitely.
 
 #### `CRASH`
-Irrecoverably terminate execution immediately. All output produced during the current cycle is discarded.
+Irrecoverably terminate execution immediately. All output produced during the current lifetime is discarded.
 
-#### `CRFF`
+#### `CRFF!`
 Read a character from the tape and crash if it is `\f`.
 
-#### `CRNR`
+#### `CRNR!`
 Crash if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `CRNZ`
@@ -261,28 +267,28 @@ Crash if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 #### `CRZR`
 Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `CRNR 0`.
 
-#### `CRyy _I, _J`
+#### `CRyy! _I, _J`
 Crash if condition `yy` holds for `_I` and `_J`. Equivalent to `{ BRxx _I, _J | CRASH }`, where `xx` is the negation of `yy`.
 
-| Condition | Break  | Supported Types |
-|-----------|--------|-----------------|
-| `EQ`      | `BRNE` | `%N`, `!n`      |
-| `GE`      | `BRLT` | `%N`, `!V`      |
-| `GT`      | `BRLE` | `%N`, `!V`      |
-| `LE`      | `BRGT` | `%N`, `!V`      |
-| `LT`      | `BRGE` | `%N`, `!V`      |
-| `NE`      | `BREQ` | `%N`, `!V`      |
+| Condition | Break   | Supported Types |
+|-----------|---------|-----------------|
+| `EQ!`     | `BRNE!` | `%N`, `!n`      |
+| `GE!`     | `BRLT`  | `%N`, `!V`      |
+| `GT!`     | `BRLE`  | `%N`, `!V`      |
+| `LE!`     | `BRGT`  | `%N`, `!V`      |
+| `LT!`     | `BRGE`  | `%N`, `!V`      |
+| `NE!`     | `BREQ`  | `%N`, `!V`      |
 
 As such, the following calls are disallowed.
-- `CREQ $V, !V`
-- `CRGE $V, !V`
-- `CRLE $V, !V`
-- `CRLT $V, !V`
+- `CREQ! $V, !V`
+- `CRGE! $V, !V`
+- `CRLE! $V, !V`
+- `CRLT! $V, !V`
 
 
 ## Printing
 
-**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current cycle if it appears before the first `\f` character. Printed characters cannot be overwritten or undone within a cycle.
+**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current lifetime if it appears before the first `\f` character. Printed characters cannot be overwritten or undone within a lifetime.
 
 #### `PRINA _I`
 Print `_I` as it appears, which may be a character or string variable.
@@ -315,40 +321,20 @@ Print `_K` using `PRINz _K` if the tape pointer is not at the end of the tape (i
 #### `PRZRz _K`
 Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `PRNRz 0 _K`.
 
-#### `PRyyz _I, _J, _K`
-Print `_K` using `PRINz _K` if condition `yy` holds for `_I` and `_J`. Equivalent to `{ BRxx _I, _J | PRINz _K }`, where `xx` is the negation of `yy`.
-
-| Condition | Break  | Supported Types |
-|-----------|--------|-----------------|
-| `EQ`      | `BRNE` | `%N`, `!n`      |
-| `GE`      | `BRLT` | `%N`, `!V`      |
-| `GT`      | `BRLE` | `%N`, `!V`      |
-| `LE`      | `BRGT` | `%N`, `!V`      |
-| `LT`      | `BRGE` | `%N`, `!V`      |
-| `NE`      | `BREQ` | `%N`, `!V`      |
-
-As such, the following calls are disallowed.
-- `PREQz $V, $V, _K`
-- `PRGEz $V, $V, _K`
-- `PRLEz $V, $V, _K`
-- `PRLTz $V, $V, _K`
-
-Formatting arguments for `PRINA` can _not_ be passed; use `PRINL` or `PRINR` instead.
-
 ### Copying
 
 **Copying** instructions print some span of the tape without modification.
 
 #### `COPY +N = 1`
-Copy exactly `N` characters. Equivalent to `PRINA ?N`.
+Copy exactly `N` characters. Equivalent to `PRINA $N`.
 
-#### `COPYC 'C, +N = 1`
+#### `COPYC! 'C, +N = 1`
 Copy characters up to but not including the `N`th succeeding appearance of `C`.
 
-#### `COPYF +N = 1`
-Copy characters up to but not including the `N`th succeeding appearance of `\f`. Equivalent to `COPYC '\f', +N'`.
+#### `COPYF! +N = 1`
+Copy characters up to but not including the `N`th succeeding appearance of `\f`. Equivalent to `COPYC! '\f', +N'`.
 
-#### `COPYR +N = 1`
+#### `COPYR! +N = 1`
 Copy characters in reverse up to but not including the `N`th previous appearance of `\f`. `$R` is not permitted.
 
 ### Special Output
@@ -367,10 +353,7 @@ Print `N` tildes (`~`).
 
 ## Special Forms
 
-#### `|...|`
-Insert the contents of `|...|`, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.
-
-*This syntax should be used sparingly, if at all. No checks are performed on the syntactic or semantic validity of injected code.*
+FORMAT directives support additional miscellaneous operations not succinctly abstracted by previous instructions. While potentially complex in description, it should be noted that none of the following instructions are macros.
 
 #### `JUSTz %N = 0, %M = 1, %L = 0, !V = Space { ... }`
 Justify the subsequent blocks by padding each block's content with at least `L` copies of `V` (with left-to-right precedence if padding must be unevenly allotted), arranged within a field of width `N+k*M` for the smallest possible choice of `k`.
@@ -420,10 +403,15 @@ Capitalize all words separated by spaces printed within the block; that is, make
 Capitalize the first word beginning with an alphabetical character printed within the block.
 
 #### `TABA +N = 1, +M = 1`
-Print spaces (` `) until at least `N+k*M` characters have been printed this cycle for the smallest possible choice of `k`.
+Print spaces (` `) until at least `N+k*M` characters have been printed this lifetime for the smallest possible choice of `k`.
 
 #### `TABR +N = 1, +M = 1`
-Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this cycle for the smallest choice of `k`.
+Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
 
 #### `UPPER { ... }`
 Fold all characters printed within the block to uppercase.
+
+#### `|...|`
+Insert the contents of `|...|`, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.
+
+*This syntax should be used sparingly, if at all. No checks are performed on the syntactic or semantic validity of injected code.*

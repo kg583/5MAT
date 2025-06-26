@@ -11,7 +11,7 @@
 # Templates are wrapped in backticks `` and must contain valid 6MAT after substituting arguments
 # Generic types may only substitute into templates
 # Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
-# Instructions with a '!' cannot appear in user code and are used internally
+# Instructions with a '#' cannot appear in user code and are used internally
 # A lowercase 'z' is a placeholder for any of the print types (ACLNR)
 
 BACK        0                       ``
@@ -19,13 +19,13 @@ BACK        1                       `BACK`
 BACK        +N                      ~+N:*
 BACK                                ~:*
 
-BACKC   'C  0                       ``
-BACKC   'C  1                       `BACKC 'C'`
-BACKC   'C  +N                      ~:*~+N@{~@{`BREQ $V, 'C'`~:2*~}~2:*~}
-BACKC   'C                          ~:*~@{`BREQ $V, 'C'`~2:*~}
+BACKC!  'C  0                       ``
+BACKC!  'C  1                       `BACKC! 'C'`
+BACKC!  'C  +N                      ~:*~+N@{~@{`BREQ $V, 'C'`~:2*~}~2:*~}
+BACKC!  'C                          ~:*~@{`BREQ $V, 'C'`~2:*~}
 
-BACKF       +N                      `BACKC '\f', +N`
-BACKF                               `BACKC '\f'`
+BACKF!      +N                      `BACKC! '\f', +N`
+BACKF!                              `BACKC! '\f'`
 
 BREAK                               ~0^
 
@@ -87,21 +87,21 @@ BRLT    'C  'F                      ~'C,'D,'F^
 BRLT    %N  $R                      ~%N,%N+1,#^
 BRLT    %N  %M                      ~%N,%N+1,%M^
 
-BRNE    $V  $V                      `ERR`
-BRNE    $V  'C                      ~v,'B,'C^~:*~'C,'D,v^
-BRNE    $n  $n                      `ERR`
-BRNE    $n  "X                      `BRNE! $n, "X`
-BRNE    $R  $R                      ``
-BRNE    $R  %N                      ~#,%N-1,%N^~%N,%N+1,#^
-BRNE    'C  $V                      ~v,'B,'C^~:*~'C,'D,v^
-BRNE    'C  'F                      ~'C,'D,'F^~:*~'F,'B,'C^~:*
-BRNE    "X  $n                      `BRNE! "X, $n`
-BRNE    "X  "Y                      `BRNE! "X, "Y`
-BRNE    %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
+BRNE!   $V  $V                      `ERR`
+BRNE!   $V  'C                      ~v,'B,'C^~:*~'C,'D,v^
+BRNE!   $n  $n                      `ERR`
+BRNE!   $n  "X                      `BRNE! $n, "X`
+BRNE!   $R  $R                      ``
+BRNE!   $R  %N                      ~#,%N-1,%N^~%N,%N+1,#^
+BRNE!   'C  $V                      ~v,'B,'C^~:*~'C,'D,v^
+BRNE!   'C  'F                      ~'C,'D,'F^~:*~'F,'B,'C^~:*
+BRNE!   "X  $n                      `BRNE: "X, $n`
+BRNE!   "X  "Y                      `BRNE: "X, "Y`
+BRNE!   %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
 
-BRNE!   $n  "X                      `BRNE $V, 'X'``BRNE! $n-1, .X`
-BRNE!   "X  $n                      `BRNE 'X', $V``BRNE! .X, $n-1`
-BRNE!   "X  "Y                      `BRNE 'X', 'Y'``BRNE! .X, .Y`
+#BRNE   $n  "X                      `BRNE! $V, 'X'``#BRNE $n-1, .X`
+#BRNE   "X  $n                      `BRNE! 'X', $V``#BRNE .X, $n-1`
+#BRNE   "X  "Y                      `BRNE! 'X', 'Y'``#BRNE .X, .Y`
 
 BRNR    +N                          `BREQ $R, +N`
 
@@ -111,68 +111,68 @@ BRZR                                ~^
 
 BUFFER  {...}                       ~<...~>
 
-CASER   [...]                       ~#[...~]
+CASER!  [...]                       ~#[...~]
 
-CASES   {...}                       ...
+CASES!  {...}                       ...
 
-CASEV   {...}                       ...
+CASEV!  {...}                       ...
 
-CASE!   0   0           {...}       ~1@{...~:}
-CASE!   +N  +M          {...}       ~;~1@{...~:}
-CASE!   0   DEFAULT     {...}       `ERR`
-CASE!   +N  DEFAULT     {...}       ~:;~1@{...~:}
-CASE!   0   0           [...]       ...
-CASE!   +N  +M          [...]       ~;...
-CASE!   0   DEFAULT     [...]       `ERR`
-CASE!   +N  DEFAULT     [...]       ~:;...
-CASE!   0   'C          {...}       ~1@{`BRNE $V, 'C'`...~:}
-CASE!   +N  'C          {...}       ~:*~1@{`BRNE $V, 'C'`...~:}
-CASE!   +N  "X          {...}       `CASE! +N, ?n, "X |...|`
-CASE!   +N  ?0  "X      |...|       ~1@{...~:}
-CASE!   +N  ?n  "X      |...|       ~<`BRNE $V, 'X'``CASE! +N, ?n-1, .X |...|`~>~:*
+#CASE   0   0           {...}       ~1@{...~:}
+#CASE   +N  +M          {...}       ~;~1@{...~:}
+#CASE   0   DEFAULT     {...}       `ERR`
+#CASE   +N  DEFAULT     {...}       ~:;~1@{...~:}
+#CASE   0   0           [...]       ...
+#CASE   +N  +M          [...]       ~;...
+#CASE   0   DEFAULT     [...]       `ERR`
+#CASE   +N  DEFAULT     [...]       ~:;...
+#CASE   0   'C          {...}       ~1@{`BRNE! $V, 'C'`...~:}
+#CASE   +N  'C          {...}       ~:*~1@{`BRNE! $V, 'C'`...~:}
+#CASE   +N  "X          {...}       `#CASE +N, ?n, "X |...|`
+#CASE   +N  ?0  "X      |...|       ~1@{...~:}
+#CASE   +N  ?n  "X      |...|       ~<`BRNE! $V, 'X'``#CASE +N, ?n-1, .X |...|`~>~:*
 
 COPY        1                       `COPY`
 COPY        $R                      ~@{~c~}
 COPY        +N                      ~+N@{~c~}
 COPY                                ~c
 
-COPYC   'C  1                       `COPYC 'C'`
-COPYC   'C  $R                      `COPY $R`
-COPYC   'C  +N                      ~+N-1@{`COPYC 'C'`C~}`COPYC 'C'`
-COPYC   'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
+COPYC!  'C  1                       `COPYC! 'C'`
+COPYC!  'C  $R                      `COPY $R`
+COPYC!  'C  +N                      ~+N-1@{`COPYC 'C'`C~}`COPYC! 'C'`
+COPYC!  'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
 
-COPYF       $R                      `COPY $R`
-COPYF       +N                      `COPYC '\f', +N`
-COPYF                               `COPYC '\f'`
+COPYF!      $R                      `COPY $R`
+COPYF!      +N                      `COPYC! '\f', +N`
+COPYF!                              `COPYC! '\f'`
 
-COPYR       1                       `COPYR`
-COPYR       $R                      `ERR`
-COPYR       +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~}`COPYR`
-COPYR                               ~:*~@{`BRFF`~:*`COPY`~2:*~}
+COPYR!      1                       `COPYR!`
+COPYR!      $R                      `ERR`
+COPYR!      +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~}`COPYR!`
+COPYR!                              ~:*~@{`BRFF`~:*`COPY`~2:*~}
 
 CRASH                               ~?
 
-CREQ    _I  ?V                      `CREQ _I, $V`~:*
-CREQ    _I  _J                      ~<`BRNE _I, _J``CRASH`~>
+CREQ!   _I  ?V                      `CREQ! _I, $V`~:*
+CREQ!   _I  _J                      ~<`BRNE! _I, _J``CRASH`~>
 
-CRFF                                ~<`BRNE $V, '\f'``CRASH`~>
+CRFF!                               ~<`BRNE! $V, '\f'``CRASH`~>
 
-CRGE    _I  ?V                      `CRGE _I, $V`~:*
-CRGE    _I  _J                      ~<`BRLT _I, _J``CRASH`~>
+CRGE!   _I  ?V                      `CRGE! _I, $V`~:*
+CRGE!   _I  _J                      ~<`BRLT _I, _J``CRASH`~>
 
-CRGT    _I  ?V                      `CRGT _I, $V`~:*
-CRGT    _I  _J                      ~<`BRLE _I, _J``CRASH`~>
+CRGT!   _I  ?V                      `CRGT! _I, $V`~:*
+CRGT!   _I  _J                      ~<`BRLE _I, _J``CRASH`~>
 
-CRLE    _I  ?V                      `CRLE _I, $V`~:*
-CRLE    _I  _J                      ~<`BRGT _I, _J``CRASH`~>
+CRLE!   _I  ?V                      `CRLE! _I, $V`~:*
+CRLE!   _I  _J                      ~<`BRGT _I, _J``CRASH`~>
 
-CRLT    _I  ?V                      `CRLT _I, $V`~:*
-CRLT    _I  _J                      ~<`BRGE _I, _J``CRASH`~>
+CRLT!   _I  ?V                      `CRLT! _I, $V`~:*
+CRLT!   _I  _J                      ~<`BRGE _I, _J``CRASH`~>
 
-CRNE    _I  ?V                      `CRNE _I, $V`~:*
-CRNE    _I  _J                      ~<`BREQ _I, _J``CRASH`~>
+CRNE!   _I  ?V                      `CRNE! _I, $V`~:*
+CRNE!   _I  _J                      ~<`BREQ _I, _J``CRASH`~>
 
-CRNR    +N                          ~<`BRNE $R, +N``CRASH`~>
+CRNR!   +N                          ~<`BRNE! $R, +N``CRASH`~>
 
 CRNZ                                ~#[~:;`CRASH`~]
 
@@ -188,34 +188,34 @@ GOTO        +N                      ~+N@*
 GOTO        -N                      `GOTO $R``BACK +N`
 GOTO                                ~@*
 
-GOTOC   'C  0                       `GOTO`
-GOTOC   'C  $R                      `GOTO $R`
-GOTOC   'C  +N                      `GOTO``SKIP 'C', +N`
-GOTOC   'C  -N                      `GOTO $R``BACKC 'C', +N`
-GOTOC   'C                          `GOTO``SKIPC 'C'`
+GOTOC!  'C  0                       `GOTO`
+GOTOC!  'C  $R                      `GOTO $R`
+GOTOC!  'C  +N                      `GOTO``SKIP 'C', +N`
+GOTOC!  'C  -N                      `GOTO $R``BACKC! 'C', +N`
+GOTOC!  'C                          `GOTO``SKIPC! 'C'`
 
-GOTOF       %N                      `GOTOC '\f', %N`
-GOTOF                               `GOTOC '\f'`
+GOTOF!      %N                      `GOTOC! '\f', %N`
+GOTOF!                              `GOTOC! '\f'`
 
-IFEQ    _I  _J  {...}               ~1@{`BRNE _I, _J`...~:}
+IFEQ!   _I  _J  {...}               ~1@{`BRNE! _I, _J`...~:}
 
-IFFF            {...}               ~1@{`BRNE $V, '\f'`...~:}
+IFFF!           {...}               ~1@{`BRNE! $V, '\f'`...~:}
 
-IFGE    _I  _J  {...}               ~1@{`BRLT _I, _J`...~:}
+IFGE!   _I  _J  {...}               ~1@{`BRLT _I, _J`...~:}
 
-IFGT    _I  _J  {...}               ~1@{`BRLE _I, _J`...~:}
+IFGT!   _I  _J  {...}               ~1@{`BRLE _I, _J`...~:}
 
-IFLE    _I  _J  {...}               ~1@{`BRGT _I, _J`...~:}
+IFLE!   _I  _J  {...}               ~1@{`BRGT _I, _J`...~:}
 
-IFLT    _I  _J  {...}               ~1@{`BRGE _I, _J`...~:}
+IFLT!   _I  _J  {...}               ~1@{`BRGE _I, _J`...~:}
 
-IFNE    _I  _J  {...}               ~1@{`BREQ _I, _J`...~:}
+IFNE!   _I  _J  {...}               ~1@{`BREQ _I, _J`...~:}
 
-IFNR    +N  {...}                   ~1@{`BRNE $R, +N`...~:}
-IFNR    +N  [...]                   ~#[`IFNR! +N`...~]
+IFNR!   +N  {...}                   ~1@{`BRNE! $R, +N`...~:}
+IFNR!   +N  [...]                    ~#[`#IFNR +N`...~]
 
-IFNR!   0                           ``
-IFNR!   +N                          ~;`IFNR! +N-1`
+#IFNR   0                           ``
+#IFNR   +N                          ~;`#IFNR +N-1`
 
 IFNZ        {...}                   ~1@{~^...~:}
 IFNZ        [...]                   ~#[~:;...~]
@@ -287,31 +287,31 @@ JUSTR                   {...}       ~:<...~>
 
 LOWER   {...}                       ~(...~)
 
-JUST!   0                   {...}   ~1@{...~:}
-JUST!   +N                  {...}   ~;~1@{...~:}
-JUST!   0                   [...]   ...
-JUST!   +N                  [...]   ~;...
-JUST!   0   OVER    %P  %O  {...}   ~1@{...~:}~%P,%O:;
-JUST!   0   OVER    %P      {...}   ~1@{...~:}~%P:;
-JUST!   0   OVER    %P  %O  [...]   ...~%P,%O:;
-JUST!   0   OVER    %P      [...]   ...~%P:;
-JUST!   +N  OVER    +P  +O  {...}   `ERR`
-JUST!   +N  OVER    +P      {...}   `ERR`
-JUST!   +N  OVER    +P  +O  [...]   `ERR`
-JUST!   +N  OVER    +P      [...]   `ERR`
+#JUST   0                   {...}   ~1@{...~:}
+#JUST   +N                  {...}   ~;~1@{...~:}
+#JUST   0                   [...]   ...
+#JUST   +N                  [...]   ~;...
+#JUST   0   OVER    %P  %O  {...}   ~1@{...~:}~%P,%O:;
+#JUST   0   OVER    %P      {...}   ~1@{...~:}~%P:;
+#JUST   0   OVER    %P  %O  [...]   ...~%P,%O:;
+#JUST   0   OVER    %P      [...]   ...~%P:;
+#JUST   +N  OVER    +P  +O  {...}   `ERR`
+#JUST   +N  OVER    +P      {...}   `ERR`
+#JUST   +N  OVER    +P  +O  [...]   `ERR`
+#JUST   +N  OVER    +P      [...]   `ERR`
 
 PRINA   ?V                          ~a~:*
 PRINA   $V                          ~a
 PRINA   'C                          "C"
-PRINA   ?n                          `PRINA! ?n`
-PRINA   $n                          `PRINA! $n`
+PRINA   ?n                          `#PRINA ?n`
+PRINA   $n                          `#PRINA $n`
 PRINA   "X                          "X
 PRINA   %N                          %N
 
-PRINA!  $0                          ``
-PRINA!  $n                          ~a`PRINA! $n-1`
-PRINA!  ?0                          ``
-PRINA!  ?n                          ~a`PRINA! ?n-1`~:*
+#PRINA  $0                          ``
+#PRINA  $n                          ~a`#PRINA $n-1`
+#PRINA  ?0                          ``
+#PRINA  ?n                          ~a`#PRINA ?n-1`~:*
 
 PRINC   ?V                          ~c~:*
 PRINC   $V                          ~c
@@ -358,20 +358,8 @@ PRINR   %N  %M  %L      $V          ~%N,%M,%La
 PRINR   %N  %M          $V          ~%N,%Ma
 PRINR   %N              $V          ~%Na
 
-PREQz   _I  _J  _K                  ~<`BRNE _I, _J``PRINz _K`~>
-
 PRFF    +N                          ~+N|
 PRFF                                ~|
-
-PRGEz   _I  _J  _K                  ~<`BRLT _I, _J``PRINz _K`~>
-
-PRGTz   _I  _J  _K                  ~<`BRLE _I, _J``PRINz _K`~>
-
-PRLEz   _I  _J  _K                  ~<`BRGT _I, _J``PRINz _K`~>
-
-PRLTz   _I  _J  _K                  ~<`BRGE _I, _J``PRINz _K`~>
-
-PRNEz   _I  _J  _K                  ~<`BREQ _I, _J``PRINz _K`~>
 
 PRNRz   +N      _K                  ~<`BREQ $R, +N``PRINz _K`~>
 
@@ -384,13 +372,13 @@ SKIP        1                       `SKIP`
 SKIP        +N                      ~+N*
 SKIP                                ~*
 
-SKIPC   'C  0                       ``
-SKIPC   'C  1                       `SKIPC 'C'`
-SKIPC   'C  +N                      ~+N@{`SKIPC 'C'`~}
-SKIPC   'C                          ~@{`BREQ $V, 'C'`~}
+SKIPC!  'C  0                       ``
+SKIPC!  'C  1                       `SKIPC! 'C'`
+SKIPC!  'C  +N                      ~+N@{`SKIPC! 'C'`~}
+SKIPC!  'C                          ~@{`BREQ $V, 'C'`~}
 
-SKIPF       +N                      `SKIPC '\f', +N`
-SKIPF                               `SKIPC '\f'`
+SKIPF!      +N                      `SKIPC! '\f', +N`
+SKIPF!                              `SKIPC! '\f'`
 
 TABA    +N  +M                      ~+N,+Mt
 TABA    +N                          ~+Nt

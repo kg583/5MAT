@@ -3,10 +3,10 @@ INIT {
     LOOP 3 { PRINC '.' }
     PRFF
 
-    IFNR 9 [ FRESH 9 ]
+    IFNR! 9 [ FRESH 9 ]
 
-    CASES {
-        "FOOF"       { CREQ '0', '1' }
+    CASES! {
+        "FOOF"       { CREQ! '0', '1' }
         "FLATULENCE" { BRINC 4, $R, 6 }
     }
 }
@@ -37,32 +37,30 @@ DO {
     TITLE 1 { PRINA "Foo bar" }
 
     JUST 9, NIL, 7, ?V {
-        OVER -6, 5 { SKIPF }
-        { BACKF }
-        [ GOTOF ]
-        { COPYR }
+        OVER -6, 5 { SKIPF! }
+        { BACKF! }
+        [ GOTOF! ]
+        { COPYR! }
     }
 
-    IFFF {
+    IFFF! {
         PRFF
-        CRFF
+        CRFF!
         BRFF
     }
 
-    COPYR 5
-    COPYF 1
+    COPYR! 5
+    COPYF! 1
 
-    CASER [
+    CASER! [
         0 [ TABR ]
         DEFAULT { TABA }
     ]
 
-    CASEV {
+    CASEV! {
         'F' { |~:p~*| }
+        '\xA4' { PRZRN $V }
     }
-
-    PREQA $R, 5, ?3
-    PRGTC $V, 'Q', '\xA4'
 
     PRINA "Behold, the most awful string in the world: `$R` \"$1\" '$V' %N% +M+ \n\tWoohoo!"
 }

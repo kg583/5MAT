@@ -7,7 +7,7 @@ DO {
   PRINC '█'
   LOOP {
     BREQ $R, 3
-    CASES {
+    CASES! {
       "   " { PRINA " " }
       "█  " { PRINA "█" }
       " █ " { PRINA "█" }

@@ -4,6 +4,7 @@ import re
 
 from collections import defaultdict
 from dataclasses import asdict, dataclass
+from warnings import warn
 
 
 TOKENS = re.compile(
@@ -25,7 +26,7 @@ TOKENS = re.compile(
     r"(?P<remain>\$R)|"
     r'(?P<string>"(?:\\.|[^"])*")|'
     r"(?P<raw>\|(?:\\.|[^`])*\|)|"
-    r"(?P<instr>[!A-Z]+)|"
+    r"(?P<instr>[#!A-Z]+)|"
     r"(?P<error>\S+)")
 
 ARG_TYPES = {"nil", "char", "read", "reads", "peek", "peeks", "pos", "neg", "remain", "string"}
@@ -145,13 +146,13 @@ with open(os.path.join(os.path.dirname(__file__), "instructions.g")) as instruct
         if line.isspace():
             continue
 
-        if line.startswith("#"):
+        if line.startswith("# "):
             continue
 
         instr, *arg_spec, template = re.split(r" {2,}", line.strip())
 
         for print_type in "ACLNR":
-            INSTRUCTIONS[instr.replace("x", print_type)] |= {tuple(arg_spec): template.replace("x", print_type)}
+            INSTRUCTIONS[instr.replace("z", print_type)] |= {tuple(arg_spec): template.replace("z", print_type)}
 
 
 def decode_escapes(string: str) -> str:
@@ -219,7 +220,17 @@ def parse(string: str, *, offset: int = 0) -> list[Token]:
 def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, list[Token]]:
     instruction, *tokens = tokens
 
-    for spec, code in INSTRUCTIONS[str(instruction)].items():
+    specs = INSTRUCTIONS[str(instruction)]
+    if not specs:
+        specs = INSTRUCTIONS[str(instruction) + "!"]
+        if not specs:
+            raise AssemblerError(instruction, "unknown instruction '{value}'")
+
+        warn(f"instruction '{instruction}' at position {instruction.pos} is a macro, "
+             f"and should be written as '{instruction}!'",
+             UserWarning)
+
+    for spec, code in specs.items():
         matched_args = [*zip(tokens, spec)]
 
         if len(matched_args) < len(spec):
@@ -360,8 +371,8 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
                 case block.close:
                     return assembled, tokens
 
-                case _ if block.name.startswith(("CASE", "JUST")) and "!" not in block.name and "!" not in str(token):
-                    tokens = [Token("instr", f"{block.name[:4]}!", token.pos),
+                case _ if block.name.startswith(("CASE", "JUST")) and "#" not in block.name and "#" not in str(token):
+                    tokens = [Token("instr", f"#{block.name[:4]}", token.pos),
                               Token("pos", str(clauses), token.pos),
                               token,
                               *tokens]
@@ -369,12 +380,8 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
                     clauses += 1
 
                 case "instr":
-                    try:
-                        code, tokens = match_args([token, *tokens], strings, **flags)
-                        assembled += code
-
-                    except KeyError:
-                        raise AssemblerError(token, "unknown instruction '{value}'")
+                    code, tokens = match_args([token, *tokens], strings, **flags)
+                    assembled += code
 
                 case "lbrace":
                     code, tokens = match_tokens(tokens, strings, Block("", "lbrace"), **flags)
@@ -426,8 +433,8 @@ def assemble(program: str, **flags) -> str:
             strings.add(token.value[1:-1])
             token.value = strings.last_key()
 
-        elif token.type == "instr" and "!" in token.value:
-            # No ! instructions from users
+        elif token.type == "instr" and "#" in token.value:
+            # No internal instructions from users
             raise AssemblerError(token, "illegal instruction '{value}'")
 
         tokens.append(token)
@@ -441,7 +448,7 @@ def assemble(program: str, **flags) -> str:
 
 
 if __name__ == "__main__":
-    with open("../samples/rule124.6mat", "r", encoding="utf8") as infile:
+    with open("../samples/tests.6mat", "r", encoding="utf8") as infile:
         print(assemble(infile.read()))
 
 

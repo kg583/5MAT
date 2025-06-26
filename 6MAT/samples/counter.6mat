@@ -6,18 +6,18 @@ INIT {
 
 DO {
     GOTO -1
-    COPYR                   ; Copy the counter into the output section, reversed
+    COPYR!                  ; Copy the counter into the output section, reversed
 
     TERP
     PRFF
 
     LOOP {                  ; Increment trailing nines
-        BRNE $V, '9'
+        BRNE! $V, '9'
         PRINC '0'
     }
 
     BACK
-    CASEV {                 ; Increment the first non-nine digit
+    CASEV! {                ; Increment the first non-nine digit
         '0' { PRINC '1' }
         '1' { PRINC '2' }
         '2' { PRINC '3' }
