@@ -114,7 +114,8 @@ FORMATTING = {
         lambda match: match[0] if int(match[1]) == 0 else "",
 
     # Newlines
-    re.compile(r"~\n\s*"): "",
+    re.compile(r"~\n\s*|~:\n|~@(\n)\s*"):
+        lambda match: match[1]
 }
 
 O1 = {
