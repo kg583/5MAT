@@ -71,7 +71,7 @@ BRINC   %N  $R  %M                  ~%N,#,%M^
 BRINC   %N  %M  $R                  ~%N,%M,#^
 BRINC   %N  %M  %L                  ~%N,%M,%L^
 
-BRLE    $V  $V                      ~'\1,v,v^
+BRLE    $V  $V                      ~'\x01,v,v^
 BRLE    $V  'C                      ~v,'C,'C^
 BRLE    $R  $R                      ~0^
 BRLE    'C  $V                      ~'C,'C,v^
