@@ -3,6 +3,13 @@ import re
 from warnings import warn
 
 
+try:
+    from util import *
+
+except ImportError:
+    from .util import *
+
+
 def arg_to_dist(arg: str) -> int:
     return int(arg.strip(":") or "1") * (-1 if ":" in arg else 1)
 
@@ -11,6 +18,7 @@ def dist_to_arg(dist: int) -> str:
     return str(abs(dist)) + (":" if dist < 0 else "")
 
 
+CHAR = r"'\\.|'[^\\]"
 CONST = r"~[%&|.]|~\n\s*|[^~]"
 
 MOVE_OPTIMIZATIONS = {
@@ -30,7 +38,9 @@ MOVE_OPTIMIZATIONS = {
     # Trivial moves
     re.compile(r"~0:?\*"): "",
     re.compile(r"~#:\*|~0@\*"): "~@*",
+    re.compile(r"~@\*~\+?\d*:\*"): r"~@*",
     re.compile(r"~#:?@\*"): "~#*",
+    re.compile(r"~#\*~\+?\d*\*"): "~#*"
 }
 
 BREAK_OPTIMIZATIONS = {
@@ -39,7 +49,7 @@ BREAK_OPTIMIZATIONS = {
         lambda match: "~0^" if int(match[1]) == 0 else "",
 
     # Constant unary character breaks
-    re.compile(r"~'.\^", flags=re.DOTALL): "",
+    re.compile(rf"~({CHAR})\^", flags=re.DOTALL): "",
 
     # Constant binary number breaks
     re.compile(r"~([-+]?\d+)?,([-+]?\d+)?\^"):
@@ -47,8 +57,8 @@ BREAK_OPTIMIZATIONS = {
                       or not any(match.groups()) else "",
 
     # Constant binary character breaks
-    re.compile(r"~('.)?,('.)?\^", flags=re.DOTALL):
-        lambda match: "~0^" if match[1] == match[2] else "",
+    re.compile(rf"~({CHAR})?,({CHAR})?\^", flags=re.DOTALL):
+        lambda match: "~0^" if decode_escapes(match[1]) == decode_escapes(match[2]) else "",
 
     # Constant ternary number breaks
     re.compile(r"~([-+]?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^"):
@@ -56,14 +66,14 @@ BREAK_OPTIMIZATIONS = {
                       or not any(match.groups()) else "",
 
     # Constant ternary character breaks
-    re.compile(r"~('.)?,('.)?,('.)?\^", flags=re.DOTALL):
-        lambda match: "~0^" if match[1] <= match[2] <= match[3] else "",
+    re.compile(rf"~({CHAR})?,({CHAR})?,({CHAR})?\^", flags=re.DOTALL):
+        lambda match: "~0^" if decode_escapes(match[1]) <= decode_escapes(match[2]) <= decode_escapes(match[3]) else "",
 
     # Unreachable code
     re.compile(r"(~0\^|~\?).*?(~>|~:?}|~])", flags=re.DOTALL):
         lambda match: match[1] + match[2],
 
-    re.compile(r"~0(~:?[^:>}])*?\^$"): "",
+    re.compile(r"~0\^(~:?[^:>}])*?$"): "",
 
     # '#' optimizations
     re.compile(r"~#\^"): "~^",
@@ -82,7 +92,7 @@ BLOCK_OPTIMIZATIONS = {
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Empty blocks
-    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): "",
+    re.compile(r"(~<|~\+?\d*@\{)(~0\^)*(~>|~:?})"): "",
 
     # INIT - DO rearranging
     re.compile(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", flags=re.DOTALL):
@@ -101,6 +111,16 @@ DETECTABLE_CRASHES = {
     re.compile(rf"~#\[({CONST})*?~\w(~[^\[]|[^~])*~]"): "~#[~?~]"
 }
 
+BOUNDEDNESS_OPTIMIZATIONS = {
+    # Relative move followed by a relative move
+    re.compile(r"~(?P<arg_1>(\+?\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
+        lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}{match['mod']}*",
+
+    # Short loops
+    re.compile(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[ac]|{CONST})*?)~:?}}"):
+        lambda match: min(match['body'] * int(match['count']), match[0], key=len),
+}
+
 SPECIAL_DIRECTIVES = {
     # ~p
     re.compile(r"ies~\*"): "~@p",
@@ -108,18 +128,53 @@ SPECIAL_DIRECTIVES = {
 
     # ~@[~]
     re.compile(r"^~:\[~;(?P<body>.*)~]$", flags=re.DOTALL):
-        lambda match: f"~@[{match['body']}~]"
+        lambda match: f"~@[{match['body']}~]",
+
+    # ~$
+    re.compile(r"~(?P<width>[-+]?\d+),*@a"):
+        lambda match: f"~{match['width']}$",
+
+    re.compile(rf"~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+        lambda match: f"~{match['width']},,,{match['char']}$",
+
+    re.compile(rf"~\*~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+        lambda match: f"~{match['width']},v,,{match['char']}$",
+
+    re.compile(rf"~2\*~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+        lambda match: f"~{match['width']},v,v,{match['char']}$",
+
+    re.compile(r"~(?P<width>[-+]?\d+),,,v@a"):
+        lambda match: f"~{match['width']},,,v$",
+
+    re.compile(r"~\*~(?P<width>[-+]?\d+),,,v@a"):
+        lambda match: f"~{match['width']},v,,v$",
+
+    re.compile(r"~2\*~(?P<width>[-+]?\d+),,,v@a"):
+        lambda match: f"~{match['width']},v,v,v$"
 }
 
-BOUNDEDNESS_OPTIMIZATIONS = {
-    # Any move followed by a relative move
-    re.compile(r"~(?P<arg_1>(\+?\d+)?:?)(?P<absolute>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
-        lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}"
-                      f"{'@' if match['absolute'] else ''}*",
+DIRECTIVE_OPTIMIZATIONS = {
+    re.compile(r"~@a"): "~a"
+}
 
-    # Short loops
-    re.compile(r"~(?P<count>[1-3])@?\{(?P<body>(~:?@?[^:@~<{]|[^~])*?)~}"):
-        lambda match: min(match['body'] * int(match['count']), match[0], key=len),
+DEFAULT_PARAMETERS = {
+    # Prints
+    re.compile(r"~[-+]?0*(,\+?0*1(,[-+]?0*(,' )?)?)?(?P<mod>@?)a"):
+        lambda match: f"~{match['mod']}a",
+
+    # Repeated characters
+    re.compile(r"~\+?0*1([%&|.])"):
+        lambda match: f"~{match[1]}",
+
+    # Justification
+    re.compile(r"~[-+]?0*(,\+?0*1(,[-+]?0*(,' )?)?)?(?P<mod>:?@?)<"):
+        lambda match: f"~{match['mod']}<",
+
+    re.compile(r"~\+?0*1(,\+?0*72)?:;"): "~:;",
+
+    # Tabulation
+    re.compile(r"~\+?0*1(,\+?0*1)?(?P<mod>:?@?)t"):
+        lambda match: f"~{match['mod']}t"
 }
 
 FORMATTING = {
@@ -146,8 +201,10 @@ O2 = {
 
 O3 = {
     **O2,
-    **FORMATTING,
-    **SPECIAL_DIRECTIVES
+    **SPECIAL_DIRECTIVES,
+    **DIRECTIVE_OPTIMIZATIONS,
+    **DEFAULT_PARAMETERS,
+    **FORMATTING
 }
 
 
@@ -177,7 +234,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~a~}~]", O2))
+    print(optimize("~:[~;~:*~{~0,1a~}~]", O3))
 
 
 __all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]

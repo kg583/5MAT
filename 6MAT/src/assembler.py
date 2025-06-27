@@ -1,10 +1,17 @@
-import codecs
 import os
 import re
 
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from warnings import warn
+
+
+# Python why are you like this
+try:
+    from util import *
+
+except ImportError:
+    from .util import *
 
 
 TOKENS = re.compile(
@@ -153,40 +160,6 @@ with open(os.path.join(os.path.dirname(__file__), "instructions.g")) as instruct
 
         for print_type in "ACLNR":
             INSTRUCTIONS[instr.replace("z", print_type)] |= {tuple(arg_spec): template.replace("z", print_type)}
-
-
-def decode_escapes(string: str) -> str:
-    def decode_match(match):
-        try:
-            return codecs.decode(match[0], 'unicode-escape')
-
-        except UnicodeDecodeError:
-            return match[0]
-
-    return re.sub(r"\\[fnrt]|\\x..", decode_match, string)
-
-
-def encode_escapes(string: str) -> str:
-    for char in range(1, 32):
-        match char:
-            case 9:
-                repl = "\\t"
-
-            case 10:
-                repl = "\\n"
-
-            case 12:
-                repl = "\\f"
-
-            case 13:
-                repl = "\\r"
-
-            case _:
-                repl = f"\\x{char:02x}"
-
-        string = string.replace(chr(char), repl)
-
-    return string
 
 
 def parse(string: str, *, offset: int = 0) -> list[Token]:

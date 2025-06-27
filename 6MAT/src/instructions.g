@@ -91,13 +91,13 @@ BRLT    %N  %M                      ~%N,%N+1,%M^
 BRNE!   $V  $V                      `ERR`
 BRNE!   $V  'C                      ~v,'B,'C^~:*~'C,'D,v^
 BRNE!   $n  $n                      `ERR`
-BRNE!   $n  "X                      `BRNE! $n, "X`
+BRNE!   $n  "X                      `#BRNE $n, "X`
 BRNE!   $R  $R                      ``
 BRNE!   $R  %N                      ~#,%N-1,%N^~%N,%N+1,#^
 BRNE!   'C  $V                      ~v,'B,'C^~:*~'C,'D,v^
 BRNE!   'C  'F                      ~'C,'D,'F^~:*~'F,'B,'C^~:*
-BRNE!   "X  $n                      `BRNE: "X, $n`
-BRNE!   "X  "Y                      `BRNE: "X, "Y`
+BRNE!   "X  $n                      `#BRNE "X, $n`
+BRNE!   "X  "Y                      `#BRNE "X, "Y`
 BRNE!   %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
 
 #BRNE   $n  "X                      `BRNE! $V, 'X'``#BRNE $n-1, .X`
