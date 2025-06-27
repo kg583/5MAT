@@ -1,3 +1,9 @@
+DEFINE MyRoutine! {
+    LOOP 5 {
+        PRINA "Hi mom"
+    }
+}
+
 INIT {
     PRINA "Beginning tests"
     LOOP 3 { PRINC '.' }
@@ -36,6 +42,8 @@ DO {
     TITLE { PRINA "Foo Bar" }
     TITLE 1 { PRINA "Foo bar" }
 
+    MyRoutine!
+
     JUST 9, NIL, 7, ?V {
         OVER -6, 5 { SKIPF! }
         { BACKF! }
@@ -61,6 +69,8 @@ DO {
         'F' { |~:p~*| }
         '\xA4' { PRZRN $V }
     }
+
+    MyRoutine!
 
     PRINA "Behold, the most awful string in the world: `$R` \"$1\" '$V' %N% +M+ \n\tWoohoo!"
 }

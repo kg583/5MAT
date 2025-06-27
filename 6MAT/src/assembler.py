@@ -2,7 +2,7 @@ import os
 import re
 
 from collections import defaultdict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from warnings import warn
 
 
@@ -33,7 +33,7 @@ TOKENS = re.compile(
     r"(?P<remain>\$R)|"
     r'(?P<string>"(?:\\.|[^"])*")|'
     r"(?P<raw>\|(?:\\.|[^`])*\|)|"
-    r"(?P<instr>[#!A-Z]+)|"
+    r"(?P<instr>[#!A-Za-z]+)|"
     r"(?P<error>\S+)")
 
 ARG_TYPES = {"nil", "char", "read", "reads", "peek", "peeks", "pos", "neg", "remain", "string"}
@@ -99,46 +99,53 @@ class Token:
 
 
 @dataclass
-class Block:
-    name: str = ""
-    open: str = ""
+class Context:
+    block_name: str = ""
+    block_open: str = ""
 
-    def __bool__(self) -> bool:
-        return bool(self.open)
-
-    @property
-    def close(self) -> str:
-        return f"r{self.symbol}"
+    macros: dict = field(default_factory=lambda: {})
+    strings: dict = field(default_factory=lambda: {})
 
     @property
-    def symbol(self) -> str:
-        return self.open[1:]
+    def block(self) -> bool:
+        return bool(self.block_open)
 
+    @property
+    def block_close(self) -> str:
+        return f"r{self.block_open[1:]}"
 
-class Strings(dict):
-    def __getitem__(self, key: str):
+    def in_block(self, block_name: str, block_open: str) -> 'Context':
+        return Context(block_name, block_open, self.macros, self.strings)
+
+    def add_macro(self, name: str, macro: str):
+        self.macros[name] = {(): macro}
+
+    def get_macro(self, name: str) -> dict[tuple, str]:
+        return self.macros[name]
+
+    def add_string(self, string: str):
+        self.strings[self.next_string()] = string
+
+    def get_string(self, key: str) -> str:
         key, index = key.strip('"').split(":")
-        return super().__getitem__(f'"{key}:0"')[int(index):]
+        return self.strings[f'"{key}:0"'][int(index):]
 
-    def add(self, string: str):
-        self[self.next_key()] = string
+    def last_string(self) -> str:
+        return f'"{len(self.strings) - 1}:0"'
 
-    def first(self, key: str) -> str:
-        return f"'{self[key][0]}'" if self[key] else None
+    def next_string(self) -> str:
+        return f'"{len(self.strings)}:0"'
 
-    def last_key(self) -> str:
-        return f'"{len(self) - 1}:0"'
-
-    def length(self, key: str) -> int:
-        return len(self[key])
-
-    def next_key(self) -> str:
-        return f'"{len(self)}:0"'
+    def string_first(self, key: str) -> str:
+        return f"'{self.get_string(key)[0]}'" if self.get_string(key) else None
 
     @staticmethod
-    def rest(key: str) -> str:
+    def string_rest(key: str) -> str:
         key, index = key.strip('"').split(":")
         return f'"{key}:{int(index) + 1}"'
+
+    def string_length(self, key: str) -> int:
+        return len(self.get_string(key))
 
 
 class AssemblerError(Exception):
@@ -190,12 +197,12 @@ def parse(string: str, *, offset: int = 0) -> list[Token]:
     return tokens
 
 
-def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, list[Token]]:
+def match_args(tokens: list[Token], context: Context, **flags) -> tuple[str, list[Token]]:
     instruction, *tokens = tokens
 
-    specs = INSTRUCTIONS[str(instruction)]
+    specs = context.get_macro(str(instruction))
     if not specs:
-        specs = INSTRUCTIONS[str(instruction) + "!"]
+        specs = context.get_macro(str(instruction) + "!")
         if not specs:
             raise AssemblerError(instruction, "unknown instruction '{value}'")
 
@@ -229,15 +236,15 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                 if not arg.pattern.fullmatch(name):
                     break
 
-            context = {}
+            repls = {}
             match arg.type:
                 case "nil":
-                    context = {name: ""}
+                    repls = {name: ""}
 
                 case "pos" | "neg":
                     num = int(arg.value)
 
-                    context = {
+                    repls = {
                         f"%{name[1]}-1": num - 1,
                         f"%{name[1]}+1": num + 1,
                         f"%{name[1]}": num,
@@ -250,12 +257,12 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     }
 
                 case "remain":
-                    context = {name: "#"}
+                    repls = {name: "#"}
 
                 case "char":
                     character = arg.value[1]
 
-                    context = {
+                    repls = {
                         f"'{chr(ord(name[1]) - 1)}": f"'{chr(ord(character) - 1)}",
                         f"'{chr(ord(name[1]))}": f"'{chr(ord(character))}",
                         f"'{chr(ord(name[1]) + 1)}": f"'{chr(ord(character) + 1)}",
@@ -265,7 +272,7 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                 case "reads" | "peeks":
                     count = int(arg.value[1:])
 
-                    context = {
+                    repls = {
                         "nn": count,
                         "$n-1": f"${count - 1}",
                         "?n-1": f"?{count - 1}",
@@ -273,27 +280,25 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     }
 
                 case "string":
-                    context = {
-                        f"'{name[1]}'": strings.first(arg.value),
-                        f".{name[1]}": strings.rest(arg.value),
-                        "$n": f"${strings.length(arg.value)}",
-                        "?n": f"?{strings.length(arg.value)}",
+                    repls = {
+                        f"'{name[1]}'": context.string_first(arg.value),
+                        f".{name[1]}": context.string_rest(arg.value),
+                        "$n": f"${context.string_length(arg.value)}",
+                        "?n": f"?{context.string_length(arg.value)}",
                         name: arg.value
                     }
 
                 case "lbrace" | "lbracket":
-                    block = Block(str(instruction), arg.type)
-
-                    inner, remaining = match_tokens(remaining, strings, block, **flags)
-                    context = {"...": inner}
+                    inner, remaining = match_tokens(remaining, context.in_block(str(instruction), arg.type), **flags)
+                    repls = {"...": inner}
 
                 case "raw":
-                    context = {"...": arg.value[1:-1]}
+                    repls = {"...": arg.value[1:-1]}
 
                 case "error":
                     raise AssemblerError(arg, "unrecognized input '{value}'")
 
-            for sub, value in context.items():
+            for sub, value in repls.items():
                 repl = str(value)
                 if sub != "...":
                     repl = encode_escapes(repl)
@@ -310,7 +315,7 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
                     # Illegal arguments
                     raise AssemblerError(instruction, "illegal signature for instruction '{value}'")
 
-                return match_args(parse(match[1], offset=instruction.pos), strings, **flags)[0]
+                return match_args(parse(match[1], offset=instruction.pos), context, **flags)[0]
 
             # Resolve templates
             code = re.sub(r"`(.*?)`", match_template, code)
@@ -320,7 +325,7 @@ def match_args(tokens: list[Token], strings: Strings, **flags) -> tuple[str, lis
     raise AssemblerError(instruction, "could not match signature of instruction '{value}'")
 
 
-def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), **flags) -> tuple[str, list[Token]]:
+def match_tokens(tokens: list[Token], context: Context, **flags) -> tuple[str, list[Token]]:
     assembled = ""
     clauses = 0
 
@@ -341,27 +346,41 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
                 case "raw":
                     assembled += token.value[1:-1]
 
-                case block.close:
+                case context.block_close:
                     return assembled, tokens
 
-                case _ if block.name.startswith(("CASE", "JUST")) and "#" not in str(token):
-                    tokens = [Token("instr", f"#{block.name[:4]}", token.pos),
+                case _ if context.block_name.startswith(("CASE", "JUST")) and "#" not in str(token):
+                    tokens = [Token("instr", f"#{context.block_name[:4]}", token.pos),
                               Token("pos", str(clauses), token.pos),
                               token,
                               *tokens]
 
                     clauses += 1
 
+                case "instr" if str(token) == "DEFINE":
+                    name = tokens.pop(0)
+                    if name.type != "instr" or not str(name).endswith("!"):
+                        raise AssemblerError(token, f"invalid macro name '{name}'")
+
+                    if str(name) in INSTRUCTIONS:
+                        raise AssemblerError(token, f"clashing macro name '{name}'")
+
+                    if tokens.pop(0).type != "lbrace":
+                        raise AssemblerError(token, f"expected open brace in '{name}' macro definition")
+
+                    code, tokens = match_tokens(tokens, context.in_block(str(name), "lbrace"), **flags)
+                    context.add_macro(str(name), code)
+
                 case "instr":
-                    code, tokens = match_args([token, *tokens], strings, **flags)
+                    code, tokens = match_args([token, *tokens], context, **flags)
                     assembled += code
 
                 case "lbrace":
-                    code, tokens = match_tokens(tokens, strings, Block("", "lbrace"), **flags)
+                    code, tokens = match_tokens(tokens, context.in_block("", "lbrace"), **flags)
                     assembled += f"~1@{{{code}~:}}"
 
                 case "lbracket":
-                    code, tokens = match_tokens(tokens, strings, Block("", "lbracket"), **flags)
+                    code, tokens = match_tokens(tokens, context.in_block("", "lbracket"), **flags)
 
                     if flags.get("preserve_groups"):
                         assembled += f"~0[{code}~]"
@@ -378,7 +397,7 @@ def match_tokens(tokens: list[Token], strings: Strings, block: Block = Block(), 
         except ValueError:
             raise AssemblerError(token, "incomplete input following '{value}'")
 
-    if block.open:
+    if context.block_open:
         raise AssemblerError(start, "unclosed block")
 
     return assembled, []
@@ -390,7 +409,8 @@ def assemble(program: str, **flags) -> str:
 
     # Preprocessing
     tokens = []
-    strings = Strings()
+    context = Context()
+    context.macros = INSTRUCTIONS.copy()
 
     for token in all_tokens:
         if token.type == "newline" and not flags.get("preserve_indents"):
@@ -403,8 +423,8 @@ def assemble(program: str, **flags) -> str:
 
         elif token.type == "string":
             # Sequester strings
-            strings.add(token.value[1:-1])
-            token.value = strings.last_key()
+            context.add_string(token.value[1:-1])
+            token.value = context.last_string()
 
         elif token.type == "instr" and "#" in token.value:
             # No internal instructions from users
@@ -412,10 +432,10 @@ def assemble(program: str, **flags) -> str:
 
         tokens.append(token)
 
-    assembled, _ = match_tokens(tokens, strings, **flags)
+    assembled, _ = match_tokens(tokens, context, **flags)
 
     # Insert strings
-    assembled = re.sub(r'"\d+:\d+"', lambda match: strings[match[0]].replace("~", "~~"), assembled)
+    assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_string(match[0]).replace("~", "~~"), assembled)
 
     return assembled
 

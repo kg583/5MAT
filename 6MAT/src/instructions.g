@@ -97,12 +97,12 @@ BRNE!   $R  %N                      ~#,%N-1,%N^~%N,%N+1,#^
 BRNE!   'C  $V                      ~v,'B,'C^~:*~'C,'D,v^
 BRNE!   'C  'F                      ~'C,'D,'F^~:*~'F,'B,'C^~:*
 BRNE!   "X  $n                      `#BRNE "X, $n`
-BRNE!   "X  "Y                      `#BRNE "X, "Y`
 BRNE!   %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
 
+#BRNE   $0  "X                      ``
 #BRNE   $n  "X                      `BRNE! $V, 'X'``#BRNE $n-1, .X`
+#BRNE   "X  $0                      ``
 #BRNE   "X  $n                      `BRNE! 'X', $V``#BRNE .X, $n-1`
-#BRNE   "X  "Y                      `BRNE! 'X', 'Y'``#BRNE .X, .Y`
 
 BRNR!   +N                          ~#[`#BRNR +N`~]
 
@@ -182,7 +182,7 @@ CRNZ                                ~#[~:;`CRASH`~]
 
 CRZR                                ~#[`CRASH`~]
 
-DO      {...}                       ~1{...~}
+DO      {...}                       ~:*~1{...~}
 
 FRESH   +N                          ~+N&
 FRESH                               ~&
@@ -227,7 +227,7 @@ IFNZ        [...]                   ~#[~:;...~]
 IFZR        {...}                   ~1@{~1,1,#^...~:}
 IFZR        [...]                   ~#[...~]
 
-INIT    {...}                       ~:[...~;~]~:*
+INIT    {...}                       ~:[...~;~]
 
 LOOP    0   {...}                   ``
 LOOP    +N  {...}                   ~+N@{...~}

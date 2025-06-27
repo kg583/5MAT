@@ -40,7 +40,9 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~#:\*|~0@\*"): "~@*",
     re.compile(r"~@\*~\+?\d*:\*"): r"~@*",
     re.compile(r"~#:?@\*"): "~#*",
-    re.compile(r"~#\*~\+?\d*\*"): "~#*"
+    re.compile(r"~#\*~\+?\d*\*"): "~#*",
+    re.compile(r"^~\+?\d*,?:\*$"): "",
+    re.compile(r"~\+?\d*,?:?@?\*$"): ""
 }
 
 BREAK_OPTIMIZATIONS = {

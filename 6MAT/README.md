@@ -109,13 +109,16 @@ Break out of the current block if `_I <= _J <= _K` holds for numbers or characte
 
 ### Outer Blocks
 
-The outermost scope may include only of the following blocks, each at most once.
+The outermost scope may consist only of the following blocks.
 
 #### `DO { ... }`
 If the tape is non-empty, bind `$V` and `$R` and execute the block.
 
 #### `INIT { ... }`
 If the tape is empty, set its contents by executing the block.
+
+#### `DEFINE name! { ... }`
+Define a user macro. The contents of `{ ... }` are copied exactly in place of every use of `name!`, which should, for readability, contain lowercase letters and end in an `!`. Do note, though, that macro (and instruction) names are case-insensitive.
 
 ### Inner Blocks
 
