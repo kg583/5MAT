@@ -304,10 +304,10 @@ Print `N` form feeds (`\f`).
 
 ### Formatted Printing
 
-#### `PRINL %N = 0, %M = 1, %L = 0, $W = #Space, !V`
+#### `PRINL %N = 0, %M = 1, %L = 0, $W = Space, !V`
 Read or peek a character from the tape and print it with `k*M + L` copies of `W` padding on the left to reach a total width of at least `N`. Character literals are not permitted in place of `!V`.
 
-#### `PRINR %N = 0, %M = 1, %L = 0, $W = #Space, !V`
+#### `PRINR %N = 0, %M = 1, %L = 0, $W = Space, !V`
 Read or peek a character from the tape and print it with `k*M + L` copies of `W` padding on the right to reach a total width of at least `N`. Character literals are not permitted in place of `!V`.
 
 ### Conditional Printing
@@ -393,6 +393,12 @@ JUST %N, %M, %L, !V {
 
 See the [HyperSpec Section on Justification](https://www.lispworks.com/documentation/HyperSpec/Body/22_cfb.htm) for a full specification of these instructions' target directives' behavior.
 
+#### `TABA +N = 1, +M = 1`
+Print spaces (` `) until at least `N+k*M` characters have been printed this lifetime for the smallest possible choice of `k`.
+
+#### `TABR +N = 1, +M = 1`
+Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
+
 #### `LOWER { ... }`
 Fold all characters printed within the block to lowercase.
 
@@ -400,13 +406,7 @@ Fold all characters printed within the block to lowercase.
 Capitalize all words separated by spaces printed within the block; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
 
 #### `TITLE 1 { ... }`
-Capitalize the first word beginning with an alphabetical character printed within the block.
-
-#### `TABA +N = 1, +M = 1`
-Print spaces (` `) until at least `N+k*M` characters have been printed this lifetime for the smallest possible choice of `k`.
-
-#### `TABR +N = 1, +M = 1`
-Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
+Capitalize the first word beginning with an alphabetical character printed within the block. Make all other characters lowercase.
 
 #### `UPPER { ... }`
 Fold all characters printed within the block to uppercase.
