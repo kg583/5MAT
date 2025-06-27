@@ -1,4 +1,12 @@
 ~1[ Wrap the input in '~(~)' to make the check case-insensitive ~]~
-~:[~2|HannaH~;~]~:*~
-~1[ If the first and last chars are the same, trim and repeat; otherwise, it's not a palindrome. ~]~
-~{~#[~;~;True~%~|~:;~<~v,'↡^~{~}~>~<~v,'↡^~:*~<~v,v^False~%~|~@{~*~}~>~|~@{~a~}~>~^~|~a~@{~*~}~:*~a~|~3@*~@{~a~#,1^~}~]~0^~}
+~:[~|HannaH~|~;~]~:*~
+~1{~
+~1[ Crash if we just printed ~]~
+~#*~:*~<~v,'↡^~?~>~@*~
+~1[ Check whether the first two characters are equal ~]~
+~<~v,'↡^~:*~<~v,v^~|False~#*~>~
+~1[ If there's less than two chars left, we're done ~]~
+~#[~;~;~|True~#*~;~|True~#*~:;~@{~a~}~]~>~#[~:;~
+~1[ Otherwise, grab the first and last characters to check ~]~
+~a~#*~2:*~a~|~2@*~@{~#,2^~a~}~|~
+~]~}

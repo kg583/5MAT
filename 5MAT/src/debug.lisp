@@ -1,4 +1,4 @@
-; Whether to print output + data
+; Whether to print data + output
 (defvar *debug* t)
 
 ; Maximum number of loops; set to nil to disable
@@ -26,7 +26,8 @@
 (defun output(string)
   (if *debug*
       (print string)
-      (format t (format nil "~~{~~v,'~|^~~:*~~a~~}") string)))
+      (format t "~{~a~}"
+        (subseq string (or (position #\ff string :from-end t) 0)))))
 
 (defun driver()
   (setq tape (coerce (format nil *program* tape) 'list)))

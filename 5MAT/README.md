@@ -10,7 +10,7 @@ To make this setup viable, though, we need one other concession. While there *ar
 
 In all, we find ourselves with a *tape* of characters that is repeatedly passed through a FORMAT string, processing each character to make a new copy of the tape. While a Turing machine doesn't care about "output" in the human sense, leaving meaningful answers to computations to live on the tape in some particular place, it'd be nice for 5MAT to actually print things to STDOUT.
 
-We accomplish this by dividing the tape in two: an output section, which is always printed, and a data section, which is not. Since output could presumably be any printable text, we'll use `\f` (`0x0C`), the [form feed](https://en.m.wikipedia.org/w/index.php?title=Page_break&useskin=vector#Form_feed) control character, to separate the sections. Programs can place the `\f` wherever they like, in particular placing it at the front of the tape to output nothing (perhaps during a lengthy computation step). Only the first `\f` is checked by the driver, allowing the program to use future copies to further conveniently divide their data sections.
+We accomplish this by dividing the tape in two: a data section, which remains hidden, and an output section, which is always printed. Since output could presumably be any printable text, we'll use `\f` (`0x0C`), the [form feed](https://en.m.wikipedia.org/w/index.php?title=Page_break&useskin=vector#Form_feed) control character, to separate the sections. Programs can place the `\f` wherever they like, in particular placing it at the front of the tape to output nothing (perhaps during a lengthy computation step). Only the last `\f` is checked by the driver, allowing the program to use earlier copies to further conveniently divide their data sections.
 
 For convenience, since a vertical spacing character not seen since the days of yore might not play nice with certain text editors, `↡` (`0x21A1`), the Unicode symbol for form feed, may be used in place of `\f`.
 
@@ -18,9 +18,9 @@ For convenience, since a vertical spacing character not seen since the days of y
 
 ## Running 5MAT
 
-Pass your program via STDIN to `src/driver.lisp` to run it.
+Pass your program via `*args*` to `src/driver.lisp` to run it.
 
-To debug your program, insert it into `src/debug.lisp` and tweak the debugging parameters to your liking.
+To debug your program, use `src/debug.lisp` and tweak the debugging parameters to your liking.
 
 ## Writing 5MAT
 
@@ -30,7 +30,7 @@ Writing non-trivial 5MAT programs is tedious but doable, heavily using the `~{`,
 
 ### Initialization
 
-Use `~[INIT-OUTPUT↡INIT-DATA~;~]~:*` at the start of your program to initialize the tape.
+Use `~[INIT-DATA↡INIT-OUTPUT~;~]~:*` at the start of your program to initialize the tape.
 
 ### Conditionals
 
@@ -60,8 +60,8 @@ Here are some common idioms:
 ; Go to the end of the tape
 ~#*
 
-; Go to the start of the data section
-~@*~@{~v,'↡^~}
+; Go to the next form feed
+~@{~v,'↡^~}
 
 ; Print a form feed
 ~|
@@ -107,15 +107,13 @@ The above generalizes easily to any base and any system of digits.
 A proof of 5MAT's Turing completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCTs can emulate any cyclic tag system, which in turn can emulate Turing machines.
 
 ```
-~:[~%101~|00111~;~]~1[ The data string is stored in the output section of the tape, with a preceding newline. ~]~
+~:[00111~|101~%~;~]~1[ The data string is stored in the output section of the tape. ~]~
 ~:*~{~
-  ~@{~v,'↡^~}~1[                     Navigate to the program section so we can check the first bit. ~]~
-  ~<~v,'1^~1[                        Is the first program bit a 0? ~]~
-    ~%~2@*~@{~v,'↡^~:*~a~}~|~1[      Delete the first data bit. ~]~
-    ~*~@{~a~}0~>~^~1[                Left cyclic shift the program once. ~]~
-  ~:*~<~%~1@*~v,'0^~1[               Is the first data bit a 1? ~]~
-    ~:*~@{~v,'↡^~:*~a~}~*~a~|~1[     Copy the second program bit to the right end of the data. ~]~
-    ~@{~a~}1~1[                      Copy the program with the first program bit moved to the end. ~]~
-    ~@*~@{~v,'↡^~}~*~a~@{~*~}~>~^~1[ Tack on the second program bit. ~]~
-  ~%~@{~a~}~}~1[                     If the first data bit was a 0, copy everything that's left. ~]
+  ~<~v,'1^~1[                         Is the first program bit a 0? ~]~
+    ~@{~v,'↡^~:*~a~}0~1[              Shift the program once ~]~
+    ~|~*~@{~a~}~>~^~1[                Delete the first data bit. ~]~
+  ~*~@{~v,'↡^~:*~a~}1~1@*~a~1[        Otherwise, shift the program twice ~]~
+    ~<~@{~v,'↡^~}~v,'0^~1[            Is the first data bit a 1? ~]~
+    ~|1~@{~#,1^~a~}~1@*~a~%~#*~>~^~1[ Copy the second program bit to the right end of the data. ~]~
+  ~|0~@{~a~}~}~1[                     Otherwise, copy the data as-is~]
 ```

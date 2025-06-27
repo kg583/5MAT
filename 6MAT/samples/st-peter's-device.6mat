@@ -1,0 +1,19 @@
+; St. Peter's Device
+; Performs IFEQ! $V, $V { ... }
+
+; Damn the pointer if $V /= $V
+IFNE! $V, $V {
+  GOTO $R
+}
+
+; If the pointer is in heaven, we must have $V = $V
+IFNE! $V, '\x00' {
+  BACK
+  ...
+}
+
+; If the pointer is in hell, redeem it
+IFEQ! $V, '\x00' {
+  BACK 2
+  GOTO $R ; REDEEM
+}

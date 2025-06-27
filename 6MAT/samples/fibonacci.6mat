@@ -1,0 +1,82 @@
+INIT {
+    ; A | B | 1 | 10 | OUT
+    PRINC '1'
+    PRFF
+
+    PRINC '1'
+    PRFF
+
+    PRINC '1'
+    PRFF
+
+    PRINA "00"
+    PRFF
+}
+
+DO {
+    GOTO -1
+    IFEQ! $V, '\f' {
+        GOTO
+        COPYF! 2
+        PRFF
+
+        IFEQ! $V, '\f' {
+            SKIPF!
+            BACK 2
+            COPYR!
+            TERP
+            SKIP $R
+            BACK 1
+        }
+        BRNR! 1
+
+        COPYF!
+        PRFF
+
+        LOOP {
+            BRLT $V, '9'
+            PRINC '0'
+        }
+
+        BACK
+        CASEV! {
+            '0' { PRINC '1' }
+            '1' { PRINC '2' }
+            '2' { PRINC '3' }
+            '3' { PRINC '4' }
+            '4' { PRINC '5' }
+            '5' { PRINC '6' }
+            '6' { PRINC '7' }
+            '7' { PRINC '8' }
+            '8' { PRINC '9' }
+        }
+
+        IFLT! $V, '0' {
+            PRINC '0'
+        }
+
+        BACK
+        COPYF!
+        PRFF
+    }
+    BRNZ
+
+    BACK
+    IFNE! $V, '\f' {
+        GOTOF! 1
+        COPYF!
+        PRFF
+
+        GOTO
+        COPYF!
+        COPYF!
+        PRFF
+
+        GOTOF! 1
+        COPYF!
+        PRFF
+
+        PRINA "00"
+        PRFF
+    }
+}

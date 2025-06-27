@@ -4,9 +4,9 @@
 
 6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh). Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
 
-On a single **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear before the first **form feed** character (`\f`) are **output** to STDOUT once the current lifetime is completed.
+On a single **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear after the last **form feed** character (`\f`) are **output** to STDOUT once the current lifetime is completed; if none exist, the entire tape is output
 
-This loop continues indefinitely, terminating only by a **crash**. This execution model, along with FORMAT's surprising control flow capabilities, enable 5MAT and 6MAT to be Turing-complete.
+This loop continues indefinitely, terminating only by a **crash**. This execution model, along with FORMAT's surprising control flow capabilities, enable 5MAT and 6MAT to be Turing-complete (see `bct.5mat` and `bct.6mat`).
 
 ### Token Types
 
@@ -109,7 +109,7 @@ Break out of the current block if `_I <= _J <= _K` holds for numbers or characte
 
 ### Outer Blocks
 
-The outermost scope may consist only of the following blocks, each at most once.
+The outermost scope may include only of the following blocks, each at most once.
 
 #### `DO { ... }`
 If the tape is non-empty, bind `$V` and `$R` and execute the block.

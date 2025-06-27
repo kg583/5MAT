@@ -1,18 +1,15 @@
+~|~
+
 ~1[ Initialize counter with an extra leading zero; count is stored backwards ~]~
 ~:[~
-    ~|~
     00~
+    ~|~
 ~;~]~:*~
 
 ~1{~
-    ~#*~:*~
-    ~:*~@{~v,'\f^~:*~c~2:*~}~1[ Copy the counter into the output section, reversed ~]~
-
-    ~%~
-    ~|~
-
+    ~*~
     ~@{~1[ Increment trailing nines ~]~
-        ~v,'8,'9^~:*~'9,':,v^~
+        ~v,'8,'9^~
         0~
     ~}~
 
@@ -29,6 +26,15 @@
         ~:*~1@{~v,'7,'8^~:*~'8,'9,v^9~:}~
     ~
 
-    ~#[0~]~1[ If there's no leading zero, add it ~]~
-    ~@{~c~}~1[ Otherwise, copy the rest of the counter ~]~
+    ~1@{~'0,'0,v^~1[ If there's no leading zero, add it ~]~
+        0~
+    ~:}~
+
+    ~:*~
+    ~@{~v,'\f^~:*~c~}~1[ Copy the rest of the counter ~]~
+
+    ~|~
+    ~2:*~
+    ~:*~@{~v,'\f^~:*~c~2:*~}~1[ Copy the counter into the output section, reversed ~]~
+    ~%~
 ~}

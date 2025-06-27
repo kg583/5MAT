@@ -14,6 +14,7 @@
 # Instructions with a '#' cannot appear in user code and are used internally
 # A lowercase 'z' is a placeholder for any of the print types (ACLNR)
 
+
 BACK        0                       ``
 BACK        1                       `BACK`
 BACK        +N                      ~+N:*
@@ -103,9 +104,12 @@ BRNE!   %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
 #BRNE   "X  $n                      `BRNE! 'X', $V``#BRNE .X, $n-1`
 #BRNE   "X  "Y                      `BRNE! 'X', 'Y'``#BRNE .X, .Y`
 
-BRNR    +N                          `BREQ $R, +N`
+BRNR!   +N                          ~#[`#BRNR +N`~]
 
-BRNZ                                `BRNE $R, 0`
+#BRNR   0                           ~0^
+#BRNR   +N                          ~;`#BRNR +N-1`
+
+BRNZ                                ~#[~:;~0^~]
 
 BRZR                                ~^
 
@@ -138,7 +142,7 @@ COPY                                ~c
 
 COPYC!  'C  1                       `COPYC! 'C'`
 COPYC!  'C  $R                      `COPY $R`
-COPYC!  'C  +N                      ~+N-1@{`COPYC 'C'`C~}`COPYC! 'C'`
+COPYC!  'C  +N                      ~+N-1@{`COPYC! 'C'`"C"~}`COPYC! 'C'`
 COPYC!  'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
 
 COPYF!      $R                      `COPY $R`
@@ -190,7 +194,7 @@ GOTO                                ~@*
 
 GOTOC!  'C  0                       `GOTO`
 GOTOC!  'C  $R                      `ERR`
-GOTOC!  'C  +N                      `GOTO``SKIP 'C', +N`
+GOTOC!  'C  +N                      `GOTO``SKIPC! 'C', +N`
 GOTOC!  'C  -N                      `SKIP $R``BACKC! 'C', +N`
 GOTOC!  'C                          `GOTO``SKIPC! 'C'`
 

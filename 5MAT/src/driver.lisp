@@ -19,9 +19,10 @@
           (t char)))
       'string)))
 
-; Output up to the first form feed
+; Output up to the last form feed
 (defun output (string)
-  (format t (format nil "~~{~~v,'~|^~~:*~~a~~}") string))
+  (format t "~{~a~}"
+    (subseq string (or (position #\ff string :from-end t) 0))))
 
 ; Initial tape is nil
 (setq tape nil)

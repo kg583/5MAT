@@ -60,7 +60,7 @@ BREAK_OPTIMIZATIONS = {
         lambda match: "~0^" if match[1] <= match[2] <= match[3] else "",
 
     # Unreachable code
-    re.compile(r"(~0\^|~\?).*?(~>|~:?})", flags=re.DOTALL):
+    re.compile(r"(~0\^|~\?).*?(~>|~:?}|~])", flags=re.DOTALL):
         lambda match: match[1] + match[2],
 
     re.compile(r"~0(~:?[^:>}])*?\^$"): "",
