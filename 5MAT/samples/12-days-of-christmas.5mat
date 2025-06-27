@@ -9,5 +9,6 @@ On the ~#[~;First~;Second~;Third~;Fourth~;Fifth~;Sixth~;Seventh~;Eighth~;Ninth~;
 My true love sent to me~1[ Preamble ~]~
 ~
 ~1[ Use the argument counter '#' to count from N down to 2 ~]~
-~@{~#,1^~%~#[~;~;Two~;Three~;Four~;Five~;Six~;Seven~;Eight~;Nine~;Ten~;Eleven~;Twelve~] ~#[~;~;Turtle Doves, and~0^~;French Hens~;Calling Birds~;Gold Rings~;Geese-a-Laying~;Swans-a-Swimming~;Maids-a-Milking~;Ladies Dancing~;Lords-a-Leaping~;Pipers Piping~;Drummers Drumming~;~?~],~*~}~%~
+~@{~#,1^~%~#[~;~;Two~;Three~;Four~;Five~;Six~;Seven~;Eight~;Nine~;Ten~;Eleven~;Twelve~] ~
+~#[~;~;Turtle Doves, and~0^~;French Hens~;Calling Birds~;Gold Rings~;Geese-a-Laying~;Swans-a-Swimming~;Maids-a-Milking~;Ladies Dancing~;Lords-a-Leaping~;Pipers Piping~;Drummers Drumming~;~?~],~*~}~%~
 A Partridge in a Pear Tree.~2%~0^~}
