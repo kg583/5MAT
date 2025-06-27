@@ -85,8 +85,12 @@ BLOCK_OPTIMIZATIONS = {
     re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): "",
 
     # INIT - DO rearranging
-    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<body>.*)$", flags=re.DOTALL):
-        lambda match: f"~:[{match['init']}~;{match['body']}~]",
+    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", flags=re.DOTALL):
+        lambda match: f"~:[{match['init']}~;{match['do']}~]",
+
+    # Empty INIT
+    re.compile(r"^~:\[~;~:\*(?P<do>~\d*\{.*~})~]$"):
+        lambda match: match['do']
 }
 
 DETECTABLE_CRASHES = {
@@ -95,6 +99,16 @@ DETECTABLE_CRASHES = {
 
     # Reading past the end of the tape
     re.compile(rf"~#\[({CONST})*?~\w(~[^\[]|[^~])*~]"): "~#[~?~]"
+}
+
+SPECIAL_DIRECTIVES = {
+    # ~p
+    re.compile(r"ies~\*"): "~@p",
+    re.compile(r"s~\*"): "~p",
+
+    # ~@[~]
+    re.compile(r"^~:\[~;(?P<body>.*)~]$", flags=re.DOTALL):
+        lambda match: f"~@[{match['body']}~]"
 }
 
 BOUNDEDNESS_OPTIMIZATIONS = {
@@ -130,6 +144,12 @@ O2 = {
     **BOUNDEDNESS_OPTIMIZATIONS
 }
 
+O3 = {
+    **O2,
+    **FORMATTING,
+    **SPECIAL_DIRECTIVES
+}
+
 
 def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     # Sequester escaped tildes
@@ -157,7 +177,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
 
 
 if __name__ == "__main__":
-    print(optimize("~#[blah~a~{2~^~}~b~]", O2))
+    print(optimize("~:[~;~:*~{~a~}~]", O2))
 
 
-__all__ = ["FORMATTING", "O1", "O2", "optimize"]
+__all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]

@@ -16,6 +16,8 @@ parser.add_argument("-O1", "-O", action="store_true",
                     help="apply optimizations to output, reducing code size and improving execution speed")
 parser.add_argument("-O2", action="store_true",
                     help="O1 + optimizations that assume the tape pointer is never moved off the tape")
+parser.add_argument("-O3", action="store_true",
+                    help="O2 + aggressive size optimizations; disregards all formatting flags")
 parser.add_argument("--preserve-comments", action="store_true",
                     help="preserve comments")
 parser.add_argument("--preserve-groups", action="store_true",
@@ -44,6 +46,9 @@ if __name__ == "__main__":
 
         elif args.O2:
             code = optimize(code, O2)
+
+        elif args.O3:
+            code = optimize(code, O3)
 
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
