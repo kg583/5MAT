@@ -126,6 +126,9 @@ class Context:
     def add_string(self, string: str):
         self.strings[self.next_string()] = string
 
+    def get_escaped_string(self, key: str) -> str:
+        return encode_escapes(self.get_string(key).replace("~", "~~"))
+
     def get_string(self, key: str) -> str:
         key, index = key.strip('"').split(":")
         return self.strings[f'"{key}:0"'][int(index):]
@@ -435,7 +438,7 @@ def assemble(program: str, **flags) -> str:
     assembled, _ = match_tokens(tokens, context, **flags)
 
     # Insert strings
-    assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_string(match[0]).replace("~", "~~"), assembled)
+    assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_escaped_string(match[0]), assembled)
 
     return assembled
 
