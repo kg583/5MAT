@@ -1,0 +1,50 @@
+INIT {
+    PRFF
+    PRINA "HannaH"
+    PRFF
+}
+
+DO {
+    GOTO -1
+    CRNE! $V, '\f'
+
+    GOTO
+    IFNE! $V, '\f' {
+        BACK
+        IFNE! $V, $V {
+            PRFF
+            PRINA "False"
+            SKIP $R
+        }
+
+        CASER! [
+            0 []
+            1 []
+            2 [
+                PRFF
+                PRINA "True"
+                SKIP $R
+            ]
+            3 [
+                PRFF
+                PRINA "True"
+                SKIP $R
+            ]
+            DEFAULT [ COPY $R ]
+        ]
+    }
+
+    IFNZ {
+        PRINC $V
+        GOTO -2
+        PRINC $V
+        PRFF
+
+        GOTO 2
+        LOOP {
+            BRNR! 2
+            PRINC $V
+        }
+        PRFF
+    }
+}
