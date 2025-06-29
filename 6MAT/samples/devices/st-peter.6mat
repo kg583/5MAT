@@ -7,13 +7,13 @@ IFNE! $V, $V {
 }
 
 ; If the pointer is in heaven, we must have $V = $V
-IFNE! $V, '\x00' {
+IFGT! $V, '\x07' {
   BACK
   ...
 }
 
 ; If the pointer is in hell, redeem it
-IFEQ! $V, '\x00' {
+IFLE! $V, '\x07' {
   BACK 2
-  GOTO $R ; REDEEM
+  GOTO $R
 }

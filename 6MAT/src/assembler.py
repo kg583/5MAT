@@ -33,7 +33,7 @@ TOKENS = re.compile(
     r"(?P<remain>\$R)|"
     r'(?P<string>"(?:\\.|[^"])*")|'
     r"(?P<raw>\|(?:\\.|[^`])*\|)|"
-    r"(?P<instr>[#!A-Za-z]+)|"
+    r"(?P<instr>[-#!?A-Za-z]+)|"
     r"(?P<error>\S+)")
 
 ARG_TYPES = {"nil", "char", "read", "reads", "peek", "peeks", "pos", "neg", "remain", "string"}

@@ -1,0 +1,4 @@
+; Dante's Inferno
+; Writes a tape which is half junk characters (hell) and half the previous tape (heaven)
+
+JUST NIL, NIL, $R, '\x07' { COPY $R }
