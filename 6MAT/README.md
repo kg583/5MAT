@@ -291,7 +291,7 @@ As such, the following calls are disallowed.
 
 ## Printing
 
-**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current lifetime if it appears before the first `\f` character. Printed characters cannot be overwritten or undone within a lifetime.
+**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current lifetime if it appears after the last `\f` character. Printed characters cannot be overwritten or undone within a lifetime.
 
 #### `PRINA _I`
 Print `_I` as it appears, which may be a character or string variable.
