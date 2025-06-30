@@ -23,7 +23,7 @@ CONST = r"~[%&|.]|~\n\s*|[^~]"
 
 MOVE_OPTIMIZATIONS = {
     # Any move followed by an absolute move
-    re.compile(r"~(?:#|\+?\d+)?:?@?\*~(#|\d*):?@\*"):
+    re.compile(r"~(?:#|\+?\d+)?:?@?\*~(#|\d*)?:?@\*"):
         lambda match: f"~{int(match[1])}@*",
 
     # Repeated unidirectional moves
@@ -31,7 +31,7 @@ MOVE_OPTIMIZATIONS = {
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}*",
 
     # Using loops to move
-    re.compile(r"~#?@\{~\*~}"): "~#*",
+    re.compile(r"~@\{~\*~}"): "~#*",
     re.compile(r"~(\+?\d+)@\{~\*~}"):
         lambda match: f"~{int(match[1])}*",
 
@@ -41,9 +41,10 @@ MOVE_OPTIMIZATIONS = {
 
     # Trivial moves
     re.compile(r"~0:?\*"): "",
+    re.compile(r"~0*1\*"): "~:*",
+    re.compile(r"~0*1:\*"): "~:*",
     re.compile(r"~#:\*|~0@\*"): "~@*",
-    re.compile(r"~@\*~\+?\d*:\*"): r"~@*",
-    re.compile(r"~#:?@\*"): "~#*",
+    re.compile(r"~@\*~\+?\d*:\*"): "~@*",
     re.compile(r"~#\*~\+?\d*\*"): "~#*",
     re.compile(r"^~\+?\d*,?:\*$"): "",
     re.compile(r"~\+?\d*,?:?@?\*$"): ""
@@ -218,6 +219,11 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     # Sequester escaped tildes
     program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
 
+    # Standardize arguments and modifiers
+    program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
+                     lambda match: f"~{match['args']}{''.join(sorted(match['mod']))}{match['dir']}",
+                     program, flags=re.DOTALL)
+
     done = False
     while not done:
         try:
@@ -240,7 +246,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~0,1a~}~]", O3))
+    print(optimize("~:[~;~:*~{~0,1@:a~}~]", O3))
 
 
 __all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]
