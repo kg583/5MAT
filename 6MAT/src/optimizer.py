@@ -84,6 +84,7 @@ BREAK_OPTIMIZATIONS = {
 
     # '#' optimizations
     re.compile(r"~#\^"): "~^",
+    re.compile(r"~#,#(,#)?\^"): "~0^",
     re.compile(r"~\^~}"): "~}",
     re.compile(r"~#,(-.*?)\^|~(-.*?),#\^"): "",
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
@@ -180,7 +181,7 @@ DEFAULT_PARAMETERS = {
     re.compile(r"~\+?0*1(,\+?0*72)?:;"): "~:;",
 
     # Tabulation
-    re.compile(r"~\+?0*1(,\+?0*1)?(?P<mod>:?@?)t"):
+    re.compile(r"~\+?0*1(,\+?0*1)?:?(?P<mod>@?)t"):
         lambda match: f"~{match['mod']}t"
 }
 
