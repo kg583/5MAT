@@ -23,7 +23,7 @@ CONST = r"~[%&|.]|~\n\s*|[^~]"
 
 MOVE_OPTIMIZATIONS = {
     # Any move followed by an absolute move
-    re.compile(r"~(?:#|(?:\+?\d+)?):?@?\*~(\d*):?@\*"):
+    re.compile(r"~(?:#|\+?\d+)?:?@?\*~(#|\d*):?@\*"):
         lambda match: f"~{int(match[1])}@*",
 
     # Repeated unidirectional moves
@@ -34,6 +34,10 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~#?@\{~\*~}"): "~#*",
     re.compile(r"~(\+?\d+)@\{~\*~}"):
         lambda match: f"~{int(match[1])}*",
+
+    # Non-reading operations between moves
+    re.compile(rf"(?P<first>(~(?:#|\+?\d+)?:?@?)\*)(?P<const>({CONST})+)(?P<second>~(?:#|\+?\d+)?:?@?\*)"):
+        lambda match: f"{match['first']}{match['second']}{match['const']}",
 
     # Trivial moves
     re.compile(r"~0:?\*"): "",
