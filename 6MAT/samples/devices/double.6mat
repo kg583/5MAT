@@ -12,72 +12,62 @@ DO {
         CASEV! {
             '0' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '0' }
-                BACK
-                IFGT! $V, '4' { PRINC '1' }
+                IFGT! '5', ?V { PRINC '0' }
+                IFLE! '5', $V { PRINC '1' }
                 SKIP
             }
             '1' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '2' }
-                BACK
-                IFGT! $V, '4' { PRINC '3' }
+                IFGT! '5', ?V { PRINC '2' }
+                IFLE! '5', $V { PRINC '3' }
                 SKIP
             }
             '2' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '4' }
-                BACK
-                IFGT! $V, '4' { PRINC '5' }
+                IFGT! '5', ?V { PRINC '4' }
+                IFLE! '5', $V { PRINC '5' }
                 SKIP
             }
             '3' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '6' }
-                BACK
-                IFGT! $V, '4' { PRINC '7' }
+                IFGT! '5', ?V { PRINC '6' }
+                IFLE! '5', $V { PRINC '7' }
                 SKIP
             }
             '4' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '8' }
-                BACK
-                IFGT! $V, '4' { PRINC '9' }
+                IFGT! '5', ?V { PRINC '8' }
+                IFLE! '5', $V { PRINC '9' }
                 SKIP
             }
             '5' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '0' }
-                BACK
-                IFGT! $V, '4' { PRINC '1' }
+                IFGT! '5', ?V { PRINC '0' }
+                IFLE! '5', $V { PRINC '1' }
                 SKIP
             }
             '6' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '2' }
-                BACK
-                IFGT! $V, '4' { PRINC '3' }
+                IFGT! '5', ?V { PRINC '2' }
+                IFLE! '5', $V { PRINC '3' }
                 SKIP
             }
             '7' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '4' }
-                BACK
-                IFGT! $V, '4' { PRINC '5' }
+                IFGT! '5', ?V { PRINC '4' }
+                IFLE! '5', $V { PRINC '5' }
                 SKIP
             }
             '8' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '6' }
-                BACK
-                IFGT! $V, '4' { PRINC '7' }
+                IFGT! '5', ?V { PRINC '6' }
+                IFLE! '5', $V { PRINC '7' }
                 SKIP
             }
             '9' {
                 BACK 2
-                IFLE! $V, '4' { PRINC '8' }
-                BACK
-                IFGT! $V, '4' { PRINC '9' }
+                IFGT! '5', ?V { PRINC '8' }
+                IFLE! '5', $V { PRINC '9' }
                 SKIP
             }
         }

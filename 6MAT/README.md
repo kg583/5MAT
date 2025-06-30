@@ -124,8 +124,8 @@ Define a user macro. The contents of `{ ... }` are copied exactly in place of ev
 
 All inner scopes may include the following blocks, with arbitrary nesting.
 
-#### `IFFF! { ... }`
-Read a character from the tape and execute the block if it is `\f`.
+#### `IFFF! !V { ... }`
+Read or peek a character from the tape and execute the block if it is `\f`.
 
 #### `IFNR! +N [{ ... }]`
 Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
@@ -139,14 +139,14 @@ Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`).
 #### `IFyy! _I, _J { ... }`
 Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BRxx _I, _J` at the top of the block, where `xx` is the negation of `yy`.
 
-| Condition | Break   | Supported Types |
-|-----------|---------|-----------------|
-| `EQ!`     | `BRNE!` | `%N`, `$nV`     |
-| `GE!`     | `BRLT`  | `%N`, `$V`      |
-| `GT!`     | `BRLE`  | `%N`, `$V`      |
-| `LE!`     | `BRGT`  | `%N`, `$V`      |
-| `LT!`     | `BRGE`  | `%N`, `$V`      |
-| `NE!`     | `BREQ`  | `%N`, `$V`      |
+| Condition | Break   | Supported Types  |
+|-----------|---------|------------------|
+| `EQ!`     | `BRNE!` | `%N`, `!V`, `$n` |
+| `GE!`     | `BRLT`  | `%N`, `!V`       |
+| `GT!`     | `BRLE`  | `%N`, `!V`       |
+| `LE!`     | `BRGT`  | `%N`, `!V`       |
+| `LT!`     | `BRGE`  | `%N`, `!V`       |
+| `NE!`     | `BREQ`  | `%N`, `!V`       |
 
 As such, the following calls are disallowed.
 - `IFEQ! $V, $V { ... }`
@@ -162,17 +162,17 @@ Execute the block at most `N` times, terminating if the tape is exhausted at the
 
 ### Case Blocks
 
-#### `CASER! { ... }`
+#### `CASER! [ ... ]`
 Conditionally execute blocks based on the value of `$R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `$R` is not equal to any listed value.
 ```
-CASER! [
+CASER! [{
     0 [{ ... }]
     1 [{ ... }]
     2 [{ ... }]
     ...
     n [{ ... }]
     DEFAULT [{ ... }]
-]
+}]
 ```
 
 #### `CASES! { ... }`
@@ -378,7 +378,7 @@ JUST %N, %M, %L, !V {
 }
 ```
 
-An `OVER` instruction may be included as the first clause (see below). Each clause, including `OVER`, acts a buffer block.
+An `OVER` instruction may be included as the first clause (see below). Each clause acts a buffer block (see `BUFFER`).
 
 #### `OVER %P = 0, %O = 72 { ... }`
 Create a buffer by executing the block. If the output of the containing `JUST` instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
