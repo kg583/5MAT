@@ -14,7 +14,7 @@ def decode_escapes(string: str) -> str:
 
 
 def encode_escapes(string: str) -> str:
-    for char in range(1, 32):
+    for char in range(32):
         match char:
             case 9:
                 repl = "\\t"
