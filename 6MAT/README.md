@@ -149,13 +149,13 @@ Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BR
 | `NE!`     | `BREQ`  | `%N`, `!V`       |
 
 As such, the following calls are disallowed.
-- `IFEQ! $V, $V { ... }`
-- `IFGE! $V, $V { ... }`
-- `IFLE! $V, $V { ... }`
-- `IFLT! $V, $V { ... }`
+- `IFEQ! $V, !V { ... }`
+- `IFGE! $V, !V { ... }`
+- `IFLE! $V, !V { ... }`
+- `IFLT! $V, !V { ... }`
 
 #### `LOOP { ... }`
-Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the tape pointer does *not* move by default at any stage in a `LOOP`, and thus failing to cause net movement of the tape pointer during execution will result in a crash.
+Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the tape pointer does *not* move by default at any point, and thus failing to cause net movement of the tape pointer during execution will result in a crash.
 
 #### `LOOP +N { ... }`
 Execute the block at most `N` times, terminating if the tape is exhausted at the top of the block.
