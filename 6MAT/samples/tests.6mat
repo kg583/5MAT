@@ -51,7 +51,7 @@ DO {
         { COPYR! }
     }
 
-    IFFF! {
+    IFFF! $V {
         PRFF
         CRFF!
         BRFF

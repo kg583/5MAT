@@ -42,13 +42,15 @@ if __name__ == "__main__":
                 raise ValueError(f"unrecognized file extension: '{args.filename}'")
 
         if args.O1:
-            code = optimize(code, O1)
+            code, saved = optimize(code, O1)
 
         elif args.O2:
-            code = optimize(code, O2)
+            code, saved = optimize(code, O2)
 
         elif args.O3:
-            code = optimize(code, O3)
+            code, saved = optimize(code, O3)
 
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
+
+        print(f"Saved {saved} characters")

@@ -216,7 +216,7 @@ O3 = {
 }
 
 
-def optimize(program: str, optimizations: dict[re.Pattern, ...]):
+def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, int]:
     # Sequester escaped tildes
     program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
 
@@ -226,6 +226,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
                      program, flags=re.DOTALL)
 
     done = False
+    saved = 0
     while not done:
         try:
             done = True
@@ -234,6 +235,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
 
                 if new != program:
                     done = False
+                    saved += len(program) - len(new)
                     program = new
 
         except Exception:
@@ -243,7 +245,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]):
     # Put them back
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
-    return program
+    return program, saved
 
 
 if __name__ == "__main__":
