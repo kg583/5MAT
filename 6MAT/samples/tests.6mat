@@ -48,7 +48,7 @@ DO {
         OVER -6, 5 { SKIPF! }
         { BACKF! }
         [ GOTOF! ]
-        { COPYR! }
+        { COPYF! }
     }
 
     IFFF! $V {
@@ -57,7 +57,7 @@ DO {
         BRFF
     }
 
-    COPYR! 5
+    COPYR! 'A', 5
     COPYF! 1
 
     CASER! [

@@ -63,7 +63,7 @@ DO {
         SKIP
         SKIPF!
         BACK 2
-        COPYR!
+        COPYR! '\f'
     }
 
     TERP

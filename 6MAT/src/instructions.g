@@ -143,17 +143,17 @@ COPY                                ~c
 
 COPYC!  'C  1                       `COPYC! 'C'`
 COPYC!  'C  $R                      `COPY $R`
-COPYC!  'C  +N                      ~+N-1@{`COPYC! 'C'`"C"~:}`COPYC! 'C'`
+COPYC!  'C  +N                      ~+N-1@{`COPYC! 'C'`"C"~}`COPYC! 'C'`
 COPYC!  'C                          ~@{`BREQ $V, 'C'`~:*`COPY`~}
 
 COPYF!      $R                      `COPY $R`
 COPYF!      +N                      `COPYC! '\f', +N`
 COPYF!                              `COPYC! '\f'`
 
-COPYR!      1                       `COPYR!`
-COPYR!      $R                      `ERR`
-COPYR!      +N                      ~:*~+N-1@{~@{`BRFF`~:*`COPY`~2:*~}~|~2:*~:}`COPYR!`
-COPYR!                              ~:*~@{`BRFF`~:*`COPY`~2:*~}
+COPYR!  'C  1                       `COPYR! 'C'`
+COPYR!  'C  $R                      `ERR`
+COPYR!  'C  +N                      ~:*~+N-1@{~@{`BREQ $V, 'C'`~:*`COPY`~2:*~}"C"~2:*~}`COPYR! 'C'`
+COPYR!  'C                          ~:*~@{`BREQ $V, 'C'`~:*`COPY`~2:*~}
 
 CRASH                               ~?
 

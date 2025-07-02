@@ -4,9 +4,9 @@
 ~:[~
     00~
     ~|~
-~;~]~:*~
+~;~]~
 
-~1{~
+~:*~1{~
     ~*~
     ~@{~1[ Increment trailing nines ~]~
         ~v,'8,'9^~
@@ -34,7 +34,7 @@
     ~@{~v,'\f^~:*~c~}~1[ Copy the rest of the counter ~]~
 
     ~|~
-    ~2:*~
-    ~:*~@{~v,'\f^~:*~c~2:*~}~1[ Copy the counter into the output section, reversed ~]~
+    ~3:*~
+    ~@{~v,'\f^~:*~c~2:*~}~1[ Copy the counter into the output section, reversed ~]~
     ~%~
 ~}

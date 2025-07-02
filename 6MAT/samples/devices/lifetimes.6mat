@@ -1,0 +1,56 @@
+CASEV! {
+    ; Execute
+    ; Tape: 1 Path 1 Hell | Heaven |
+
+    '\x01' {
+        PRINC '\x02'
+
+        GOTOF! 1
+        { ... } ; Actual program
+
+        PRFF
+        PRINC '\x01'
+        { ... } ; Path to next block (backwards)
+        PRFF
+    }
+
+    ; Print
+    ; Tape: 2 Collation | 1 htaP |
+    '\x02' {
+        PRINC '\x03'
+
+        ; Non-prints
+        LOOP {
+            COPYC! '\x02'
+            SKIPC! '\x02'
+        }
+
+        ; Prints
+        GOTO 1
+        LOOP {
+            SKIPC! '\x02'
+            COPYC! '\x02'
+        }
+    }
+
+    ; Hell
+    ; Tape: 3 Heaven | 1 htaP | Output
+    '\x03' {
+        PRINC '\x01'
+
+        ; Copy block path
+        SKIP $R
+        BACKF!
+        BACK
+        COPYR! '\f'
+
+        ; Pad the tape sans path + output
+        GOTO 1
+        JUST NIL, NIL, $R, '\x07' {
+            [
+                PRFF
+                COPYC! '\x01'
+            ]
+        }
+    }
+}
