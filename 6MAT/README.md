@@ -17,7 +17,7 @@ This loop continues indefinitely, terminating only by a **crash**. This executio
 - `FOO`: An instruction
 - `; Blah`: A comment
 
-Escape sequences `\t`, `\n`, `\f`, `\r`, `\"`, and `\xXX`. are recognized. `↡`, the Unicode symbol for a form feed, is also recognized as a replacement for `\f`.
+Escape sequences `\a`, `\b`, `\t`, `\n`, `\v`, `\f`, `\r`, `\"` (inside strings), and `\xXX`. are recognized. `↡`, the Unicode symbol for a form feed, is also recognized as a replacement for `\f`.
 
 ### Instruction Types
 
