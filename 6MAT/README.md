@@ -36,7 +36,7 @@ The following variables are recognized.
 
 A `?V` or `?n` argument can only be passed at the end of an argument list. Other contexts where peeking is illegal are noted in their respective sections; do note, though, that peeking is equivalent to reading then rewinding the tape pointer by `n` characters, so the same effect may be achievable directly.
 
-Instruction arguments are denoted using the following placeholders. Separate arguments using `,`.
+Instruction arguments are denoted in this document and the instruction grammar using the following placeholders. Separate arguments using `,`.
 - `%N`: A signed decimal integer literal, or `$R`
 - `+N`: A positive decimal integer literal, or `$R`
 - `-N`: A negative decimal integer literal
