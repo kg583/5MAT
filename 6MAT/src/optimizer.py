@@ -87,7 +87,7 @@ BREAK_OPTIMIZATIONS = {
 
     # Unreachable code
     re.compile(r"(~0\^|~\?).*?(~>|~:?}|~])", flags=re.DOTALL):
-        lambda match: match[1] + match[2],
+        lambda match: f"{match[1]}{match[2]}",
 
     re.compile(r"~0\^(~:?[^:>}])*?$"): "",
 
@@ -101,7 +101,7 @@ BREAK_OPTIMIZATIONS = {
 
 BLOCK_OPTIMIZATIONS = {
     # Blocks that are never broken out of
-    re.compile(r"(~<|~1@\{)(?P<body>[^^]*?)(~>|~:})"):
+    re.compile(r"(~<|~1@\{)(?P<body>[^^{<]*?)(~>|~:})"):
         lambda match: match["body"],
 
     # Constant blocks
@@ -117,7 +117,11 @@ BLOCK_OPTIMIZATIONS = {
 
     # Empty INIT
     re.compile(r"^~:\[~;~:\*(?P<do>~\d*\{.*~})~]$"):
-        lambda match: match['do']
+        lambda match: match['do'],
+
+    # Adjacent case conversion blocks
+    re.compile(r"~(:@?)?\(([^(]*?)~\)~\1\(([^(]*?)~\)"):
+        lambda match: f"~{match[1]}({match[2]}{match[3]}~)"
 }
 
 DETECTABLE_CRASHES = {
@@ -167,7 +171,10 @@ SPECIAL_DIRECTIVES = {
         lambda match: f"~{match['width']},v,,v$",
 
     re.compile(r"~2\*~(?P<width>-?\d+),,,v@a"):
-        lambda match: f"~{match['width']},v,v,v$"
+        lambda match: f"~{match['width']},v,v,v$",
+
+    # ~@c
+    re.compile(r"#\\~:c"): "~@c"
 }
 
 DIRECTIVE_OPTIMIZATIONS = {
@@ -260,7 +267,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~00,+1@:a~}~]", O3))
+    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~}~]", O3))
 
 
 __all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]
