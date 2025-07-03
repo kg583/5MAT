@@ -1,0 +1,159 @@
+; Tape
+; | xednI | 0,; 1,; 2,; ... | <>
+
+; Result
+; Prints the element at Index without damaging the array
+; xednI is replaced by a bell
+
+INIT {
+    PRFF
+    PRINA "21"
+    PRFF
+    PRINA ";A,;B,;C,;D,;E,;F,;G,;H,;I,;J,;K,;L,;M,;N,;O,;P,;Q,;R,;S,;T,;U,;V,;W,;X,;Y,;Z,;"
+    PRFF
+}
+
+
+DO {
+    PRFF
+
+    ; Check LSB
+    GOTO 1
+    CASEV! {
+        '0' {
+            COPYF!
+            PRFF
+            LOOP 1 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '1' {
+            COPYF!
+            PRFF
+            LOOP 2 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '2' {
+            COPYF!
+            PRFF
+            LOOP 3 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '3' {
+            COPYF!
+            PRFF
+            LOOP 4 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '4' {
+            COPYF!
+            PRFF
+            LOOP 5 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '5' {
+            COPYF!
+            PRFF
+            LOOP 6 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '6' {
+            COPYF!
+            PRFF
+            LOOP 7 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '7' {
+            COPYF!
+            PRFF
+            LOOP 8 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '8' {
+            COPYF!
+            PRFF
+            LOOP 9 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '9' {
+            COPYF!
+            PRFF
+            LOOP 10 {
+                BRFF
+                BACK
+                COPYC! ';'
+            }
+        }
+        '\f' {
+            ; We found the element
+            PRINC '\a'
+            PRFF
+            PRINC ';'
+
+            LOOP {
+                SKIP
+                BRFF
+                BACK 2
+
+                COPYC! ','
+                PRINC ','
+                IFNE! ';', ?V {
+                    PRINC ';'
+                }
+            }
+            PRINC ';'
+            PRFF
+
+            GOTO 2
+            SKIPC! ';'
+            COPYC! ','
+            SKIP $R
+        }
+        '\a' {
+            ; We're done
+            CRASH
+        }
+    }
+    BRZR
+
+    ; Re-group array elements
+    LOOP {
+        BRFF
+        BACK
+
+        PRINC ';'
+        LOOP 10 {
+            BRFF
+            BACK
+            COPYC! ';'
+        }
+    }
+    PRINC ';'
+    PRFF
+}
