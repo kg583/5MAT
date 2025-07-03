@@ -18,25 +18,33 @@ def dist_to_arg(dist: int) -> str:
     return str(abs(dist)) + (":" if dist < 0 else "")
 
 
+def cleanup_args(args: str) -> str:
+    return re.sub(r"\+?(\d+)", lambda match: str(int(match[1])), args).replace("V", "v")
+
+
+def cleanup_directive(modifiers: str, directive: str) -> str:
+    return ''.join(sorted(modifiers)).strip(":" if directive in "at" else "") + directive.lower()
+
+
 CHAR = r"'\\.|'[^\\]"
 CONST = r"~[%&|.]|~\n\s*|[^~]"
 
 MOVE_OPTIMIZATIONS = {
     # Any move followed by an absolute move
-    re.compile(r"~(?:#|\+?\d+)?:?@?\*~(#|\d*)?:?@\*"):
+    re.compile(r"~(?:#|\d+)?:?@?\*~(#|\d*)?:?@\*"):
         lambda match: f"~{int(match[1])}@*",
 
     # Repeated unidirectional moves
-    re.compile(r"~(?P<arg_1>(\+?\d+)?(?P<back>:)?)\*~(?P<arg_2>(\+?\d+)?(?(back):|))\*"):
+    re.compile(r"~(?P<arg_1>(\d+)?(?P<back>:)?)\*~(?P<arg_2>(\d+)?(?(back):|))\*"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}*",
 
     # Using loops to move
     re.compile(r"~@\{~\*~}"): "~#*",
-    re.compile(r"~(\+?\d+)@\{~\*~}"):
+    re.compile(r"~(\d+)@\{~\*~}"):
         lambda match: f"~{int(match[1])}*",
 
     # Non-reading operations between moves
-    re.compile(rf"(?P<first>(~(?:#|\+?\d+)?:?@?)\*)(?P<const>({CONST})+)(?P<second>~(?:#|\+?\d+)?:?@?\*)"):
+    re.compile(rf"(?P<first>(~(?:#|\d+)?:?@?)\*)(?P<const>({CONST})+)(?P<second>~(?:#|\d+)?:?@?\*)"):
         lambda match: f"{match['first']}{match['second']}{match['const']}",
 
     # Trivial moves
@@ -44,23 +52,23 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~0*1\*"): "~:*",
     re.compile(r"~0*1:\*"): "~:*",
     re.compile(r"~#:\*|~0@\*"): "~@*",
-    re.compile(r"~@\*~\+?\d*:\*"): "~@*",
-    re.compile(r"~#\*~\+?\d*\*"): "~#*",
-    re.compile(r"^~\+?\d*,?:\*$"): "",
-    re.compile(r"~\+?\d*,?:?@?\*$"): "",
+    re.compile(r"~@\*~\d*:\*"): "~@*",
+    re.compile(r"~#\*~\d*\*"): "~#*",
+    re.compile(r"^~\d*,?:\*$"): "",
+    re.compile(r"~\d*,?:?@?\*$"): "",
     re.compile(r"~#@\*~#@\*"): ""
 }
 
 BREAK_OPTIMIZATIONS = {
     # Constant unary number breaks
-    re.compile(r"~([-+]?\d+)\^"):
+    re.compile(r"~(-?\d+)\^"):
         lambda match: "~0^" if int(match[1]) == 0 else "",
 
     # Constant unary character breaks
     re.compile(rf"~({CHAR})\^", flags=re.DOTALL): "",
 
     # Constant binary number breaks
-    re.compile(r"~([-+]?\d+)?,([-+]?\d+)?\^"):
+    re.compile(r"~(-?\d+)?,([-+]?\d+)?\^"):
         lambda match: "~0^" if all(match.groups()) and int(match[1]) == int(match[2])
                       or not any(match.groups()) else "",
 
@@ -69,7 +77,7 @@ BREAK_OPTIMIZATIONS = {
         lambda match: "~0^" if decode_escapes(match[1]) == decode_escapes(match[2]) else "",
 
     # Constant ternary number breaks
-    re.compile(r"~([-+]?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^"):
+    re.compile(r"~(-?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^"):
         lambda match: "~0^" if all(match.groups()) and int(match[1]) <= int(match[2]) <= int(match[3])
                       or not any(match.groups()) else "",
 
@@ -101,7 +109,7 @@ BLOCK_OPTIMIZATIONS = {
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Empty blocks
-    re.compile(r"(~<|~\+?\d*@\{)(~0\^)*(~>|~:?})"): "",
+    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): "",
 
     # INIT - DO rearranging
     re.compile(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", flags=re.DOTALL):
@@ -122,7 +130,7 @@ DETECTABLE_CRASHES = {
 
 BOUNDEDNESS_OPTIMIZATIONS = {
     # Relative move followed by a relative move
-    re.compile(r"~(?P<arg_1>(\+?\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\+?\d+)?:?)\*"):
+    re.compile(r"~(?P<arg_1>(\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\d+)?:?)\*"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}{match['mod']}*",
 
     # Short loops
@@ -140,55 +148,57 @@ SPECIAL_DIRECTIVES = {
         lambda match: f"~@[{match['body']}~]",
 
     # ~$
-    re.compile(r"~(?P<width>[-+]?\d+),*@a"):
+    re.compile(r"~(?P<width>-?\d+),*@a"):
         lambda match: f"~{match['width']}$",
 
-    re.compile(rf"~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+    re.compile(rf"~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
         lambda match: f"~{match['width']},,,{match['char']}$",
 
-    re.compile(rf"~\*~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+    re.compile(rf"~\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
         lambda match: f"~{match['width']},v,,{match['char']}$",
 
-    re.compile(rf"~2\*~(?P<width>[-+]?\d+),,,(?P<char>{CHAR})@a"):
+    re.compile(rf"~2\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
         lambda match: f"~{match['width']},v,v,{match['char']}$",
 
-    re.compile(r"~(?P<width>[-+]?\d+),,,v@a"):
+    re.compile(r"~(?P<width>-?\d+),,,v@a"):
         lambda match: f"~{match['width']},,,v$",
 
-    re.compile(r"~\*~(?P<width>[-+]?\d+),,,v@a"):
+    re.compile(r"~\*~(?P<width>-?\d+),,,v@a"):
         lambda match: f"~{match['width']},v,,v$",
 
-    re.compile(r"~2\*~(?P<width>[-+]?\d+),,,v@a"):
+    re.compile(r"~2\*~(?P<width>-?\d+),,,v@a"):
         lambda match: f"~{match['width']},v,v,v$"
 }
 
 DIRECTIVE_OPTIMIZATIONS = {
-    re.compile(r"~@a"): "~a"
+    re.compile(r"~@a"): "~a",
+    re.compile(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*):a"):
+        lambda match: f"~{match['args']}a"
 }
 
 DEFAULT_PARAMETERS = {
     # Prints
-    re.compile(r"~[-+]?0*(,\+?0*1(,[-+]?0*(,' )?)?)?(?P<mod>@?)a"):
+    re.compile(r"~0?(,1?(,0?(,' )?)?)?(?P<mod>@?)a"):
         lambda match: f"~{match['mod']}a",
 
     # Repeated characters
-    re.compile(r"~\+?0*1([%&|.])"):
+    re.compile(r"~1?([%&|.])"):
         lambda match: f"~{match[1]}",
 
     # Justification
-    re.compile(r"~[-+]?0*(,\+?0*1(,[-+]?0*(,' )?)?)?(?P<mod>:?@?)<"):
+    re.compile(r"~0?(,1?(,0?(,' )?)?)?(?P<mod>:?@?)<"):
         lambda match: f"~{match['mod']}<",
 
-    re.compile(r"~\+?0*1(,\+?0*72)?:;"): "~:;",
+    re.compile(r"~1?(,(72)?)?:;"): "~:;",
 
     # Tabulation
-    re.compile(r"~\+?0*1(,\+?0*1)?:?(?P<mod>@?)t"):
+    re.compile(r"~1?(,1?)?:?(?P<mod>@?)t"):
         lambda match: f"~{match['mod']}t"
 }
 
 FORMATTING = {
     # Comments
-    re.compile(r"~([-+]?\d+)\[.*?~]", flags=re.DOTALL):
+    re.compile(r"~(-?\d+)\[.*?~]", flags=re.DOTALL):
         lambda match: match[0] if int(match[1]) == 0 else "",
 
     # Newlines
@@ -223,7 +233,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
 
     # Standardize arguments and modifiers
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
-                     lambda match: f"~{match['args']}{''.join(sorted(match['mod']))}{match['dir']}",
+                     lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
                      program, flags=re.DOTALL)
 
     done = False
@@ -250,7 +260,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~0,1@:a~}~]", O3))
+    print(optimize("~:[~;~:*~{~00,+1@:a~}~]", O3))
 
 
 __all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]
