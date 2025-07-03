@@ -45,12 +45,12 @@ Instruction arguments are denoted in this document and the instruction grammar u
 - `'C`: A character literal
 - `!n`: A string literal, or `$n`, or `?n`
 - `$n`: A string literal, or `$n`
-- `""`: A string literal
+- `"X`: A string literal
 - `_I`: Any previously listed type (with potential restrictions)
 
 Default values for arguments are denoted like `_I = default`. Passing `NIL` as an argument is equivalent to passing the default value. If an instruction has adjacent defaulted arguments of the same type, they are bound from left to right; e.g. if `FOO %N = 1, %M = 2` is called with `FOO 3`, then `3` is bound to `%N`.
 
-Multiple `!n` arguments are never permitted in a single instruction call. If an instruction accepts `!n` and `""` in a call, `n` must be the length of the string literal.
+Multiple `!n` arguments are never permitted in a single instruction call. If an instruction accepts `!n` and `"X` in a call, `n` must be the length of the string literal.
 
 ## Control Flow
 
