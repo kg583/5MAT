@@ -156,10 +156,10 @@ SPECIAL_DIRECTIVES = {
         lambda match: f"~@[{match['body']}~]",
 
     # ~$
-    re.compile(r"~(?P<width>-?\d+),*@a"):
+    re.compile(r"~(?P<width>-?\d+|#),*@a"):
         lambda match: f"~{match['width']}$",
 
-    re.compile(rf"~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
+    re.compile(rf"~(?P<width>-?\d+|#),,,(?P<char>{CHAR})@a"):
         lambda match: f"~{match['width']},,,{match['char']}$",
 
     re.compile(rf"~\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
@@ -168,7 +168,7 @@ SPECIAL_DIRECTIVES = {
     re.compile(rf"~2\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
         lambda match: f"~{match['width']},v,v,{match['char']}$",
 
-    re.compile(r"~(?P<width>-?\d+),,,v@a"):
+    re.compile(r"~(?P<width>-?\d+|#),,,v@a"):
         lambda match: f"~{match['width']},,,v$",
 
     re.compile(r"~\*~(?P<width>-?\d+),,,v@a"):
