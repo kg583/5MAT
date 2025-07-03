@@ -23,7 +23,11 @@ def cleanup_args(args: str) -> str:
 
 
 def cleanup_directive(modifiers: str, directive: str) -> str:
-    return ''.join(sorted(modifiers)).strip(":" if directive in "at" else "") + directive.lower()
+    if directive in "%&|~":
+        return directive.lower()
+
+    else:
+        return ''.join(sorted(modifiers)) + directive.lower()
 
 
 CHAR = r"'\\.|'[^\\]"
@@ -177,15 +181,9 @@ SPECIAL_DIRECTIVES = {
     re.compile(r"#\\~:c"): "~@c"
 }
 
-DIRECTIVE_OPTIMIZATIONS = {
-    re.compile(r"~@a"): "~a",
-    re.compile(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*):a"):
-        lambda match: f"~{match['args']}a"
-}
-
 DEFAULT_PARAMETERS = {
     # Prints
-    re.compile(r"~0?(,1?(,0?(,' )?)?)?(?P<mod>@?)a"):
+    re.compile(r"~0?(,1?(,0?(,' )?)?)?:?(?P<mod>@?)a"):
         lambda match: f"~{match['mod']}a",
 
     # Repeated characters
@@ -228,20 +226,19 @@ O2 = {
 O3 = {
     **O2,
     **SPECIAL_DIRECTIVES,
-    **DIRECTIVE_OPTIMIZATIONS,
     **DEFAULT_PARAMETERS,
     **FORMATTING
 }
 
 
 def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, int]:
-    # Sequester escaped tildes
-    program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
-
     # Standardize arguments and modifiers
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
                      lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
                      program, flags=re.DOTALL)
+
+    # Sequester escaped tildes
+    program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
 
     done = False
     saved = 0
