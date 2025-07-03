@@ -160,7 +160,8 @@ CRASH                               ~?
 CREQ!   _I  ?V                      `CREQ! _I, $V`~:*
 CREQ!   _I  _J                      ~<`BRNE! _I, _J``CRASH`~>
 
-CRFF!                               ~<`BRNE! $V, '\f'``CRASH`~>
+CRFF!       ?V                      `CRFF! $V`~:*
+CRFF!       $V                      ~<`BREQ $V, '\f'``CRASH`~>
 
 CRGE!   _I  ?V                      `CRGE! _I, $V`~:*
 CRGE!   _I  _J                      ~<`BRLT _I, _J``CRASH`~>

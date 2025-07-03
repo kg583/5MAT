@@ -258,8 +258,8 @@ All 5MAT (and thus 6MAT) programs cycle indefinitely, using the previous tape co
 #### `CRASH`
 Irrecoverably terminate execution immediately. All output produced during the current lifetime is discarded.
 
-#### `CRFF!`
-Read a character from the tape and crash if it is `\f`.
+#### `CRFF! !V`
+Read or peek a character from the tape and crash if it is `\f`.
 
 #### `CRNR!`
 Crash if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).

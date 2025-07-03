@@ -19,7 +19,7 @@ def dist_to_arg(dist: int) -> str:
 
 
 def cleanup_args(args: str) -> str:
-    return re.sub(r"\+?(\d+)", lambda match: str(int(match[1])), args).replace("V", "v")
+    return re.sub(r"\+?(\d+)", lambda match: str(int(match[1])), args)
 
 
 def cleanup_directive(modifiers: str, directive: str) -> str:
@@ -235,7 +235,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
     # Standardize arguments and modifiers
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
                      lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
-                     program, flags=re.DOTALL)
+                     program, flags=re.DOTALL | re.IGNORECASE)
 
     # Sequester escaped tildes
     program = re.sub(r"(~(#|\d*)~)+", lambda match: f"~TILDE<{match[0]}~>", program)
