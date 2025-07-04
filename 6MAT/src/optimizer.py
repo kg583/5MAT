@@ -4,10 +4,10 @@ from warnings import warn
 
 
 try:
-    from util import *
+    from .util import *
 
 except ImportError:
-    from .util import *
+    from util import *
 
 
 class Opt:
@@ -307,6 +307,3 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
 if __name__ == "__main__":
     print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~#[a~;ab~:;ab~]~-1,#,#^~a7~}~]",
                    UNSAFE_OPTS | GOLF_OPTS, [], verbose=True))
-
-
-__all__ = ["FORMATTING", "BASIC_OPTS", "UNSAFE_OPTS", "GOLF_OPTS", "optimize"]

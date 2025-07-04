@@ -43,6 +43,3 @@ def encode_escapes(string: str) -> str:
         string = string.replace(chr(char), repl)
 
     return string
-
-
-__all__ = ["decode_escapes", "encode_escapes"]

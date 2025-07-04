@@ -1,8 +1,7 @@
 import argparse
 import os
 
-from .src.assembler import *
-from .src.optimizer import *
+from .src import *
 
 
 parser = argparse.ArgumentParser(
