@@ -30,6 +30,22 @@ def cleanup_directive(modifiers: str, directive: str) -> str:
         return ''.join(sorted(modifiers)) + directive.lower()
 
 
+def excise_common_prefix(match: re.Match) -> str:
+    body = match[1]
+    clauses = re.split("~:?;", body)
+    index = min(map(len, clauses))
+    prefix = ""
+
+    while index:
+        prefix = clauses[0][:index]
+        if all(clause[:index] == prefix for clause in clauses):
+            break
+
+        index -= 1
+
+    return f"{prefix}~#[{re.sub(r'(^|~:?;)' + prefix, lambda m: m[1], body)}~]"
+
+
 CHAR = r"'\\.|'[^\\]"
 CONST = r"~[%&|.]|~\n\s*|[^~]"
 
@@ -128,8 +144,7 @@ BLOCK_OPTS = {
         lambda match: f"~{match[1]}({match[2]}{match[3]}~)",
 
     # Common clause prefixes
-    re.compile(r"~#\[(?P<body>(?P<prefix>(~[^;\[]|[^\[])*)[^\[]*?(~;(?P=prefix)[^\[]*?)*~:;(?P=prefix)[^\[]*?)~]"):
-        lambda match: f"{match['prefix']}~#[{re.sub(r'(^|~:?;)' + match['prefix'], lambda m: m[1], match['body'])}~]",
+    re.compile(r"~#\[((~\S+|[^\[])*?~:;[^\[]*?)~]"): excise_common_prefix,
 
     # Expandable default clause
     re.compile(r"~;([^\[]*?)~:;\1~]"):
@@ -263,9 +278,11 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
                     saved += len(program) - len(new)
                     program = new
 
+                    print(f"Applied {regex.pattern}")
+
         except Exception:
             warn("optimizer ran into an error during execution; partial optimization was returned", UserWarning)
-            break
+            done = True
 
     # Put them back
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
