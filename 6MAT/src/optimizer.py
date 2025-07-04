@@ -10,6 +10,19 @@ except ImportError:
     from .util import *
 
 
+class Opt:
+    def __init__(self, pattern: str, name: str, flags: int | re.RegexFlag = 0):
+        self.pattern = re.compile(pattern, flags=flags)
+        self.name = name
+
+    def __getattr__(self, item: str):
+        try:
+            return getattr(self.pattern, item)
+        
+        except AttributeError:
+            return self.__getattribute__(item)
+
+
 def arg_to_dist(arg: str) -> int:
     return int(arg.strip(":") or "1") * (-1 if ":" in arg else 1)
 
@@ -51,188 +64,185 @@ CONST = r"~[%&|.]|~\n\s*|[^~]"
 
 MOVE_OPTS = {
     # Any move followed by an absolute move
-    re.compile(r"~(?:#|\d+)?:?@?\*~(#|\d*)?:?@\*"):
+    Opt(r"~(?:#|\d+)?:?@?\*~(#|\d*)?:?@\*", "overwritten_move"):
         lambda match: f"~{int(match[1])}@*",
 
     # Repeated unidirectional moves
-    re.compile(r"~(?P<arg_1>(\d+)?(?P<back>:)?)\*~(?P<arg_2>(\d+)?(?(back):|))\*"):
+    Opt(r"~(?P<arg_1>(\d+)?(?P<back>:)?)\*~(?P<arg_2>(\d+)?(?(back):|))\*", "repeat_unidirectional_moves"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}*",
 
     # Using loops to move
-    re.compile(r"~@\{~\*~}"): "~#*",
-    re.compile(r"~(\d+)@\{~\*~}"):
+    Opt(r"~@\{~\*~}", "move_loop"): "~#*",
+    Opt(r"~(\d+)@\{~\*~}", "finite_move_loop"):
         lambda match: f"~{int(match[1])}*",
 
     # Non-reading operations between moves
-    re.compile(rf"(?P<first>(~(?:#|\d+)?:?@?)\*)(?P<const>({CONST})+)(?P<second>~(?:#|\d+)?:?@?\*)"):
+    Opt(rf"(?P<first>(~(?:#|\d+)?:?@?)\*)(?P<const>({CONST})+)(?P<second>~(?:#|\d+)?:?@?\*)",
+        "constants_between_moves"):
         lambda match: f"{match['first']}{match['second']}{match['const']}",
 
     # Trivial moves
-    re.compile(r"~0:?\*"): "",
-    re.compile(r"~0*1\*"): "~:*",
-    re.compile(r"~0*1:\*"): "~:*",
-    re.compile(r"~#:\*|~0@\*"): "~@*",
-    re.compile(r"~@\*~\d*:\*"): "~@*",
-    re.compile(r"~#\*~\d*\*"): "~#*",
-    re.compile(r"^~\d*,?:\*$"): "",
-    re.compile(r"~\d*,?:?@?\*$"): "",
-    re.compile(r"~#@\*~#@\*"): ""
+    Opt(r"~0:?\*", "zero_step"): "",
+    Opt(r"~0*1\*", "one_skip"): "~*",
+    Opt(r"~0*1:\*", "one_back"): "~:*",
+    Opt(r"~0@\*", "zero_goto"): "~@*",
+    Opt(r"~#\*~\d*\*", "clamped_skip"): "~#*",
+    Opt(r"~@\*~\d*:\*", "clamped_back"): "~@*",
+    Opt(r"^~\d*,?:\*", "initial_back"): "",
+    Opt(r"~\d*,?:?@?\*$", "final_skip"): "",
+    Opt(r"~#@\*~#@\*", "double_damn"): ""
 }
 
 BREAK_OPTS = {
-    # Constant unary number breaks
-    re.compile(r"~(-?\d+)\^"):
+    # Constant unary numeric breaks
+    Opt(r"~(-?\d+)\^", "unary_numeric_break"):
         lambda match: "~0^" if int(match[1]) == 0 else "",
 
     # Constant unary character breaks
-    re.compile(rf"~({CHAR})\^", flags=re.DOTALL): "",
+    Opt(rf"~({CHAR})\^", "unary_character_break", flags=re.DOTALL): "",
 
-    # Constant binary number breaks
-    re.compile(r"~(-?\d+)?,([-+]?\d+)?\^"):
+    # Constant binary numeric breaks
+    Opt(r"~(-?\d+)?,([-+]?\d+)?\^", "binary_numeric_break"):
         lambda match: "~0^" if all(match.groups()) and int(match[1]) == int(match[2])
                       or not any(match.groups()) else "",
 
     # Constant binary character breaks
-    re.compile(rf"~({CHAR})?,({CHAR})?\^", flags=re.DOTALL):
+    Opt(rf"~({CHAR})?,({CHAR})?\^", "binary_character_break", flags=re.DOTALL):
         lambda match: "~0^" if decode_escapes(match[1]) == decode_escapes(match[2]) else "",
 
-    # Constant ternary number breaks
-    re.compile(r"~(-?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^"):
+    # Constant ternary numeric breaks
+    Opt(r"~(-?\d+)?,([-+]?\d+)?,([-+]?\d+)?\^", "ternary_numeric_break"):
         lambda match: "~0^" if all(match.groups()) and int(match[1]) <= int(match[2]) <= int(match[3])
                       or not any(match.groups()) else "",
 
     # Constant ternary character breaks
-    re.compile(rf"~({CHAR})?,({CHAR})?,({CHAR})?\^", flags=re.DOTALL):
+    Opt(rf"~({CHAR})?,({CHAR})?,({CHAR})?\^", "ternary_character_break", flags=re.DOTALL):
         lambda match: "~0^" if decode_escapes(match[1]) <= decode_escapes(match[2]) <= decode_escapes(match[3]) else "",
 
     # Unreachable code
-    re.compile(r"(?P<exit>~0\^|~\?)[^<{\[]*?(?P<close>~>|~:?}|~])", flags=re.DOTALL):
+    Opt(r"(?P<exit>~0\^|~\?)[^<{\[]*?(?P<close>~>|~:?}|~])", "unreachable_code", flags=re.DOTALL):
         lambda match: f"{match['exit']}{match['close']}",
 
-    re.compile(r"~0\^(~:?[^:>}])*?$"): "",
+    Opt(r"~0\^(~:?[^:>}])*?$", "unreachable_end"): "",
 
     # '#' optimizations
-    re.compile(r"~#\^"): "~^",
-    re.compile(r"~(-\d+?|#),#(,#)?\^"): "~0^",
-    re.compile(r"~\^~}"): "~}",
-    re.compile(r"~#,-\d+\^|~-\d+,#\^"): "",
-    re.compile(r"~#,-\d+,(\d+|#)\^|~(\d+|#),#,-\d+\^"): "",
+    Opt(r"~#\^", "unary_remainder"): "~^",
+    Opt(r"~(-\d+?|#),#(,#)?\^", "n-ary_remainder"): "~0^",
+    Opt(r"~\^~}", "redundant_remainder_break"): "~}",
+    Opt(r"~#,-\d+\^|~-\d+,#\^", "negative_binary_remainder_break"): "",
+    Opt(r"~#,-\d+,(\d+|#)\^|~(\d+|#),#,-\d+\^", "negative_ternary_remainder_break"): "",
 }
 
 BLOCK_OPTS = {
     # Blocks that are never broken out of
-    re.compile(r"(~<|~1@\{)(?P<body>[^^{<]*?)(~>|~:})"):
+    Opt(r"(~<|~1@\{)(?P<body>[^^{<]*?)(~>|~:})", "redundant_block"):
         lambda match: match["body"],
 
     # Constant blocks
-    re.compile(rf"~(?P<count>[1-6])@?\{{(?P<body>({CONST})*?)~}}"):
+    Opt(rf"~(?P<count>[1-6])@?\{{(?P<body>({CONST})*?)~}}", "unrolled_constant_block"):
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Empty blocks
-    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})|~#?\[(~;)*(~:;)?~]"): "",
+    Opt(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})|~#?\[(~;)*(~:;)?~]", "empty_block"): "",
 
     # INIT - DO rearranging
-    re.compile(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", flags=re.DOTALL):
+    Opt(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", "init_do", flags=re.DOTALL):
         lambda match: f"~:[{match['init']}~;{match['do']}~]",
 
     # Empty INIT
-    re.compile(r"^~:\[~;~:\*(?P<do>~\d*\{.*~})~]$"):
+    Opt(r"^~:\[~;~:\*(?P<do>~\d*\{.*~})~]$", "empty_init"):
         lambda match: match['do'],
 
     # Adjacent case conversion blocks
-    re.compile(r"~(:@?)?\(([^(]*?)~\)~\1\(([^(]*?)~\)"):
+    Opt(r"~(:@?)?\(([^(]*?)~\)~\1\(([^(]*?)~\)", "adjacent_case_blocks"):
         lambda match: f"~{match[1]}({match[2]}{match[3]}~)",
 
     # Common clause prefixes
-    re.compile(r"~#\[((~\S+|[^\[])*?~:;[^\[]*?)~]"): excise_common_prefix,
+    Opt(r"~#\[((~\S+|[^\[])*?~:;[^\[]*?)~]", "common_case_prefix"): excise_common_prefix,
 
     # Expandable default clause
-    re.compile(r"~;([^\[]*?)~:;\1~]"):
+    Opt(r"~;([^\[]*?)~:;\1~]", "merged_default_clause"):
         lambda match: f"~:;{match[1]}~]"
 }
 
 CRASH_OPTS = {
     # Loops which do not move the tape pointer
-    re.compile(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", flags=re.DOTALL): "~?",
+    Opt(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", "infinite_loop", flags=re.DOTALL): "~?",
 
     # Reading past the end of the tape
-    re.compile(rf"~#\[({CONST})*?~\w[^\[]*?~]"): "~#[~?~]"
+    Opt(rf"~#\[({CONST})*?~\w[^\[]*?~]", "invalid_read"): "~#[~?~]"
 }
 
 BOUNDEDNESS_OPTS = {
     # Relative move followed by a relative move
-    re.compile(r"~(?P<arg_1>(\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\d+)?:?)\*"):
+    Opt(r"~(?P<arg_1>(\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\d+)?:?)\*", "repeat_moves"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}{match['mod']}*",
 
     # Short loops
-    re.compile(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[ac]|{CONST})*?)~:?}}"):
+    Opt(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[ac]|{CONST})*?)~:?}}", "unrolled_loop"):
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 }
 
 SPECIAL_DIRECTIVES = {
     # ~p
-    re.compile(r"ies~\*"): "~@p",
-    re.compile(r"s~\*"): "~p",
-
-    # ~@[~]
-    re.compile(r"^~:\[~;(?P<body>.*)~]$", flags=re.DOTALL):
-        lambda match: f"~@[{match['body']}~]",
+    Opt(r"ies~\*", "plural_y"): "~@p",
+    Opt(r"s~\*", "plural"): "~p",
 
     # ~$
-    re.compile(r"~(?P<width>-?\d+|#),*@a"):
+    Opt(r"~(?P<width>-?\d+|#),*@a", "dollar"):
         lambda match: f"~{match['width']}$",
 
-    re.compile(rf"~(?P<width>-?\d+|#),,,(?P<char>{CHAR})@a"):
+    Opt(rf"~(?P<width>-?\d+|#),,,(?P<char>{CHAR})@a", "dollar_pad"):
         lambda match: f"~{match['width']},,,{match['char']}$",
 
-    re.compile(rf"~\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
+    Opt(rf"~\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a", "dollar_pad_skip"):
         lambda match: f"~{match['width']},v,,{match['char']}$",
 
-    re.compile(rf"~2\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a"):
+    Opt(rf"~2\*~(?P<width>-?\d+),,,(?P<char>{CHAR})@a", "dollar_pad_double_skip"):
         lambda match: f"~{match['width']},v,v,{match['char']}$",
 
-    re.compile(r"~(?P<width>-?\d+|#),,,v@a"):
+    Opt(r"~(?P<width>-?\d+|#),,,v@a", "dollar_read"):
         lambda match: f"~{match['width']},,,v$",
 
-    re.compile(r"~\*~(?P<width>-?\d+),,,v@a"):
+    Opt(r"~\*~(?P<width>-?\d+),,,v@a", "dollar_read_skip"):
         lambda match: f"~{match['width']},v,,v$",
 
-    re.compile(r"~2\*~(?P<width>-?\d+),,,v@a"):
+    Opt(r"~2\*~(?P<width>-?\d+),,,v@a", "dollar_read_double_skip"):
         lambda match: f"~{match['width']},v,v,v$",
 
     # ~@c
-    re.compile(r"#\\~:c"): "~@c"
+    Opt(r"#\\~:c", "character_reader_name"): "~@c"
 }
 
 DEFAULT_PARAMETERS = {
     # Prints
-    re.compile(r"~0?(,1?(,0?(,' )?)?)?:?(?P<mod>@?)a"):
+    Opt(r"~0?(,1?(,0?(,' )?)?)?:?(?P<mod>@?)a", "default_print"):
         lambda match: f"~{match['mod']}a",
 
-    re.compile(r"~@a"): "~a",
+    Opt(r"~@a", "unpadded_print"): "~a",
 
     # Repeated characters
-    re.compile(r"~1?([%&|.])"):
+    Opt(r"~1?([%&|.])", "default_basic_character"):
         lambda match: f"~{match[1]}",
 
     # Justification
-    re.compile(r"~0?(,1?(,0?(,' )?)?)?(?P<mod>:?@?)<"):
+    Opt(r"~0?(,1?(,0?(,' )?)?)?(?P<mod>:?@?)<", "default_justification"):
         lambda match: f"~{match['mod']}<",
 
-    re.compile(r"~1?(,(72)?)?:;"): "~:;",
+    Opt(r"~1?(,(72)?)?:;", "default_overflow"): "~:;",
 
     # Tabulation
-    re.compile(r"~1?(,1?)?:?(?P<mod>@?)t"):
+    Opt(r"~1?(,1?)?:?(?P<mod>@?)t", "default_tabulation"):
         lambda match: f"~{match['mod']}t"
 }
 
 FORMATTING = {
     # Comments
-    re.compile(r"~(-?\d+)\[.*?~]", flags=re.DOTALL):
+    Opt(r"~(-?\d+)\[.*?~]", "comment", flags=re.DOTALL):
         lambda match: match[0] if int(match[1]) == 0 else "",
 
-    # Newlines
-    re.compile(r"~\n\s*|~:\n|~@(\n)\s*"):
+    # Newlines/indentation
+    Opt(r"~\n\s*|~:\n|~@(\n)\s*", "indentation"):
         lambda match: match[1]
 }
 
@@ -256,7 +266,7 @@ GOLF_OPTS = {
 }
 
 
-def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, int]:
+def optimize(program: str, optimizations: dict[Opt, ...]) -> tuple[str, int]:
     # Standardize arguments and modifiers
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
                      lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
@@ -278,7 +288,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
                     saved += len(program) - len(new)
                     program = new
 
-                    print(f"Applied {regex.pattern}")
+                    print(f"Applied {regex.name}")
 
         except Exception:
             warn("optimizer ran into an error during execution; partial optimization was returned", UserWarning)
