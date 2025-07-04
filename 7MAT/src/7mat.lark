@@ -1,0 +1,67 @@
+%import common.WS
+%ignore WS
+
+// BASIC TERMINALS
+%import common.INT
+number: INT
+%import python.NAME
+sym_name: NAME
+comment: /\/\/[^\n]*/
+// we could %ignore comments but I want comments I make in the 7MAT to appear in the 6MAT
+
+!_comp_op: "<" | ">" | "==" | ">=" | "<=" | "!="
+!_shift_op: "<<" | ">>"
+!_add_op: "+" | "-"
+!_mul_op: "*" | "/" | "%"
+!_unary_op: "-"
+
+// EXPRESSIONS
+?expr: shift_expr
+?shift_expr: arith_expr (_shift_op number)?
+?arith_expr: term (_add_op term)*
+?term: factor (_mul_op factor)*
+?factor: _unary_op? atom_expr
+
+comma_list: expr ("," expr)*
+?atom_expr: sym_name "(" [comma_list] ")" -> func_call
+          | sym_name "[" expr "]"         -> arr_access
+          | sym_name "." atom_expr        -> attr_access
+          | atom
+
+?atom: "(" expr ")"
+     | "TRUE" -> const_true
+     | "FALSE" -> const_false
+     | sym_name -> var_ref
+     | number
+
+// TESTS (conditional expressions)
+test: or_test
+?or_test: and_test ("||" and_test)*
+?and_test: comparison ("&&" comparison)*
+?comparison: expr [_comp_op expr]
+
+// TYPES
+!named_type: "Dec" | "Bin" | "Str"
+type: named_type
+    | /Int_(3[0-6]|[12]\d|[2-9])/ -> type_int_base
+    | "struct" sym_name -> type_struct
+
+// STATEMENTS
+if: "if" "(" test ")" "{" code_block "}" ["else" "{" code_block "}"]
+while: "while" "(" test ")" "{" code_block "}"
+return: "return" expr? ";"
+print: "print" expr ";"
+
+var_decl: type sym_name ";"
+var_assign: sym_name "=" expr ";"
+arr_assign: sym_name "[" expr "]" "=" expr ";"
+
+proc_call: sym_name "(" comma_list? ")" ";"
+
+// CODE HIERARCHY
+start: fn_def*
+args_list: type sym_name ("," type sym_name)*
+fn_def: "func" sym_name "(" args_list? ")" ["->" type] "{" code_block "}"
+code_block: statement+
+?statement: if | while | var_decl | var_assign | arr_assign | proc_call | return | print | comment
+
