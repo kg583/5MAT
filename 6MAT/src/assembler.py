@@ -1,8 +1,8 @@
-import os
 import re
 
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from warnings import warn
 
 
@@ -159,7 +159,7 @@ class AssemblerError(Exception):
         super().__init__(f"{message} at position {{pos}}".format(**asdict(token)))
 
 
-def load_grammar(filename: str) -> Instructions:
+def load_grammar(filename: str | Path) -> Instructions:
     instructions = defaultdict(dict[tuple[str, ...], str])
 
     with open(filename) as file:
@@ -417,7 +417,7 @@ def assemble(program: str, instructions: Instructions = None, **flags) -> str:
     all_tokens = parse(program)
 
     context = Context()
-    context.instructions = load_grammar(os.path.join(os.path.dirname(__file__), "instructions.g"))
+    context.instructions = load_grammar(Path(__file__).parent / "instructions.g")
     context.instructions |= instructions or {}
 
     context.flags = flags
