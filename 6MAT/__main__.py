@@ -12,12 +12,12 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument("filename",
                     help="the file to assemble; output will be <filename>.5mat")
-parser.add_argument("-O1", "-O", action="store_true",
-                    help="apply optimizations to output, reducing code size and improving execution speed")
-parser.add_argument("-O2", action="store_true",
-                    help="O1 + optimizations that assume the tape pointer is never moved off the tape")
-parser.add_argument("-O3", action="store_true",
-                    help="O2 + aggressive size optimizations; disregards all formatting flags")
+parser.add_argument("-m", "--macros", default=None,
+                    help="custom macro file; defaults to none")
+parser.add_argument("-u", "--unsafe", action="store_true",
+                    help="apply optimizations that assume the tape pointer is never moved off the tape")
+parser.add_argument("-g", "--golf", action="store_true",
+                    help="apply aggressive golf optimizations; discards all formatting")
 parser.add_argument("--preserve-comments", action="store_true",
                     help="preserve comments")
 parser.add_argument("--preserve-groups", action="store_true",
@@ -30,10 +30,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     path, ext = os.path.splitext(args.filename)
 
+    instructions = {}
+    if args.macros:
+        instructions = load_grammar(args.macros)
+
     with open(args.filename, "r", encoding="utf8") as infile:
+        total = 0
         match ext:
             case ".6mat":
-                code = assemble(infile.read(), **vars(args))
+                print(f"Assembling {path}.6mat...")
+                code = assemble(infile.read(), instructions, **vars(args))
 
             case ".5mat":
                 code = infile.read()
@@ -41,16 +47,19 @@ if __name__ == "__main__":
             case _:
                 raise ValueError(f"unrecognized file extension: '{args.filename}'")
 
-        if args.O1:
-            code, saved = optimize(code, O1)
+        print(f"Optimizing {path}.5mat...")
+        code, saved = optimize(code, BASIC_OPTS)
+        total += saved
 
-        elif args.O2:
-            code, saved = optimize(code, O2)
+        if args.unsafe:
+            code, saved = optimize(code, UNSAFE_OPTS)
+            total += saved
 
-        elif args.O3:
-            code, saved = optimize(code, O3)
+        if args.golf:
+            code, saved = optimize(code, GOLF_OPTS)
+            total += saved
 
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
 
-        print(f"Saved {saved} characters")
+        print(f"Saved {total} characters!")

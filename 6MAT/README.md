@@ -120,6 +120,8 @@ If the tape is empty, set its contents by executing the block.
 #### `DEFINE name! { ... }`
 Define a user macro. The contents of `{ ... }` are copied exactly in place of every use of `name!`, which should, for readability, contain lowercase letters and end in an `!`. Do note, though, that macro (and instruction) names are case-insensitive.
 
+To define a macro which accepts arguments, you may add it for personal use to a custom macro file. The format is detailed in the base instruction grammar, `instructions.g`.
+
 ### Inner Blocks
 
 All inner scopes may include the following blocks, with arbitrary nesting.

@@ -33,7 +33,7 @@ def cleanup_directive(modifiers: str, directive: str) -> str:
 CHAR = r"'\\.|'[^\\]"
 CONST = r"~[%&|.]|~\n\s*|[^~]"
 
-MOVE_OPTIMIZATIONS = {
+MOVE_OPTS = {
     # Any move followed by an absolute move
     re.compile(r"~(?:#|\d+)?:?@?\*~(#|\d*)?:?@\*"):
         lambda match: f"~{int(match[1])}@*",
@@ -63,7 +63,7 @@ MOVE_OPTIMIZATIONS = {
     re.compile(r"~#@\*~#@\*"): ""
 }
 
-BREAK_OPTIMIZATIONS = {
+BREAK_OPTS = {
     # Constant unary number breaks
     re.compile(r"~(-?\d+)\^"):
         lambda match: "~0^" if int(match[1]) == 0 else "",
@@ -103,7 +103,7 @@ BREAK_OPTIMIZATIONS = {
     re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
 }
 
-BLOCK_OPTIMIZATIONS = {
+BLOCK_OPTS = {
     # Blocks that are never broken out of
     re.compile(r"(~<|~1@\{)(?P<body>[^^{<]*?)(~>|~:})"):
         lambda match: match["body"],
@@ -128,7 +128,7 @@ BLOCK_OPTIMIZATIONS = {
         lambda match: f"~{match[1]}({match[2]}{match[3]}~)"
 }
 
-DETECTABLE_CRASHES = {
+CRASH_OPTS = {
     # Loops which do not move the tape pointer
     re.compile(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", flags=re.DOTALL): "~?",
 
@@ -136,7 +136,7 @@ DETECTABLE_CRASHES = {
     re.compile(rf"~#\[({CONST})*?~\w(~[^\[]|[^~])*~]"): "~#[~?~]"
 }
 
-BOUNDEDNESS_OPTIMIZATIONS = {
+BOUNDEDNESS_OPTS = {
     # Relative move followed by a relative move
     re.compile(r"~(?P<arg_1>(\d+)?:?)(?P<mod>@?)\*~(?P<arg_2>(\d+)?:?)\*"):
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}{match['mod']}*",
@@ -211,20 +211,20 @@ FORMATTING = {
         lambda match: match[1]
 }
 
-O1 = {
-    **MOVE_OPTIMIZATIONS,
-    **BREAK_OPTIMIZATIONS,
-    **BLOCK_OPTIMIZATIONS,
-    **DETECTABLE_CRASHES
+BASIC_OPTS = {
+    **MOVE_OPTS,
+    **BREAK_OPTS,
+    **BLOCK_OPTS,
+    **CRASH_OPTS
 }
 
-O2 = {
-    **O1,
-    **BOUNDEDNESS_OPTIMIZATIONS
+UNSAFE_OPTS = {
+    **BASIC_OPTS,
+    **BOUNDEDNESS_OPTS
 }
 
-O3 = {
-    **O2,
+GOLF_OPTS = {
+    **BASIC_OPTS,
     **SPECIAL_DIRECTIVES,
     **DEFAULT_PARAMETERS,
     **FORMATTING
@@ -264,7 +264,7 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~}~]", O3))
+    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~}~]", UNSAFE_OPTS | GOLF_OPTS))
 
 
-__all__ = ["FORMATTING", "O1", "O2", "O3", "optimize"]
+__all__ = ["FORMATTING", "BASIC_OPTS", "UNSAFE_OPTS", "GOLF_OPTS", "optimize"]

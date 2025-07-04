@@ -39,6 +39,8 @@ TOKENS = re.compile(
 ARG_TYPES = {"nil", "char", "read", "reads", "peek", "peeks", "pos", "neg", "remain", "string"}
 CASE_SENSITIVE = {"comment", "char", "string", "raw"}
 
+Instructions = dict[str, dict[tuple[str, ...], str]]
+
 
 @dataclass
 class Token:
@@ -103,8 +105,9 @@ class Context:
     block_name: str = ""
     block_open: str = ""
 
-    macros: dict = field(default_factory=lambda: {})
+    instructions: dict = field(default_factory=lambda: {})
     strings: dict = field(default_factory=lambda: {})
+    flags: dict = field(default_factory=lambda: {})
 
     @property
     def block(self) -> bool:
@@ -115,13 +118,13 @@ class Context:
         return f"r{self.block_open[1:]}"
 
     def in_block(self, block_name: str, block_open: str) -> 'Context':
-        return Context(block_name, block_open, self.macros, self.strings)
+        return Context(block_name, block_open, self.instructions, self.strings, self.flags)
 
     def add_macro(self, name: str, macro: str):
-        self.macros[name] = {(): macro}
+        self.instructions[name] = {(): macro}
 
-    def get_macro(self, name: str) -> dict[tuple, str]:
-        return self.macros[name]
+    def get_instruction(self, name: str) -> dict[tuple, str]:
+        return self.instructions[name]
 
     def add_string(self, string: str):
         self.strings[self.next_string()] = string
@@ -156,20 +159,23 @@ class AssemblerError(Exception):
         super().__init__(f"{message} at position {{pos}}".format(**asdict(token)))
 
 
-with open(os.path.join(os.path.dirname(__file__), "instructions.g")) as instructions:
-    INSTRUCTIONS = defaultdict(dict[tuple[str, ...], str])
+def load_grammar(filename: str) -> Instructions:
+    instructions = defaultdict(dict[tuple[str, ...], str])
 
-    for line in instructions:
-        if line.isspace():
-            continue
+    with open(filename) as file:
+        for line in file:
+            if line.isspace():
+                continue
 
-        if line.startswith("# "):
-            continue
+            if line.startswith("# "):
+                continue
 
-        instr, *arg_spec, template = re.split(r" {2,}", line.strip())
+            instr, *arg_spec, template = re.split(r" {2,}", line.strip())
 
-        for print_type in "ACLNR":
-            INSTRUCTIONS[instr.replace("z", print_type)] |= {tuple(arg_spec): template.replace("z", print_type)}
+            for print_type in "ACLNR":
+                instructions[instr.replace("z", print_type)] |= {tuple(arg_spec): template.replace("z", print_type)}
+
+    return instructions
 
 
 def parse(string: str, *, offset: int = 0) -> list[Token]:
@@ -200,12 +206,12 @@ def parse(string: str, *, offset: int = 0) -> list[Token]:
     return tokens
 
 
-def match_args(tokens: list[Token], context: Context, **flags) -> tuple[str, list[Token]]:
+def match_args(tokens: list[Token], context: Context) -> tuple[str, list[Token]]:
     instruction, *tokens = tokens
 
-    specs = context.get_macro(str(instruction))
+    specs = context.get_instruction(str(instruction))
     if not specs:
-        specs = context.get_macro(str(instruction) + "!")
+        specs = context.get_instruction(str(instruction) + "!")
         if not specs:
             raise AssemblerError(instruction, "unknown instruction '{value}'")
 
@@ -292,7 +298,7 @@ def match_args(tokens: list[Token], context: Context, **flags) -> tuple[str, lis
                     }
 
                 case "lbrace" | "lbracket":
-                    inner, remaining = match_tokens(remaining, context.in_block(str(instruction), arg.type), **flags)
+                    inner, remaining = match_tokens(remaining, context.in_block(str(instruction), arg.type))
                     repls = {"...": inner}
 
                 case "raw":
@@ -318,7 +324,7 @@ def match_args(tokens: list[Token], context: Context, **flags) -> tuple[str, lis
                     # Illegal arguments
                     raise AssemblerError(instruction, "illegal signature for instruction '{value}'")
 
-                return match_args(parse(match[1], offset=instruction.pos), context, **flags)[0]
+                return match_args(parse(match[1], offset=instruction.pos), context)[0]
 
             # Resolve templates
             code = re.sub(r"`(.*?)`", match_template, code)
@@ -328,7 +334,7 @@ def match_args(tokens: list[Token], context: Context, **flags) -> tuple[str, lis
     raise AssemblerError(instruction, "could not match signature of instruction '{value}'")
 
 
-def match_tokens(tokens: list[Token], context: Context, **flags) -> tuple[str, list[Token]]:
+def match_tokens(tokens: list[Token], context: Context) -> tuple[str, list[Token]]:
     assembled = ""
     clauses = 0
 
@@ -339,11 +345,11 @@ def match_tokens(tokens: list[Token], context: Context, **flags) -> tuple[str, l
         try:
             match token.type:
                 case "newline":
-                    if flags.get("preserve_indents"):
+                    if context.flags.get("preserve_indents"):
                         assembled += f"~{token.value}"
 
                 case "comment":
-                    if flags.get("preserve_comments"):
+                    if context.flags.get("preserve_comments"):
                         assembled += f"~1[{token.value.lstrip(';').replace('~', '~~')} ~]"
 
                 case "raw":
@@ -365,27 +371,27 @@ def match_tokens(tokens: list[Token], context: Context, **flags) -> tuple[str, l
                     if name.type != "instr" or not str(name).endswith("!"):
                         raise AssemblerError(token, f"invalid macro name '{name}'")
 
-                    if str(name) in INSTRUCTIONS:
+                    if str(name) in context.instructions:
                         raise AssemblerError(token, f"clashing macro name '{name}'")
 
                     if tokens.pop(0).type != "lbrace":
                         raise AssemblerError(token, f"expected open brace in '{name}' macro definition")
 
-                    code, tokens = match_tokens(tokens, context.in_block(str(name), "lbrace"), **flags)
+                    code, tokens = match_tokens(tokens, context.in_block(str(name), "lbrace"))
                     context.add_macro(str(name), code)
 
                 case "instr":
-                    code, tokens = match_args([token, *tokens], context, **flags)
+                    code, tokens = match_args([token, *tokens], context)
                     assembled += code
 
                 case "lbrace":
-                    code, tokens = match_tokens(tokens, context.in_block("", "lbrace"), **flags)
+                    code, tokens = match_tokens(tokens, context.in_block("", "lbrace"))
                     assembled += f"~1@{{{code}~:}}"
 
                 case "lbracket":
-                    code, tokens = match_tokens(tokens, context.in_block("", "lbracket"), **flags)
+                    code, tokens = match_tokens(tokens, context.in_block("", "lbracket"))
 
-                    if flags.get("preserve_groups"):
+                    if context.flags.get("preserve_groups"):
                         assembled += f"~0[{code}~]"
 
                     else:
@@ -406,14 +412,18 @@ def match_tokens(tokens: list[Token], context: Context, **flags) -> tuple[str, l
     return assembled, []
 
 
-def assemble(program: str, **flags) -> str:
+def assemble(program: str, instructions: Instructions = None, **flags) -> str:
     # Initial parse
     all_tokens = parse(program)
 
+    context = Context()
+    context.instructions = load_grammar(os.path.join(os.path.dirname(__file__), "instructions.g"))
+    context.instructions |= instructions or {}
+
+    context.flags = flags
+
     # Preprocessing
     tokens = []
-    context = Context()
-    context.macros = INSTRUCTIONS.copy()
 
     for token in all_tokens:
         if token.type == "newline" and not flags.get("preserve_indents"):
@@ -435,7 +445,7 @@ def assemble(program: str, **flags) -> str:
 
         tokens.append(token)
 
-    assembled, _ = match_tokens(tokens, context, **flags)
+    assembled, _ = match_tokens(tokens, context)
 
     # Insert strings
     assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_escaped_string(match[0]), assembled)
@@ -448,4 +458,4 @@ if __name__ == "__main__":
         print(assemble(infile.read()))
 
 
-__all__ = ["Token", "AssemblerError", "assemble"]
+__all__ = ["Token", "AssemblerError", "load_grammar", "parse", "assemble"]
