@@ -35,7 +35,6 @@ if __name__ == "__main__":
         instructions = load_grammar(args.macros)
 
     with open(args.filename, "r", encoding="utf8") as infile:
-        total = 0
         match ext:
             case ".6mat":
                 print(f"Assembling {path}.6mat...")
@@ -48,18 +47,16 @@ if __name__ == "__main__":
                 raise ValueError(f"unrecognized file extension: '{args.filename}'")
 
         print(f"Optimizing {path}.5mat...")
-        code, saved = optimize(code, BASIC_OPTS)
-        total += saved
+        opts = BASIC_OPTS
 
         if args.unsafe:
-            code, saved = optimize(code, UNSAFE_OPTS)
-            total += saved
+            opts |= UNSAFE_OPTS
 
         if args.golf:
-            code, saved = optimize(code, GOLF_OPTS)
-            total += saved
+            opts |= GOLF_OPTS
 
+        code, saved = optimize(code, opts)
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
 
-        print(f"Saved {total} characters!")
+        print(f"Saved {saved} characters!")
