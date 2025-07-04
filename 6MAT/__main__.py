@@ -18,6 +18,8 @@ parser.add_argument("-u", "--unsafe", action="store_true",
                     help="apply optimizations that assume the tape pointer is never moved off the tape")
 parser.add_argument("-g", "--golf", action="store_true",
                     help="apply aggressive golf optimizations; discards all formatting")
+parser.add_argument("-v", "--verbose", action="store_true",
+                    help="show optimization steps")
 parser.add_argument("--preserve-comments", action="store_true",
                     help="preserve comments")
 parser.add_argument("--preserve-groups", action="store_true",
@@ -55,7 +57,7 @@ if __name__ == "__main__":
         if args.golf:
             opts |= GOLF_OPTS
 
-        code, saved = optimize(code, opts)
+        code, saved = optimize(code, opts, **vars(args))
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
 

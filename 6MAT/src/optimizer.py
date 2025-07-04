@@ -266,7 +266,7 @@ GOLF_OPTS = {
 }
 
 
-def optimize(program: str, optimizations: dict[Opt, ...]) -> tuple[str, int]:
+def optimize(program: str, optimizations: dict[Opt, ...], **flags) -> tuple[str, int]:
     # Standardize arguments and modifiers
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
                      lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
@@ -288,11 +288,12 @@ def optimize(program: str, optimizations: dict[Opt, ...]) -> tuple[str, int]:
                     saved += len(program) - len(new)
                     program = new
 
-                    print(f"Applied {regex.name}")
+                    if flags.get("verbose"):
+                        print(f"Applied {regex.name}")
 
         except Exception:
             warn("optimizer ran into an error during execution; partial optimization was returned", UserWarning)
-            done = True
+            break
 
     # Put them back
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
@@ -302,7 +303,7 @@ def optimize(program: str, optimizations: dict[Opt, ...]) -> tuple[str, int]:
 
 if __name__ == "__main__":
     print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~#[a~;ab~:;ab~]~-1,#,#^~a7~}~]",
-                   UNSAFE_OPTS | GOLF_OPTS))
+                   UNSAFE_OPTS | GOLF_OPTS, verbose=True))
 
 
 __all__ = ["FORMATTING", "BASIC_OPTS", "UNSAFE_OPTS", "GOLF_OPTS", "optimize"]
