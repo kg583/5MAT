@@ -90,17 +90,17 @@ BREAK_OPTS = {
         lambda match: "~0^" if decode_escapes(match[1]) <= decode_escapes(match[2]) <= decode_escapes(match[3]) else "",
 
     # Unreachable code
-    re.compile(r"(~0\^|~\?).*?(~>|~:?}|~])", flags=re.DOTALL):
-        lambda match: f"{match[1]}{match[2]}",
+    re.compile(r"(?P<exit>~0\^|~\?)[^<{\[]*?(?P<close>~>|~:?}|~])", flags=re.DOTALL):
+        lambda match: f"{match['exit']}{match['close']}",
 
     re.compile(r"~0\^(~:?[^:>}])*?$"): "",
 
     # '#' optimizations
     re.compile(r"~#\^"): "~^",
-    re.compile(r"~#,#(,#)?\^"): "~0^",
+    re.compile(r"~(-\d+?|#),#(,#)?\^"): "~0^",
     re.compile(r"~\^~}"): "~}",
-    re.compile(r"~#,(-.*?)\^|~(-.*?),#\^"): "",
-    re.compile(r"~#,(-.*?),.*?\^|~.*?,#,(-.*?)\^"): "",
+    re.compile(r"~#,-\d+\^|~-\d+,#\^"): "",
+    re.compile(r"~#,-\d+,(\d+|#)\^|~(\d+|#),#,-\d+\^"): "",
 }
 
 BLOCK_OPTS = {
@@ -113,7 +113,7 @@ BLOCK_OPTS = {
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Empty blocks
-    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})"): "",
+    re.compile(r"(~<|~\d*@\{)(~0\^)*(~>|~:?})|~#?\[(~;)*(~:;)?~]"): "",
 
     # INIT - DO rearranging
     re.compile(r"^~:\[(?P<init>.*?)~;~](?P<do>.*)$", flags=re.DOTALL):
@@ -125,7 +125,15 @@ BLOCK_OPTS = {
 
     # Adjacent case conversion blocks
     re.compile(r"~(:@?)?\(([^(]*?)~\)~\1\(([^(]*?)~\)"):
-        lambda match: f"~{match[1]}({match[2]}{match[3]}~)"
+        lambda match: f"~{match[1]}({match[2]}{match[3]}~)",
+
+    # Common clause prefixes
+    re.compile(r"~#\[(?P<body>(?P<prefix>(~[^;\[]|[^\[])*)[^\[]*?(~;(?P=prefix)[^\[]*?)*~:;(?P=prefix)[^\[]*?)~]"):
+        lambda match: f"{match['prefix']}~#[{re.sub(r'(^|~:?;)' + match['prefix'], lambda m: m[1], match['body'])}~]",
+
+    # Expandable default clause
+    re.compile(r"~;([^\[]*?)~:;\1~]"):
+        lambda match: f"~:;{match[1]}~]"
 }
 
 CRASH_OPTS = {
@@ -133,7 +141,7 @@ CRASH_OPTS = {
     re.compile(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", flags=re.DOTALL): "~?",
 
     # Reading past the end of the tape
-    re.compile(rf"~#\[({CONST})*?~\w(~[^\[]|[^~])*~]"): "~#[~?~]"
+    re.compile(rf"~#\[({CONST})*?~\w[^\[]*?~]"): "~#[~?~]"
 }
 
 BOUNDEDNESS_OPTS = {
@@ -185,6 +193,8 @@ DEFAULT_PARAMETERS = {
     # Prints
     re.compile(r"~0?(,1?(,0?(,' )?)?)?:?(?P<mod>@?)a"):
         lambda match: f"~{match['mod']}a",
+
+    re.compile(r"~@a"): "~a",
 
     # Repeated characters
     re.compile(r"~1?([%&|.])"):
@@ -264,7 +274,8 @@ def optimize(program: str, optimizations: dict[re.Pattern, ...]) -> tuple[str, i
 
 
 if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~}~]", UNSAFE_OPTS | GOLF_OPTS))
+    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~#[a~;ab~:;ab~]~-1,#,#^~a7~}~]",
+                   UNSAFE_OPTS | GOLF_OPTS))
 
 
 __all__ = ["FORMATTING", "BASIC_OPTS", "UNSAFE_OPTS", "GOLF_OPTS", "optimize"]
