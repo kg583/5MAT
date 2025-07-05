@@ -126,11 +126,14 @@ BREAK_OPTS = {
     Opt(r"~0\^(~:?[^:>}])*?$", "unreachable-end"): "",
 
     # '#' optimizations
-    Opt(r"~#\^", "unary-remainder"): "~^",
-    Opt(r"~(-\d+?|#),#(,#)?\^", "n-ary-remainder"): "~0^",
-    Opt(r"~\^~}", "redundant-remainder-break"): "~}",
-    Opt(r"~#,-\d+\^|~-\d+,#\^", "negative-binary-remainder-break"): "",
-    Opt(r"~#,-\d+,(\d+|#)\^|~(\d+|#),#,-\d+\^", "negative-ternary-remainder-break"): "",
+    Opt(r"~#\^", "unary-remaining"): "~^",
+    Opt(r"~(-\d+?|#),#(,#)?\^", "n-ary-remaining"): "~0^",
+    Opt(r"~\^~}", "redundant-remaining-break"): "~}",
+    Opt(r"~#,-\d+\^|~-\d+,#\^", "negative-binary-remaining-break"): "",
+    Opt(r"~#,-\d+,(-?\d+|#)\^|~(-?\d+|#),#,-\d+\^", "negative-ternary-remaining-break"): "",
+
+    Opt(r"~#,(\d+),#^", "ternary-remaining-simplify"):
+        lambda match: f"~#,{match[1]}^"
 }
 
 BLOCK_OPTS = {
