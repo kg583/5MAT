@@ -126,8 +126,8 @@ BREAK_OPTS = {
     Opt(r"~0\^(~:?[^:>}])*?$", "unreachable-end"): "",
 
     # '#' optimizations
-    Opt(r"~#\^", "unary-remaining"): "~^",
-    Opt(r"~(-\d+?|#),#(,#)?\^", "n-ary-remaining"): "~0^",
+    Opt(r"~#(,0)?\^", "unary-remaining"): "~^",
+    Opt(r"~(-\d+|#),#(,#)?\^", "n-ary-remaining"): "~0^",
     Opt(r"~\^~}", "redundant-remaining-break"): "~}",
     Opt(r"~#,-\d+\^|~-\d+,#\^", "negative-binary-remaining-break"): "",
     Opt(r"~#,-\d+,(-?\d+|#)\^|~(-?\d+|#),#,-\d+\^", "negative-ternary-remaining-break"): "",
