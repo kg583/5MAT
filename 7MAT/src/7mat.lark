@@ -3,7 +3,7 @@
 
 // BASIC TERMINALS
 %import common.INT
-number: INT
+!number: "-"? INT
 %import python.NAME
 sym_name: NAME
 comment: /\/\/[^\n]*/
@@ -29,8 +29,8 @@ comma_list: expr ("," expr)*
           | atom
 
 ?atom: "(" expr ")"
-     | "TRUE" -> const_true
-     | "FALSE" -> const_false
+     | "TRUE"   -> const_true
+     | "FALSE"  -> const_false
      | sym_name -> var_ref
      | number
 
@@ -44,7 +44,9 @@ test: or_test
 !named_type: "Dec" | "Bin" | "Str"
 type: named_type
     | /Int_(3[0-6]|[12]\d|[2-9])/ -> type_int_base
-    | "struct" sym_name -> type_struct
+    | "struct" sym_name           -> type_struct
+    | type "[" "]"                -> mutable_arr
+    | type "[" number "]"         -> immutable_arr
 
 // STATEMENTS
 if: "if" "(" test ")" "{" code_block "}" ["else" "{" code_block "}"]
@@ -53,15 +55,31 @@ return: "return" expr? ";"
 print: "print" expr ";"
 
 var_decl: type sym_name ";"
-var_assign: sym_name "=" expr ";"
-arr_assign: sym_name "[" expr "]" "=" expr ";"
+lhs: sym_name              -> var_assign
+   | sym_name "[" expr "]" -> arr_assign
+   | sym_name ("." lhs)+   -> ind_assign
+
+assignment: lhs "=" expr ";"
 
 proc_call: sym_name "(" comma_list? ")" ";"
 
 // CODE HIERARCHY
-start: fn_def*
+start: _global_def*
+_global_def: struct_def
+           | fn_def
+
+members_list: var_decl+
+struct_def: "struct" sym_name "{" members_list "}" ";"?
+
 args_list: type sym_name ("," type sym_name)*
 fn_def: "func" sym_name "(" args_list? ")" ["->" type] "{" code_block "}"
-code_block: statement+
-?statement: if | while | var_decl | var_assign | arr_assign | proc_call | return | print | comment
 
+code_block: statement+
+?statement: if
+          | while
+          | var_decl
+          | assignment
+          | proc_call
+          | return
+          | print
+          | comment
