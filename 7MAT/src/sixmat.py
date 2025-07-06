@@ -69,6 +69,10 @@ class SixMat:
 
         return self
 
+    def case(self, option: str):
+        # TODO: check that we're actually in a case
+        return self.scope_instn(option)
+
     def push_block(self, scope=False):
         self.indent()
 
