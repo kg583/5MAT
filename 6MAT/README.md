@@ -404,16 +404,16 @@ Print spaces (` `) until at least `N+k*M` characters have been printed this life
 #### `TABR +N = 1, +M = 1`
 Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
 
-#### `LOWER { ... }`
+#### `LOWER [ ... ]`
 Fold all characters printed within the block to lowercase.
 
-#### `TITLE { ... }`
+#### `TITLE [ ... ]`
 Capitalize all words separated by spaces printed within the block; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
 
-#### `TITLE 1 { ... }`
+#### `TITLE 1 [ ... ]`
 Capitalize the first word beginning with an alphabetical character printed within the block. Make all other characters lowercase.
 
-#### `UPPER { ... }`
+#### `UPPER [ ... ]`
 Fold all characters printed within the block to uppercase.
 
 #### `|...|`

@@ -37,10 +37,10 @@ DO {
         ]
     }
 
-    LOWER { PRINA "foo bar" }
-    UPPER { PRINA "FOO BAR" }
-    TITLE { PRINA "Foo Bar" }
-    TITLE 1 { PRINA "Foo bar" }
+    LOWER [ PRINA "foo bar" ]
+    UPPER [ PRINA "FOO BAR" ]
+    TITLE [ PRINA "Foo Bar" ]
+    TITLE 1 [ PRINA "Foo bar" ]
 
     MyRoutine!
 
