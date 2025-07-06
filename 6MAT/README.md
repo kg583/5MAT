@@ -56,13 +56,13 @@ Multiple `!n` arguments are never permitted in a single instruction call. If an 
 
 ### Blocks
 
-**Blocks** and **groups** are lists of instructions whose execution can be terminated early using **break** instructions.
+**Blocks** are collections of instructions, usually indented for clarity. Some blocks create **scopes**, whose execution can be terminated early using **break** instructions.
 
 #### `{ ... }`
-Create a block and execute it. Breaking instructions terminate *this* block's execution. Block argument placeholders are denoted by `{ ... }`.
+Create a scoped block and execute it. Breaking instructions terminate execution in the *current* scope. Scoped block argument placeholders are denoted by `{ ... }`.
 
 #### `[ ... ]`
-Create a group and execute it. Breaking instructions terminate the *containing* block's execution. Group argument placeholders are denoted by `[ ... ]`, with `[{ ... }]` meaning a block or a group is permitted.
+Create an unscoped block and execute it. Breaking instructions terminate execution in the *containing* scope. Unscoped block argument placeholders are denoted by `[ ... ]`, with `[{ ... }]` meaning any block is permitted.
 
 #### `BUFFER { ... }`
 Create a buffer block and execute it. Prints which occur inside buffer blocks do *not* succeed if the block is broken out of at any point.
@@ -72,7 +72,7 @@ Create a buffer block and execute it. Prints which occur inside buffer blocks do
 Breaking is the central tool for almost all control flow in 5MAT. Though 6MAT provides additional abstractions, it's mostly breaks all the way down, which dictates the legality of certain argument combinations. In particular, peeking is *not* permitted in any break instruction.
 
 #### `BREAK`
-Break out of the current block. The tape pointer is unaltered.
+Break out of the current scope. The tape pointer is unaltered.
 
 #### `BRFF`
 Read a character from the tape and break if it is `\f`.
@@ -81,13 +81,13 @@ Read a character from the tape and break if it is `\f`.
 Break out of the current block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `BRNZ`
-Break out of the current block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Break out of the current scope if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `BRZR`
-Break out of the current block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR 0`.
+Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR 0`.
 
 #### `BRxx? _I, _J`
-Break out of the current block if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
+Break out of the current scope if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
 
 | Condition | Comparison | Supported Types |
 |-----------|------------|-----------------|
@@ -105,7 +105,7 @@ Mismatched argument types are not permitted. Furthermore, the following calls ar
 - `BRNE! $V, $V`
 
 #### `BRINC _I, _J, _K`
-Break out of the current block if `_I <= _J <= _K` holds for numbers or characters. Mismatched argument types are not permitted.
+Break out of the current scope if `_I <= _J <= _K` holds for numbers or characters. Mismatched argument types are not permitted.
 
 ### Outer Blocks
 

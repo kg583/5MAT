@@ -22,7 +22,7 @@ parser.add_argument("-v", "--verbose", action="store_true",
 parser.add_argument("--preserve-comments", action="store_true",
                     help="preserve comments")
 parser.add_argument("--preserve-groups", action="store_true",
-                    help="preserve non-semantic groups")
+                    help="preserve unscoped grouping blocks")
 parser.add_argument("--preserve-indents", action="store_true",
                     help="preserve newlines and indentation")
 
