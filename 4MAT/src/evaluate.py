@@ -1,5 +1,5 @@
-from directives import *
-from parse import parse, tokenize
+from .directives import *
+from .parse import parse, tokenize
 
 
 class Interpreter:
@@ -166,7 +166,3 @@ def fivemat(program: str):
                 break
 
             print(end=char)
-
-
-if __name__ == "__main__":
-    print(fourmat("~:[{~;[~]~:{~S~:[)~S~;~*~]~:^ ~}~:[~; ~]~{~S)~^ ~}~:[~; ~]~[~*~;)~S~;)~*~]~:[}~;]~]", [3]))

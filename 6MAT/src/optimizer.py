@@ -1,13 +1,10 @@
 import re
 
+from importlib import import_module
 from warnings import warn
 
-
-try:
-    from .util import *
-
-except ImportError:
-    from util import *
+from .util import *
+parser = import_module("4MAT").parse
 
 
 class Opt:
@@ -283,11 +280,11 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
     while not done:
         try:
             done = True
-            for regex, repl in optimizations.items():
-                if regex.name in disables:
+            for opt, repl in optimizations.items():
+                if opt.name in disables:
                     continue
 
-                new = regex.sub(repl, program)
+                new = opt.sub(repl, program)
 
                 if new != program:
                     done = False
@@ -295,7 +292,7 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
                     program = new
 
                     if flags.get("verbose"):
-                        print(f"Applied {regex.name}")
+                        print(f"Applied {opt.name}")
 
         except Exception:
             warn("optimizer ran into an error during execution; partial optimization was returned", UserWarning)
@@ -305,8 +302,3 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
     return program, saved
-
-
-if __name__ == "__main__":
-    print(optimize("~:[~;~:*~{~:(~00,+1@:a~)~:(~<~c~>~)~#[a~;ab~:;ab~]~-1,#,#^~a7~}~]",
-                   UNSAFE_OPTS | GOLF_OPTS, [], verbose=True))

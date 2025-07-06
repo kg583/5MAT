@@ -1,5 +1,5 @@
 import re
-from directives import *
+from .directives import *
 
 
 def tokenize(source) -> list[str | Directive]:

@@ -5,13 +5,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from warnings import warn
 
-
-# Python why are you like this
-try:
-    from .util import *
-
-except ImportError:
-    from util import *
+from .util import *
 
 
 TOKENS = re.compile(
@@ -451,8 +445,3 @@ def assemble(program: str, instructions: Instructions = None, **flags) -> str:
     assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_escaped_string(match[0]), assembled)
 
     return assembled
-
-
-if __name__ == "__main__":
-    with open("../samples/tests.6mat", "r", encoding="utf8") as infile:
-        print(assemble(infile.read()))
