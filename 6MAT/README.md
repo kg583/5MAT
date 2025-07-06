@@ -132,7 +132,7 @@ Read or peek a character from the tape and execute the block if it is `\f`.
 #### `IFNR! +N [{ ... }]`
 Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
-#### `IFZR [{ ... }]`
+#### `IFNZ [{ ... }]`
 Execute the block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `IFZR [{ ... }]`
