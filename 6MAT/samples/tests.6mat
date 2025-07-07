@@ -45,10 +45,10 @@ DO {
     MyRoutine!
 
     JUST 9, NIL, 7, ?V {
-        OVER -6, 5 { SKIPF! }
-        { BACKF! }
-        [ GOTOF! ]
-        { COPYF! }
+        OVER -6, 5 { SKIPF! 2 }
+        { BACKF! 2 }
+        [ GOTOF! 3 ]
+        { COPYF! 4 }
     }
 
     IFFF! $V {

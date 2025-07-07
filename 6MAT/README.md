@@ -223,10 +223,10 @@ Whenever a character is read from the tape, the tape pointer automatically advan
 Move the tape pointer backward by `N` characters.
 
 #### `BACKC! 'C, +N = 1`
-Move the tape pointer backward to after the `N`th preceding appearance of `C`.
+Move the tape pointer backward past the `N`th preceding appearance of `C`. Crashes if there are less than `N` preceding appearances of `C`.
 
 #### `BACKF! +N = 1`
-Move the tape pointer backward to after the `N`th preceding appearance of `\f`. Equivalent to `BACKC! '\f', +N`.
+Move the tape pointer backward past the `N`th preceding appearance of `\f`. Equivalent to `BACKC! '\f', +N`.
 
 #### `SKIP +N = 1`
 Move the tape pointer forward by `N` characters.
