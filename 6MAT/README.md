@@ -54,15 +54,15 @@ Multiple `!n` arguments are never permitted in a single instruction call. If an 
 
 ## Control Flow
 
-### Blocks
+### Groups and Blocks
 
-**Blocks** are collections of instructions, usually indented for clarity. Some blocks create **scopes**, whose execution can be terminated early using **break** instructions.
+**Groups** are collections of instructions, usually indented for clarity. Some groups create **blocks**, whose execution can be terminated early using **break** instructions.
 
 #### `{ ... }`
-Create a scoped block and execute it. Breaking instructions terminate execution in the *current* scope. Scoped block argument placeholders are denoted by `{ ... }`.
+Create a block and execute it. Breaking instructions terminate execution in the *current* block. Block argument placeholders are denoted by `{ ... }`.
 
 #### `[ ... ]`
-Create an unscoped block and execute it. Breaking instructions terminate execution in the *containing* scope. Unscoped block argument placeholders are denoted by `[ ... ]`, with `[{ ... }]` meaning any block is permitted.
+Create an instruction group and execute it. Breaking instructions terminate execution in the *containing* block. Group argument placeholders are denoted by `[ ... ]`, with `[{ ... }]` meaning either a group or a block is permitted.
 
 #### `BUFFER { ... }`
 Create a buffer block and execute it. Prints which occur inside buffer blocks do *not* succeed if the block is broken out of at any point.
@@ -124,19 +124,19 @@ To define a macro which accepts arguments, you may add it for personal use to a 
 
 ### Inner Blocks
 
-All inner scopes may include the following blocks, with arbitrary nesting.
+All outer blocks may include the following blocks, with arbitrary nesting.
 
 #### `IFFF! !V { ... }`
 Read or peek a character from the tape and execute the block if it is `\f`.
 
 #### `IFNR! +N [{ ... }]`
-Execute the block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+Execute the group or block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `IFNZ [{ ... }]`
-Execute the block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Execute the group or block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `IFZR [{ ... }]`
-Execute the block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `IFNR 0 [{ ... }]`.
+Execute the group or block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `IFNR! 0 [{ ... }]`.
 
 #### `IFyy! _I, _J { ... }`
 Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BRxx _I, _J` at the top of the block, where `xx` is the negation of `yy`.
@@ -165,7 +165,7 @@ Execute the block at most `N` times, terminating if the tape is exhausted at the
 ### Case Blocks
 
 #### `CASER! [ ... ]`
-Conditionally execute blocks based on the value of `$R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `$R` is not equal to any listed value.
+Conditionally execute groups based on the value of `$R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `$R` is not equal to any listed value.
 ```
 CASER! [{
     0 [{ ... }]
@@ -405,16 +405,16 @@ Print spaces (` `) until at least `N+k*M` characters have been printed this life
 Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
 
 #### `LOWER [ ... ]`
-Fold all characters printed within the block to lowercase.
+Fold all characters printed within the group to lowercase.
 
 #### `TITLE [ ... ]`
-Capitalize all words separated by spaces printed within the block; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
+Capitalize all words separated by spaces printed within the group; that is, make the first character of each word uppercase (if possible), and all other characters lowercase.
 
 #### `TITLE 1 [ ... ]`
-Capitalize the first word beginning with an alphabetical character printed within the block. Make all other characters lowercase.
+Capitalize the first word beginning with an alphabetical character printed within the group. Make all other characters lowercase.
 
 #### `UPPER [ ... ]`
-Fold all characters printed within the block to uppercase.
+Fold all characters printed within the group to uppercase.
 
 #### `|...|`
 Insert the contents of `|...|`, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.

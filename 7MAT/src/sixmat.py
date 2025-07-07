@@ -60,23 +60,23 @@ class SixMat:
     def indent(self):
         self.result += SixMat.INDENTATION * len(self.blocks)
 
-    def scope_instn(self, opcode: str, *args: A):
-        return self.block_instn(opcode, *args, _scope=True)
+    def block_instn(self, opcode: str, *args: A):
+        return self.group_instn(opcode, *args, _block=True)
 
-    def block_instn(self, opcode: str, *args: A, _scope=False):
+    def group_instn(self, opcode: str, *args: A, _block=False):
         self.instn(opcode, *args)
-        self.push_block(scope=_scope)
+        self.push_block(block=_block)
 
         return self
 
-    def case(self, option: str, _scope=True):
+    def case(self, option: str, _block=True):
         # TODO: check that we're actually in a case
-        return self.block_instn(option, _scope=_scope)
+        return self.block_instn(option, _block=_block)
 
-    def push_block(self, scope=False):
+    def push_block(self, block=False):
         self.indent()
 
-        if scope:
+        if block:
             self.result += "{\n"
             self.blocks.append("}")
         else:
