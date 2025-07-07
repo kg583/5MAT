@@ -23,7 +23,7 @@ BACK                                ~:*
 BACKC!  'C  0                       ``
 BACKC!  'C  1                       `BACKC! 'C'`
 BACKC!  'C  +N                      ~+N@{`BACKC! 'C'`~:}
-BACKC!  'C                          ~@{~:*`BREQ $V, 'C'`~:*:~}~:*
+BACKC!  'C                          ~@{~:*`BREQ $V, 'C'`~:*~:}~:*
 
 BACKF!      +N                      `BACKC! '\f', +N`
 BACKF!                              `BACKC! '\f'`
