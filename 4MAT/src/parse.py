@@ -26,24 +26,24 @@ def tokenize(source) -> list[str | Directive]:
                 print(f"Error on token {token}")
                 exit(1)
 
-            prefix_params = []
+            params = []
             if len(match[1]) > 0:
-                for prefix_param in re.split(r"(?<!'),", match[1]):
-                    if prefix_param.startswith("'"):
-                        prefix_params.append(prefix_param[1])
-                    elif prefix_param.lower() == "v":
-                        prefix_params.append(Special.V)
-                    elif prefix_param == '#':
-                        prefix_params.append(Special.Hash)
-                    elif len(prefix_param) == 0:
-                        prefix_params.append(None)
+                for param in re.split(r"(?<!'),", match[1]):
+                    if param.startswith("'"):
+                        params.append(param[1])
+                    elif param.lower() == "v":
+                        params.append(Special.V)
+                    elif param == '#':
+                        params.append(Special.Hash)
+                    elif len(param) == 0:
+                        params.append(None)
                     else:
-                        prefix_params.append(int(prefix_param))
+                        params.append(int(param))
 
             tokens.append(
                 Directive(
                     match[3],
-                    prefix_params=prefix_params,
+                    params=params,
                     at_sign="@" in match[2],
                     colon=":" in match[2],
                 )
@@ -65,11 +65,8 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
                 if stack[-1].kind not in "[<":
                     print(f"~; is only supported in ~[ and ~< blocks")
                     exit(1)
-                if stack[-1].default:
-                    print(
-                        f"The default clause must always be the last clause in a ~{stack[-1].kind} block"
-                    )
-                    exit(1)
+
+                # TODO: Correctly check for invalid ~:;
 
                 if token.colon:
                     stack[-1].default = True

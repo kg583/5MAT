@@ -58,34 +58,32 @@ class Interpreter:
     def clamp_arg_idx(self):
         self.arg_idx = min(max(self.arg_idx, 0), len(self.args) - 1)
 
-    def get_arg(self, index: int):
+    def get_arg(self, index: int = None):
         try:
-            return self.args[index]
+            return self.args[self.arg_idx if index is None else index]
         except IndexError:
             raise IndexError("not enough args")
 
     def consume_arg(self):
-        arg = self.get_arg(self.arg_idx)
+        arg = self.get_arg()
         self.arg_idx += 1
         return arg
 
-    def get_param(self, directive, index, default: int | str | None = 0):
-        if 0 <= index < len(directive.prefix_params):
-            match directive.prefix_params[index]:
-                case Special.V:
-                    arg = self.consume_arg()
-                    if isinstance(arg, int) or isinstance(arg, str) and len(arg) == 1:
-                        return arg
-                    if arg is None:
-                        return default
-                case Special.Hash:
-                    return len(self.args) - self.arg_idx
-                case None:
-                    return default
-                case _:
-                    return directive.prefix_params[index]
-        else:
-            return default
+    def get_param(self, directive: Directive, index: int, default=None):
+        param = directive.get_param(index, default)
+
+        match param:
+            case Special.V:
+                arg = self.consume_arg()
+                param = default if arg is None else arg
+
+            case Special.Hash:
+                param = len(self.args) - self.arg_idx
+
+        if param is not None and not isinstance(default, Special) and not isinstance(param, type(default)):
+            raise ValueError(f"invalid type for ~{directive.kind} parameter {index}")
+
+        return param
 
     def eval(self, token: str | Directive):
         if isinstance(token, str):
@@ -110,17 +108,13 @@ class Interpreter:
             case 'r':
                 self.eval_radix(directive)
             case 'd':
-                directive.prefix_params.insert(0, 10)
-                self.eval_radix(directive)
+                self.eval_radix(directive.copy(kind='r', params=[10, *directive.params]))
             case 'b':
-                directive.prefix_params.insert(0, 2)
-                self.eval_radix(directive)
+                self.eval_radix(directive.copy(kind='r', params=[2, *directive.params]))
             case 'o':
-                directive.prefix_params.insert(0, 8)
-                self.eval_radix(directive)
+                self.eval_radix(directive.copy(kind='r', params=[8, *directive.params]))
             case 'x':
-                directive.prefix_params.insert(0, 16)
-                self.eval_radix(directive)
+                self.eval_radix(directive.copy(kind='r', params=[16, *directive.params]))
 
             # FORMAT Floating-Point Printers
             # FORMAT Printer Operations
@@ -135,6 +129,9 @@ class Interpreter:
             case '*':
                 self.eval_goto(directive)
 
+            case '[':
+                self.eval_conditional(directive)
+
             # FORMAT Miscellaneous Operations
             case 'p':
                 self.eval_plural(directive)
@@ -145,7 +142,10 @@ class Interpreter:
     def eval_ast_root(self):
         assert len(self.ast.clauses) == 1
 
-        for token in self.ast.clauses[0]:
+        self.eval_block(self.ast.clauses[0])
+
+    def eval_block(self, tokens: list):
+        for token in tokens:
             self.eval(token)
 
     # FORMAT Basic Output
@@ -260,6 +260,47 @@ class Interpreter:
 
         else:
             self.skip_args(param)
+
+    def eval_conditional(self, directive: BlockDirective):
+        if directive.colon:
+            if directive.at_sign:
+                raise TypeError("~:@[ is invalid")
+
+            if len(directive.clauses) != 2:
+                raise ValueError("~:[ must contain exactly two clauses")
+
+            if directive.default:
+                raise TypeError("default clause in ~:[")
+
+            no, yes = directive.clauses
+
+            self.eval_block(no if self.consume_arg() is None else yes)
+
+        elif directive.at_sign:
+            if self.get_arg() is None:
+                self.consume_arg()
+                return
+
+            if len(directive.clauses) > 1:
+                raise ValueError("multiple clauses in ~@[")
+
+            self.eval_block(directive.clauses[0])
+
+        else:
+            index = self.get_param(directive, 0, default=Special.V)
+
+            if not isinstance(index, int):
+                raise TypeError("invalid index for ~[")
+
+            if index < 0:
+                raise ValueError("negative ~[ arg")
+
+            try:
+                self.eval_block(directive.clauses[index])
+
+            except IndexError:
+                if directive.default:
+                    self.eval_block(directive.clauses[-1])
 
     # FORMAT Miscellaneous Operations
     def eval_plural(self, directive: Directive):
