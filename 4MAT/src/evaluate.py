@@ -268,9 +268,5 @@ def fivemat(program: str):
 
     tape = []
     while True:
-        tape = list(fourmat(parsed, [tape]))
-        for char in tape:
-            if char == "\f":
-                break
-
-            print(end=char)
+        tape = fourmat(parsed, [list(tape)])
+        print(end=tape[tape.rfind("\f") + 1:])
