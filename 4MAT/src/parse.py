@@ -58,7 +58,7 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
     stack = [BlockDirective("", [])]
     for token in tokens:
         if isinstance(token, Directive):
-            if token.kind in "{[<":  # opening block
+            if token.kind in "{[<(":  # opening block
                 stack.append(BlockDirective.from_embedded(token))
                 continue
             if token.kind == ";":
@@ -73,11 +73,12 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
                 stack[-1].clauses.append([])
                 continue
 
-            if token.kind in "}]>":  # closing block
+            if token.kind in "}]>)":  # closing block
                 pairings = {
                     "{": "}",
                     "[": "]",
                     "<": ">",
+                    "(": ")"
                 }
 
                 closed_block = stack.pop()

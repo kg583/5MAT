@@ -136,6 +136,9 @@ class Interpreter:
                 self.eval_recursive(directive)
 
             # FORMAT Miscellaneous Operations
+            case '(':
+                self.eval_case(directive)
+
             case 'p':
                 self.eval_plural(directive)
 
@@ -318,6 +321,28 @@ class Interpreter:
             self.output(interp.buffer)
 
     # FORMAT Miscellaneous Operations
+    def eval_case(self, directive: BlockDirective):
+        # TODO: Implement without recursion?
+
+        interp = Interpreter(directive, self.args)
+        interp.eval_ast_root()
+        output = interp.buffer
+        self.args = interp.args[interp.arg_idx:]
+
+        if directive.colon:
+            if directive.at_sign:
+                self.output(output.upper())
+
+            else:
+                self.output(output.title())
+
+        else:
+            if directive.at_sign:
+                self.output(output.capitalize())
+
+            else:
+                self.output(output.lower())
+
     def eval_plural(self, directive: Directive):
         if directive.colon:
             self.skip_args(-1)
