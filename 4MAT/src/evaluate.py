@@ -58,26 +58,16 @@ class Interpreter:
     def clamp_arg_idx(self):
         self.arg_idx = min(max(self.arg_idx, 0), len(self.args) - 1)
 
-    def get_arg(self, index):
-        if 0 <= index < len(self.args):
-            return self.args[self.arg_idx]
-        else:
-            return None
+    def get_arg(self, index: int):
+        try:
+            return self.args[index]
+        except IndexError:
+            raise IndexError("not enough args")
 
     def consume_arg(self):
         arg = self.get_arg(self.arg_idx)
         self.arg_idx += 1
         return arg
-
-    def params(self, directive, count) -> list[int | str | None]:
-        result = []
-        # for i in range(min(count, len(directive.prefix_params))):
-        # match directive.prefix_params[i]:
-
-        if len(result) < count:
-            result.extend([None] * (count - len(result)))
-
-        return result
 
     def get_param(self, directive, index, default: int | str | None = 0):
         if 0 <= index < len(directive.prefix_params):
@@ -133,6 +123,13 @@ class Interpreter:
                 self.eval_radix(directive)
 
             # FORMAT Floating-Point Printers
+            # FORMAT Printer Operations
+            case 'a':
+                self.eval_aesthetic(directive)
+            case 's':
+                # TODO: Add correct escapes to output
+                self.eval_aesthetic(directive)
+
             # FORMAT Layout Control
             # FORMAT Control-Flow Operations
             case '*':
@@ -184,7 +181,7 @@ class Interpreter:
         arg = self.consume_arg()
 
         if not isinstance(arg, int):
-            # TODO: Print using ~a
+            self.eval_aesthetic(directive)
             return
 
         if base is None:
@@ -223,6 +220,27 @@ class Interpreter:
 
         self.output(f"{''.join(output):{pad_char}>{min_col}}")
 
+    # FORMAT Printer Operations
+    def eval_aesthetic(self, directive: Directive):
+        arg = self.consume_arg()
+        
+        if arg is None:
+            output = "()" if directive.colon else "NIL"
+
+        else:
+            output = str(arg)
+
+        min_col = self.get_param(directive, 0, default=0)
+        col_inc = self.get_param(directive, 1, default=1)
+        min_pad = self.get_param(directive, 2, default=0)
+        pad_char = self.get_param(directive, 3, default=" ")
+
+        padding = min_pad * pad_char
+        while len(padding) + len(output) < min_col:
+            padding += col_inc * pad_char
+
+        self.output(padding + output if directive.at_sign else output + padding)
+
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
         if directive.at_sign:
@@ -239,9 +257,9 @@ class Interpreter:
 
         if directive.colon:
             self.skip_args(-param)
-            return
 
-        self.skip_args(param)
+        else:
+            self.skip_args(param)
 
     # FORMAT Miscellaneous Operations
     def eval_plural(self, directive: Directive):
