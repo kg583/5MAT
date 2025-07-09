@@ -7,15 +7,14 @@ class A:
         self.repr = value
 
     @classmethod
-    def chr(cls, char):
+    def chr(cls, char: str):
         assert len(char) == 1
 
-        return cls(repr(char))
+        return cls(f"'{repr(char)[1:-1]}'")
 
     @classmethod
-    def str(cls, string):
-        # TODO: Fix. Sometimes uses single quotes.
-        return cls(repr(string))
+    def str(cls, string: str):
+        return cls(f'"{repr(string)[1:-1]}"')
 
     @classmethod
     def remaining(cls):
@@ -43,7 +42,7 @@ class A:
         return self.repr
 
     @classmethod
-    def int(cls, num):
+    def int(cls, num: int):
         return cls(repr(num))
 
 
@@ -60,18 +59,18 @@ class SixMat:
     def indent(self):
         self.result += SixMat.INDENTATION * len(self.blocks)
 
-    def block_instn(self, opcode: str, *args: A):
+    def block_instn(self, opcode: str = "", *args: A):
         return self.group_instn(opcode, *args, _block=True)
 
-    def group_instn(self, opcode: str, *args: A, _block=False):
+    def group_instn(self, opcode: str = "", *args: A, _block=False):
         self.instn(opcode, *args)
         self.push_block(block=_block)
 
         return self
 
-    def case(self, option: str, _block=True):
+    def case(self, option: A, _block=True):
         # TODO: check that we're actually in a case
-        return self.block_instn(option, _block=_block)
+        return self.group_instn(str(option), _block=_block)
 
     def push_block(self, block=False):
         self.indent()
@@ -93,7 +92,7 @@ class SixMat:
 
     def instn(self, opcode: str, *args: A):
         self.indent()
-        self.result += f"{opcode}\t{', '.join(map(str, args))}\n"
+        self.result += f"{opcode}\t{', '.join(map(str, args))}\n".rstrip("\t")
 
     def comment(self, comment, debug=False):
         if SixMat.DEBUG_COMMENTS and debug or SixMat.USER_COMMENTS and not debug:
