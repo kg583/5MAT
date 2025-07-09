@@ -1,3 +1,5 @@
+import math
+import re
 import unicodedata
 
 from .directives import *
@@ -37,18 +39,19 @@ def char_name(char: str) -> str:
 
 
 class Interpreter:
-    def __init__(self, program: str | BlockDirective, args: list, args_idx=0):
+    def __init__(self, program: str | BlockDirective, args: list, arg_idx: int = 0, position: int = 0):
         if isinstance(program, str):
             self.ast = parse(tokenize(program))
         else:
             self.ast = program
 
         self.args = args
-        self.arg_idx = args_idx
+        self.arg_idx = arg_idx
 
         self.buffer = ""
+        self.position = position
 
-    def output(self, data):
+    def output(self, data: str):
         self.buffer += data
 
     def skip_args(self, distance: int):
@@ -69,6 +72,9 @@ class Interpreter:
         self.arg_idx += 1
         return arg
 
+    def remaining_args(self) -> list:
+        return self.args[self.arg_idx:]
+
     def get_param(self, directive: Directive, index: int, default=None):
         param = directive.get_param(index, default)
 
@@ -84,6 +90,13 @@ class Interpreter:
             raise ValueError(f"invalid type for ~{directive.kind} parameter {index}")
 
         return param
+
+    def get_position(self) -> int:
+        if "\n" in self.buffer:
+            return len(self.buffer) - 1 - self.buffer.rfind("\n")
+
+        else:
+            return len(self.buffer) + self.position
 
     def eval(self, token: str | Directive):
         if isinstance(token, str):
@@ -125,6 +138,9 @@ class Interpreter:
                 self.eval_aesthetic(directive)
 
             # FORMAT Layout Control
+            case 't':
+                self.eval_tabulate(directive)
+
             # FORMAT Control-Flow Operations
             case '*':
                 self.eval_goto(directive)
@@ -247,6 +263,28 @@ class Interpreter:
 
         self.output(padding + output if directive.at_sign else output + padding)
 
+    # FORMAT Layout Control
+    def eval_tabulate(self, directive: Directive):
+        position = self.get_position()
+
+        if directive.at_sign:
+            col_rel = self.get_param(directive, 0, default=1)
+            col_inc = self.get_param(directive, 1, default=1)
+
+            k = math.ceil((position + col_rel) / (col_inc or 1))
+            inc = k * col_inc - (position + col_rel)
+            inc = max(inc, 1)
+
+        else:
+            col_num = self.get_param(directive, 0, default=1)
+            col_inc = self.get_param(directive, 1, default=1)
+
+            k = max(math.ceil((position - col_num) / (col_inc or 1)), 1)
+            inc = k * col_inc - (position - col_num)
+            inc = max(inc, 1 if col_inc else 0)
+
+        self.output(" " * inc)
+
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
         if directive.at_sign:
@@ -310,10 +348,10 @@ class Interpreter:
 
     def eval_recursive(self, directive: Directive):
         if directive.at_sign:
-            interp = Interpreter(self.consume_arg(), self.args)
+            interp = Interpreter(self.consume_arg(), self.args, self.arg_idx)
             interp.eval_ast_root()
             self.output(interp.buffer)
-            self.args = interp.args[interp.arg_idx:]
+            self.args = interp.remaining_args()
 
         else:
             interp = Interpreter(self.consume_arg(), self.consume_arg())
@@ -324,10 +362,10 @@ class Interpreter:
     def eval_case(self, directive: BlockDirective):
         # TODO: Implement without recursion?
 
-        interp = Interpreter(directive, self.args)
+        interp = Interpreter(directive, self.args, self.arg_idx)
         interp.eval_ast_root()
         output = interp.buffer
-        self.args = interp.args[interp.arg_idx:]
+        self.args = interp.remaining_args()
 
         if directive.colon:
             if directive.at_sign:
@@ -338,7 +376,17 @@ class Interpreter:
 
         else:
             if directive.at_sign:
-                self.output(output.capitalize())
+                output = list(output)
+                while output:
+                    char = output.pop(0)
+                    if char.isalpha():
+                        self.output(char.upper())
+                        break
+
+                    else:
+                        self.output(char.lower())
+
+                self.output("".join(output).lower())
 
             else:
                 self.output(output.lower())
