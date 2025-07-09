@@ -132,6 +132,9 @@ class Interpreter:
             case '[':
                 self.eval_conditional(directive)
 
+            case '?':
+                self.eval_recursive(directive)
+
             # FORMAT Miscellaneous Operations
             case 'p':
                 self.eval_plural(directive)
@@ -301,6 +304,18 @@ class Interpreter:
             except IndexError:
                 if directive.default:
                     self.eval_block(directive.clauses[-1])
+
+    def eval_recursive(self, directive: Directive):
+        if directive.at_sign:
+            interp = Interpreter(self.consume_arg(), self.args)
+            interp.eval_ast_root()
+            self.output(interp.buffer)
+            self.args = interp.args[interp.arg_idx:]
+
+        else:
+            interp = Interpreter(self.consume_arg(), self.consume_arg())
+            interp.eval_ast_root()
+            self.output(interp.buffer)
 
     # FORMAT Miscellaneous Operations
     def eval_plural(self, directive: Directive):
