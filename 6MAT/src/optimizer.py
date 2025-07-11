@@ -40,22 +40,6 @@ def cleanup_directive(modifiers: str, directive: str) -> str:
         return ''.join(sorted(modifiers)) + directive.lower()
 
 
-def common_case_prefix(match: re.Match) -> str:
-    body = match[1]
-    clauses = re.split("~:?;", body)
-    index = min(map(len, clauses))
-    prefix = ""
-
-    while index:
-        prefix = clauses[0][:index]
-        if all(clause[:index] == prefix for clause in clauses):
-            break
-
-        index -= 1
-
-    return f"{prefix}~#[{re.sub(r'(^|~:?;)' + prefix, lambda m: m[1], body)}~]"
-
-
 CHAR = r"'\\.|'[^\\]"
 CONST = r"~[%&|.]|~\n\s*|[^~]"
 
@@ -156,9 +140,6 @@ BLOCK_OPTS = {
     # Adjacent case conversion blocks
     Opt(r"~(:@?)?\(([^(]*?)~\)~\1\(([^(]*?)~\)", "adjacent-case-blocks"):
         lambda match: f"~{match[1]}({match[2]}{match[3]}~)",
-
-    # Common clause prefixes
-    Opt(r"~#\[((~\S+|[^\[])*?~:;[^\[]*?)~]", "common-case-prefix"): common_case_prefix,
 
     # Expandable default clause
     Opt(r"~;([^\[]*?)~:;\1~]", "merged-default-clause"):
