@@ -532,15 +532,16 @@ def fourmat(program: str | BlockDirective, args: list | Args):
     return interp.buffer
 
 
-def fivemat(program: str):
+def fivemat(program: str, *, max_loops: int = None):
     parsed = parse(tokenize(program))
-
     tape = []
 
     try:
-        while True:
+        iterations = 0
+        while max_loops is None or iterations < max_loops:
             tape = fourmat(parsed, [list(tape)])
             print(end=tape[tape.rfind("\f") + 1:])
+            iterations += 1
 
     except Exception:
         pass
