@@ -49,6 +49,9 @@ class Args:
         return self.args.__iter__()
 
     def __post_init__(self):
+        if self.args is None:
+            self.args = []
+
         if not isinstance(self.args, list):
             raise TypeError(f"invalid arguments: {self.args}")
 
@@ -68,7 +71,13 @@ class Args:
         self.clamp()
 
     def peek(self):
-        return self.args[self.index]
+        arg = self.args[self.index]
+
+        # NILs
+        if arg in (None, [], ()):
+            return None
+
+        return arg
 
     def remaining(self) -> list:
         return self.args[self.index:]
@@ -320,14 +329,18 @@ class Interpreter:
 
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
-        param = self.get_param(directive, 0, default=0)
-        if param < 0:
-            raise ValueError("negative ~* arg")
-
         if directive.at_sign:
+            param = self.get_param(directive, 0, default=0)
+            if param < 0:
+                raise ValueError("negative ~@* arg")
+
             self.args.goto(param)
 
         else:
+            param = self.get_param(directive, 0, default=1)
+            if param < 0:
+                raise ValueError("negative ~* arg")
+
             if directive.colon:
                 self.args.skip(-param)
 
@@ -426,7 +439,7 @@ class Interpreter:
                     interp.eval_ast_root()
                     iterations += 1
 
-                while interp.args.remaining() and (limit is None or iterations < limit):
+                while interp.args.hash() and (limit is None or iterations < limit):
                     interp.eval_ast_root()
                     iterations += 1
 
@@ -523,6 +536,11 @@ def fivemat(program: str):
     parsed = parse(tokenize(program))
 
     tape = []
-    while True:
-        tape = fourmat(parsed, [list(tape)])
-        print(end=tape[tape.rfind("\f") + 1:])
+
+    try:
+        while True:
+            tape = fourmat(parsed, [list(tape)])
+            print(end=tape[tape.rfind("\f") + 1:])
+
+    except Exception:
+        pass
