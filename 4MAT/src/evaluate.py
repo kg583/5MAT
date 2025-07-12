@@ -2,6 +2,8 @@ import math
 import re
 import unicodedata
 
+from dataclasses import dataclass
+
 from .directives import *
 from .parse import parse, tokenize
 
@@ -38,55 +40,78 @@ def char_name(char: str) -> str:
             return unicodedata.name(char).title()
 
 
+@dataclass
+class Args:
+    args: list
+    index: int = 0
+
+    def __iter__(self):
+        return self.args.__iter__()
+
+    def __post_init__(self):
+        if not isinstance(self.args, list):
+            raise TypeError(f"invalid arguments: {self.args}")
+
+    def clamp(self):
+        self.index = min(max(self.index, 0), len(self.args) - 1)
+
+    def consume(self):
+        arg = self.peek()
+        self.index += 1
+        return arg
+
+    def hash(self):
+        return len(self.args) - self.index
+
+    def goto(self, index: int):
+        self.index = index
+        self.clamp()
+
+    def peek(self):
+        return self.args[self.index]
+
+    def remaining(self) -> list:
+        return self.args[self.index:]
+
+    def skip(self, dist: int):
+        self.index += dist
+        self.clamp()
+
+
 class Interpreter:
-    def __init__(self, program: str | BlockDirective, args: list, arg_idx: int = 0, position: int = 0):
+    def __init__(self, program: str | BlockDirective, *, args: list | Args, position: int = 0, outer: int = None):
         if isinstance(program, str):
             self.ast = parse(tokenize(program))
         else:
             self.ast = program
 
-        self.args = args
-        self.arg_idx = arg_idx
+        if isinstance(args, Args):
+            self.args = args
+        else:
+            self.args = Args(args)
 
         self.buffer = ""
         self.position = position
+        self.outer = outer
+
+    def child(self, program: str | BlockDirective, *, args: list | Args) -> 'Interpreter':
+        return Interpreter(program, args=args, position=self.get_position(), outer=self.outer)
 
     def output(self, data: str):
         self.buffer += data
-
-    def skip_args(self, distance: int):
-        self.arg_idx += distance
-        self.clamp_arg_idx()
-
-    def clamp_arg_idx(self):
-        self.arg_idx = min(max(self.arg_idx, 0), len(self.args) - 1)
-
-    def get_arg(self, index: int = None):
-        try:
-            return self.args[self.arg_idx if index is None else index]
-        except IndexError:
-            raise IndexError("not enough args")
-
-    def consume_arg(self):
-        arg = self.get_arg()
-        self.arg_idx += 1
-        return arg
-
-    def remaining_args(self) -> list:
-        return self.args[self.arg_idx:]
 
     def get_param(self, directive: Directive, index: int, default=None):
         param = directive.get_param(index, default)
 
         match param:
             case Special.V:
-                arg = self.consume_arg()
+                arg = self.args.consume()
                 param = default if arg is None else arg
 
             case Special.Hash:
-                param = len(self.args) - self.arg_idx
+                param = self.args.hash()
 
-        if param is not None and not isinstance(default, Special) and not isinstance(param, type(default)):
+        if default is not None and not isinstance(default, Special) and not isinstance(param, type(default)):
             raise ValueError(f"invalid type for ~{directive.kind} parameter {index}")
 
         return param
@@ -144,19 +169,22 @@ class Interpreter:
             # FORMAT Control-Flow Operations
             case '*':
                 self.eval_goto(directive)
-
             case '[':
                 self.eval_conditional(directive)
-
+            case '{':
+                self.eval_iteration(directive)
             case '?':
                 self.eval_recursive(directive)
 
             # FORMAT Miscellaneous Operations
             case '(':
                 self.eval_case(directive)
-
             case 'p':
                 self.eval_plural(directive)
+
+            # FORMAT Miscellaneous Pseudo-Operations
+            case '^':
+                self.eval_escape_upward(directive)
 
             case _:
                 print(f"Unrecognized directive ~{directive.kind}")
@@ -164,15 +192,20 @@ class Interpreter:
     def eval_ast_root(self):
         assert len(self.ast.clauses) == 1
 
-        self.eval_block(self.ast.clauses[0])
+        try:
+            self.eval_clause(self.ast.clauses[0])
 
-    def eval_block(self, tokens: list):
+        except StopIteration as stop:
+            if self.ast.kind != "":
+                raise stop
+
+    def eval_clause(self, tokens: list):
         for token in tokens:
             self.eval(token)
 
     # FORMAT Basic Output
     def eval_character(self, directive: Directive):
-        char = self.consume_arg()
+        char = self.args.consume()
 
         if not isinstance(char, str) or len(char) != 1:
             raise TypeError("~c arg is not a character")
@@ -200,7 +233,7 @@ class Interpreter:
     # FORMAT Radix Control
     def eval_radix(self, directive: Directive):
         base = self.get_param(directive, 0, default=None)
-        arg = self.consume_arg()
+        arg = self.args.consume()
 
         if not isinstance(arg, int):
             self.eval_aesthetic(directive)
@@ -244,7 +277,7 @@ class Interpreter:
 
     # FORMAT Printer Operations
     def eval_aesthetic(self, directive: Directive):
-        arg = self.consume_arg()
+        arg = self.args.consume()
         
         if arg is None:
             output = "()" if directive.colon else "NIL"
@@ -288,22 +321,22 @@ class Interpreter:
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
         if directive.at_sign:
-            self.arg_idx = self.get_param(directive, 0, default=0)
-            if self.arg_idx < 0:
-                raise ValueError("negative ~* arg")
+            index = self.get_param(directive, 0, default=0)
+            if index < 0:
+                raise ValueError("negative ~@* arg")
 
-            self.clamp_arg_idx()
-            return
-
-        param = self.get_param(directive, 0, default=1)
-        if param < 0:
-            raise ValueError("negative ~* arg")
-
-        if directive.colon:
-            self.skip_args(-param)
+            self.args.goto(index)
 
         else:
-            self.skip_args(param)
+            param = self.get_param(directive, 0, default=1)
+            if param < 0:
+                raise ValueError("negative ~* arg")
+
+            if directive.colon:
+                self.args.skip(-param)
+
+            else:
+                self.args.skip(param)
 
     def eval_conditional(self, directive: BlockDirective):
         if directive.colon:
@@ -318,17 +351,17 @@ class Interpreter:
 
             no, yes = directive.clauses
 
-            self.eval_block(no if self.consume_arg() is None else yes)
+            self.eval_clause(no if self.args.consume() is None else yes)
 
         elif directive.at_sign:
-            if self.get_arg() is None:
-                self.consume_arg()
+            if self.args.peek() is None:
+                self.args.consume()
                 return
 
             if len(directive.clauses) > 1:
                 raise ValueError("multiple clauses in ~@[")
 
-            self.eval_block(directive.clauses[0])
+            self.eval_clause(directive.clauses[0])
 
         else:
             index = self.get_param(directive, 0, default=Special.V)
@@ -340,32 +373,91 @@ class Interpreter:
                 raise ValueError("negative ~[ arg")
 
             try:
-                self.eval_block(directive.clauses[index])
+                self.eval_clause(directive.clauses[index])
 
             except IndexError:
                 if directive.default:
-                    self.eval_block(directive.clauses[-1])
+                    self.eval_clause(directive.clauses[-1])
+
+    def eval_iteration(self, directive: BlockDirective):
+        limit = self.get_param(directive, 0)
+
+        if not isinstance(limit, int | None):
+            raise TypeError("invalid iteration limit")
+
+        if limit is not None and limit < 0:
+            raise ValueError("negative iteration limit")
+
+        # Empty body
+        if not directive.clauses[0]:
+            directive.clauses = parse(tokenize(self.args.consume())).clauses
+
+        if directive.colon:
+            lsts = self.args.remaining() if directive.at_sign else self.args.consume()
+
+            # ~:}
+            if not lsts and directive.special:
+                lsts = [[]]
+
+            try:
+                lst_hash = len(lsts)
+
+            except TypeError:
+                raise TypeError("~{ argument is not a list")
+
+            for lst in lsts[:limit]:
+                interp = self.child(directive, args=lst)
+
+                lst_hash -= 1
+                interp.outer = lst_hash
+
+                try:
+                    interp.eval_ast_root()
+
+                except StopIteration as stop:
+                    if stop.value:
+                        break
+
+                finally:
+                    self.output(interp.buffer)
+
+        else:
+            args = self.args if directive.at_sign else self.args.consume()
+            interp = self.child(directive, args=args)
+            iterations = 0
+
+            try:
+                # ~:}
+                if directive.special and limit != 0:
+                    interp.eval_ast_root()
+                    iterations += 1
+
+                while interp.args.remaining() and (limit is None or iterations < limit):
+                    interp.eval_ast_root()
+                    iterations += 1
+
+            except StopIteration:
+                pass
+
+            self.output(interp.buffer)
 
     def eval_recursive(self, directive: Directive):
         if directive.at_sign:
-            interp = Interpreter(self.consume_arg(), self.args, self.arg_idx)
-            interp.eval_ast_root()
-            self.output(interp.buffer)
-            self.args = interp.remaining_args()
+            interp = self.child(self.args.consume(), args=self.args)
 
         else:
-            interp = Interpreter(self.consume_arg(), self.consume_arg())
-            interp.eval_ast_root()
-            self.output(interp.buffer)
+            interp = self.child(self.args.consume(), args=self.args.consume())
+
+        interp.eval_ast_root()
+        self.output(interp.buffer)
 
     # FORMAT Miscellaneous Operations
     def eval_case(self, directive: BlockDirective):
         # TODO: Implement without recursion?
 
-        interp = Interpreter(directive, self.args, self.arg_idx)
-        interp.eval_ast_root()
+        interp = self.child(directive, args=self.args)
+        interp.eval_clause(directive.clauses[0])
         output = interp.buffer
-        self.args = interp.remaining_args()
 
         if directive.colon:
             if directive.at_sign:
@@ -393,7 +485,7 @@ class Interpreter:
 
     def eval_plural(self, directive: Directive):
         if directive.colon:
-            self.skip_args(-1)
+            self.args.skip(-1)
 
         if directive.at_sign:
             options = ["ies", "y"]
@@ -401,11 +493,34 @@ class Interpreter:
         else:
             options = ["s", ""]
 
-        self.output(options[self.consume_arg() == 1])
+        self.output(options[self.args.consume() == 1])
+
+    # FORMAT Miscellaneous Pseudo-Operations
+    def eval_escape_upward(self, directive: Directive):
+        if directive.at_sign:
+            raise ValueError("~@^ is invalid")
+
+        def escape():
+            raise StopIteration(directive.colon)
+
+        try:
+            match [self.get_param(directive, index) for index in range(len(directive.params))]:
+                case [] if directive.colon and self.outer == 0: escape()
+
+                case [] if not directive.colon and self.args.hash() == 0: escape()
+
+                case [a] if a == 0: escape()
+
+                case [a, b] if a == b: escape()
+
+                case [a, b, c] if a <= b <= c: escape()
+
+        except TypeError:
+            pass
 
 
-def fourmat(program: str | BlockDirective, args: list):
-    interp = Interpreter(program, args)
+def fourmat(program: str | BlockDirective, args: list | Args):
+    interp = Interpreter(program, args=args)
     interp.eval_ast_root()
     return interp.buffer
 

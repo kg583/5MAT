@@ -91,8 +91,10 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
                     )
                     exit(1)
 
+                closed_block.special = token.colon
                 stack[-1].clauses[-1].append(closed_block)
                 continue
+
         stack[-1].clauses[-1].append(token)
 
     if len(stack) > 1:

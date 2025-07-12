@@ -1,4 +1,4 @@
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from enum import Enum
 
 
@@ -34,12 +34,11 @@ class Directive:
         return f"({self.kind}{at_sign}{colon}{' ' + prefix_params if len(self.params) >= 1 else ''})"
 
 
+@dataclass
 class BlockDirective(Directive):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.clauses = [[]]
-        self.default = False
+    clauses: list = field(default_factory=lambda: [[]])
+    default: bool = False
+    special: bool = False
 
     @classmethod
     def from_embedded(cls, embedded):
@@ -54,4 +53,5 @@ class BlockDirective(Directive):
         at_sign = "@" if self.at_sign else ""
         colon = ":" if self.colon else ""
         prefix_params = ",".join(map(repr, self.params))
-        return f"({self.kind}{at_sign}{colon}{' ' + prefix_params if len(self.params) >= 1 else ''}|{' ' + repr(self.clauses) if len(self.clauses) >= 1 else ''})"
+        return (f"({self.kind}{at_sign}{colon}{' ' + prefix_params if len(self.params) >= 1 else ''}|"
+                f"{' ' + repr(self.clauses) if len(self.clauses) >= 1 else ''}{':' if self.special else ''})")
