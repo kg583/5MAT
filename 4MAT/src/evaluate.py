@@ -388,21 +388,20 @@ class Interpreter:
         if not directive.clauses[0]:
             directive.clauses = parse(tokenize(self.args.consume())).clauses
 
+        args = self.args if directive.at_sign else self.args.consume()
         if directive.colon:
-            lsts = self.args.remaining() if directive.at_sign else self.args.consume()
-
             # ~:}
-            if not lsts and directive.special:
-                lsts = [[]]
+            if not args and directive.special:
+                args = [[]]
 
             try:
-                lst_hash = len(lsts)
+                lst_hash = len(args)
 
             except TypeError:
                 raise TypeError("~{ argument is not a list")
 
-            for lst in lsts[:limit]:
-                interp = self.child(directive, args=lst)
+            for sublist in args[:limit]:
+                interp = self.child(directive, args=sublist)
 
                 lst_hash -= 1
                 interp.outer = lst_hash
@@ -418,7 +417,6 @@ class Interpreter:
                     self.output(interp.buffer)
 
         else:
-            args = self.args if directive.at_sign else self.args.consume()
             interp = self.child(directive, args=args)
             iterations = 0
 
