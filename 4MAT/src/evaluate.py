@@ -320,18 +320,14 @@ class Interpreter:
 
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
-        if directive.at_sign:
-            index = self.get_param(directive, 0, default=0)
-            if index < 0:
-                raise ValueError("negative ~@* arg")
+        param = self.get_param(directive, 0, default=0)
+        if param < 0:
+            raise ValueError("negative ~* arg")
 
-            self.args.goto(index)
+        if directive.at_sign:
+            self.args.goto(param)
 
         else:
-            param = self.get_param(directive, 0, default=1)
-            if param < 0:
-                raise ValueError("negative ~* arg")
-
             if directive.colon:
                 self.args.skip(-param)
 
