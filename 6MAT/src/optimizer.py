@@ -151,7 +151,7 @@ CRASH_OPTS = {
     Opt(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", "infinite-loop", flags=re.DOTALL): "~?",
 
     # Reading past the end of the tape
-    Opt(rf"~#\[({CONST})*?~\w[^\[]*?~]", "invalid-read"): "~#[~?~]"
+    Opt(rf"~#\[({CONST})*?~[a-z]", "invalid-read"): "~#[~?"
 }
 
 BOUNDEDNESS_OPTS = {
