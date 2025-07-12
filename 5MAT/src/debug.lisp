@@ -10,22 +10,24 @@
   (with-input-from-string (stream string)
     (coerce
       (loop while (listen stream) collect
-        (case (setq char (read-char stream))
-          (#\\
-            (case (read-char stream)
-              (#\x (int-char (+ (* (digit-char-p (read-char stream) 16) 16)
-                                   (digit-char-p (read-char stream) 16))))
-              (#\a #\bell)
-              (#\b #\backspace)
-              (#\t #\tab)
-              (#\n #\nl)
-              (#\v #\vt)
-              (#\f #\ff)
-              (#\r #\cr)))
-          (#\↡ #\ff)
-          (t char)))
+        (let ((c (read-char stream)))
+          (case c
+            (#\\
+              (case (read-char stream)
+                (#\x (code-char (+ (* (digit-char-p (read-char stream) 16) 16)
+                                      (digit-char-p (read-char stream) 16))))
+                (#\a #\bell)
+                (#\b #\backspace)
+                (#\t #\tab)
+                (#\n #\nl)
+                (#\v #\vt)
+                (#\f #\ff)
+                (#\r #\cr)))
+            (#\↡ #\ff)
+            (t c))))
       'string)))
 
+(defvar tape nil)
 (defun output(string)
   (if *debug*
       (print string)
@@ -35,7 +37,6 @@
 (defun driver()
   (setq tape (coerce (format nil *program* tape) 'list)))
 
-(setq tape nil)
 (setq *program* (decode *program*))
 
 (if *max-loops*

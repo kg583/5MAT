@@ -11,7 +11,7 @@ Like most sensible languages, Common Lisp has a handy-dandy function for produci
 >>> "This number has padding: 009. This one's in hex: FE."
 ```
 
-The [Common Lisp HyperSpec](https://www.lispworks.com/documentation/HyperSpec/Body/22_c.htm) is the definitive description of exactly what `format` does and does not do. Many implementations exist across the many Lisps and Schemes of the world, but [CLISP's](https://gitlab.com/gnu-clisp/clisp/-/blob/master/src/format.lisp?ref_type=heads) is the only 100% compliant one that I know of. A common theme in this project, the code is a beautiful mess, but still leaves much to be desired in terms of speed and interoperability.
+The [Common Lisp HyperSpec](https://www.lispworks.com/documentation/HyperSpec/Body/22_c.htm) is the definitive description of exactly what `format` does and does not do. Many implementations exist across the many Lisps and Schemes of the world, but we choose to use [GNU CLISP's](https://gitlab.com/gnu-clisp/clisp/-/blob/master/src/format.lisp?ref_type=heads). A common theme in this project, the code is a beautiful mess, but still leaves much to be desired in terms of speed and interoperability.
 
 Thus, `4MAT/` contains a standalone, spec-compliant `format` implementation, written in Python. There are still many pieces to implement, including those not needed for the next step: making `format` Turing-complete (though we will get around to them, for completeness[^1]).
 

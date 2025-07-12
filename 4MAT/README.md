@@ -6,7 +6,7 @@ Our implementation adds to the pile, with three specific goals:
 
 1. Fully comply with the Common Lisp HyperSpec (except the pretty printer).
 2. Support efficiently running 5MAT programs which are too large or too slow for CLISP.
-3. Align as closely as possible with CLISP's interpretation of the specification, as determined by observeable behavior.
+3. Align as closely as possible with CLISP's interpretation of the specification, as determined by observable behavior.
 
 The first is tedious but straightforward if you know how to read and test; the second is, in part, because CLISP has a limit of ~6 million characters[^1] in a format string, which given the developing exploits in `6MAT/` and `7MAT/` is dangerously small; and the third is to ensure our driver is equivalent to the "canonical" 5MAT driver found in `5MAT/`.
 
