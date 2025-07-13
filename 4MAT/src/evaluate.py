@@ -357,6 +357,19 @@ class Interpreter:
         self.output(" " * inc)
 
     def eval_justification(self, directive: BlockDirective):
+        # Buffer optimization
+        if not directive.params and not directive.default_token:
+            interp = self.child(args=self.args)
+
+            try:
+                interp.eval_clause(directive.clauses[0])
+
+            except StopIteration:
+                return
+
+            self.output(interp.buffer)
+            return
+
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
@@ -367,16 +380,18 @@ class Interpreter:
             interp = self.child(args=self.args)
 
             try:
-                interp.eval_clause(directive.clauses.pop(0))
+                interp.eval_clause(directive.clauses[0])
 
             except StopIteration:
                 return
 
+            index = 1
             overflow = interp.buffer
             line_pad = self.get_param(directive.default_token, 0, default=0)
             line_width = self.get_param(directive.default_token, 1, default=72)
 
         else:
+            index = 0
             overflow = ""
             line_pad = 0
             line_width = 0
@@ -387,7 +402,7 @@ class Interpreter:
         if directive.colon:
             segments.extend(["", min_padding])
 
-        for clause in directive.clauses:
+        for clause in directive.clauses[index:]:
             interp = self.child(args=self.args)
 
             try:
