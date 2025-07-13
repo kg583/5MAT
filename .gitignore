@@ -1,4 +1,5 @@
 .idea/*
 *.pyc
+*.pstats
 
 6MAT/devices/*.5mat
