@@ -94,11 +94,21 @@ class SixMat:
         self.indent()
         self.result += f"{opcode}\t{', '.join(map(str, args))}\n".rstrip("\t")
 
-    def comment(self, comment, debug=False):
+    def comment(self, comment: str, debug=False):
         if SixMat.DEBUG_COMMENTS and debug or SixMat.USER_COMMENTS and not debug:
             for line in comment.splitlines():
                 self.indent()
                 self.result += f"; {line}\n"
+
+    def fivemat(self, program: str):
+        self.indent()
+        self.result += f"|{program}|\n"
+
+    def raw_text(self, text: str):
+        """
+        Function for inserting text directly into the output. No checks or reformatting is performed; use sparingly.
+        """
+        self.result += text
 
 
 __all__ = ["A", "SixMat"]
