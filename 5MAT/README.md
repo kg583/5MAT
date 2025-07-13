@@ -117,3 +117,29 @@ A proof of 5MAT's Turing completeness exists via `samples/bct.5mat`, which can i
     ~|1~@{~#,1^~a~}~1@*~a~%~#*~>~^~1[ Copy the second program bit to the right end of the data. ~]~
   ~|0~@{~a~}~}~1[                     Otherwise, copy the data as-is~]
 ```
+
+## Compatibility
+
+### Lisp
+
+As stated in the topmost README, we use GNU CLISP as the canonical Lisp implementation driving 5MAT. One would expect other implementations to suffice as well, as long as they are HyperSpec-compliant, but it's not so simple.
+
+Recall, for example, the following description of the parameters to `~^`:
+> If two parameters are given, termination occurs if they are equal. If three parameters are given, termination occurs if the first is less than or equal to the second and the second is less than or equal to the third.
+
+CLISP kindly permits integers *and* characters for these arguments, but this is actually rather unusual in the grand scheme of lisps. Indeed, the HyperSpec is conveniently ambiguous about which data types "less than or equal to" is a valid relation for.
+
+*Every* implementation that we could find, besides CLISP[^2], only handles numeric parameters to `~^` (if they handle it at all). This does not hurt 5MAT's Turing completeness, but it does make many constructs discussed in the previous sections far more tedious. To check inequality with a given character, for example, we can't check against ranges on either side, and instead must check equality with *every other* character which might appear on that section of the tape.
+
+[^2]: Exactly one missing character in the `format` implementation in Clozure CL prevents its conformance, which we have a pending [PR](https://github.com/Clozure/ccl/pull/536) to insert.
+
+So, while these implementations *are* HyperSpec-compliant, they will not do for our task; Steel Bank Common Lisp (SBCL) is probably the most notable member of this category. There are then, of course, implementations which are *not* HyperSpec-compliant, or don't bother with `format` at all (e.g. PicoLISP).
+
+### Scheme
+
+No discussion of Lisps is complete without the Schemes, but the story here is even shorter. A much barer form of `format`, one without looping or conditionals, is specified by SRFI 28 and SRFI 48, and just about every Scheme limits itself to one of those specs. There are two honorable mentions, though.
+
+1. GNU Guile: The near entirety of `format` (and even some bells and whistles from SRFI 48) is implemented, but alas, it falls short in the `~^` category like it lispy brethren.
+2. ChezScheme: Despite claims to choose to conform to the HyperSpec, `~^` doesn't accept three parameters at all, and also behaves as if it is always in a `~:{~}` block for some reason.
+
+ChezScheme actually presents an entertaining nearly-viable backend for 5MAT. Since we can successfully implement [Rule 110](https://en.wikipedia.org/wiki/Rule_110) without needing to break out of loops, we maintain Turing-completeness, though I don't think *anybody* is deranged enough to start building the nMAT stack off of *that*.
