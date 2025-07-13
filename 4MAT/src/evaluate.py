@@ -403,7 +403,7 @@ class Interpreter:
 
         output = self.justify(segments[:-1], min_col, col_inc, pad_char)
 
-        if self.get_position() + len(output) + line_pad > line_width:
+        if overflow and self.get_position() + len(output) + line_pad > line_width:
             output = overflow + output
 
         self.output(output)
