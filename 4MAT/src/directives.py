@@ -36,22 +36,17 @@ class Directive:
 
 @dataclass
 class BlockDirective(Directive):
+    closing_token: Directive = None
+    default_token: Directive = None
     clauses: list = field(default_factory=lambda: [[]])
-    default: bool = False
-    special: bool = False
 
     @classmethod
-    def from_embedded(cls, embedded):
-        embedded.__class__ = cls
-
-        embedded.clauses = [[]]
-        embedded.default = False
-
-        return embedded
+    def from_embedded(cls, embedded: Directive):
+        return BlockDirective(**vars(embedded))
 
     def __repr__(self) -> str:
         at_sign = "@" if self.at_sign else ""
         colon = ":" if self.colon else ""
         prefix_params = ",".join(map(repr, self.params))
         return (f"({self.kind}{at_sign}{colon}{' ' + prefix_params if len(self.params) >= 1 else ''}|"
-                f"{' ' + repr(self.clauses) if len(self.clauses) >= 1 else ''}{':' if self.special else ''})")
+                f"{' ' + repr(self.clauses) if len(self.clauses) >= 1 else ''})")

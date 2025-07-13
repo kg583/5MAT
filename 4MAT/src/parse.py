@@ -61,15 +61,27 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
             if token.kind in "{[<(":  # opening block
                 stack.append(BlockDirective.from_embedded(token))
                 continue
+
             if token.kind == ";":
                 if stack[-1].kind not in "[<":
                     print(f"~; is only supported in ~[ and ~< blocks")
                     exit(1)
 
-                # TODO: Correctly check for invalid ~:;
-
                 if token.colon:
-                    stack[-1].default = True
+                    if stack[-1].default_token:
+                        print(f"multiple ~:; separators provided")
+                        exit(1)
+
+                    if stack[-1].kind == "<" and len(stack[-1].clauses) > 1:
+                        print(f"overflow clause is not first ~< clause")
+                        exit(1)
+
+                    stack[-1].default_token = token
+
+                elif stack[-1].kind == "[" and stack[-1].default_token:
+                    print(f"default clause is not final ~[ clause")
+                    exit(1)
+
                 stack[-1].clauses.append([])
                 continue
 
@@ -85,13 +97,12 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
                 if closed_block.kind == "":
                     print(f"Unmatched ~{token.kind}")
                     exit(1)
+
                 if pairings[closed_block.kind] != token.kind:
-                    print(
-                        f"Unbalanced ~{closed_block.kind} (was closed with ~{token.kind})"
-                    )
+                    print(f"Unbalanced ~{closed_block.kind} (was closed with ~{token.kind})")
                     exit(1)
 
-                closed_block.special = token.colon
+                closed_block.closing_token = token
                 stack[-1].clauses[-1].append(closed_block)
                 continue
 
@@ -100,4 +111,5 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
     if len(stack) > 1:
         print(f"Unclosed ~{stack[1].kind}")
         exit(1)
+
     return stack[0]

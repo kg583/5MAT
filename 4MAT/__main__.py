@@ -1,9 +1,9 @@
-from src import *
+from .src import *
 import sys
 
 
 def main():
-    print(fivemat(open(sys.argv[-1], encoding="UTF-8").read()))
+    fivemat(open(sys.argv[-1], encoding="UTF-8").read(), max_loops=100)
 
 """
 arg options...

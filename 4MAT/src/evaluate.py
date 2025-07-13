@@ -1,14 +1,27 @@
+import codecs
 import math
 import re
 import unicodedata
 
 from dataclasses import dataclass
+from importlib import import_module
 
 from .directives import *
 from .parse import parse, tokenize
 
 
 DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+
+def decode_escapes(string: str) -> str:
+    def decode_match(match):
+        try:
+            return codecs.decode(match[0], 'unicode-escape')
+
+        except UnicodeDecodeError:
+            return match[0]
+
+    return re.sub(r"\\[abfnrtv]|\\x..", decode_match, string).replace("↡", "\f")
 
 
 def char_name(char: str) -> str:
@@ -56,7 +69,7 @@ class Args:
             raise TypeError(f"invalid arguments: {self.args}")
 
     def clamp(self):
-        self.index = min(max(self.index, 0), len(self.args) - 1)
+        self.index = min(max(self.index, 0), len(self.args))
 
     def consume(self):
         arg = self.peek()
@@ -103,7 +116,7 @@ class Interpreter:
         self.position = position
         self.outer = outer
 
-    def child(self, program: str | BlockDirective, *, args: list | Args) -> 'Interpreter':
+    def child(self, program: str | BlockDirective = BlockDirective("", []), *, args: list | Args) -> 'Interpreter':
         return Interpreter(program, args=args, position=self.get_position(), outer=self.outer)
 
     def output(self, data: str):
@@ -174,6 +187,8 @@ class Interpreter:
             # FORMAT Layout Control
             case 't':
                 self.eval_tabulate(directive)
+            case '<':
+                self.eval_justification(directive)
 
             # FORMAT Control-Flow Operations
             case '*':
@@ -200,13 +215,7 @@ class Interpreter:
 
     def eval_ast_root(self):
         assert len(self.ast.clauses) == 1
-
-        try:
-            self.eval_clause(self.ast.clauses[0])
-
-        except StopIteration as stop:
-            if self.ast.kind != "":
-                raise stop
+        self.eval_clause(self.ast.clauses[0])
 
     def eval_clause(self, tokens: list):
         for token in tokens:
@@ -299,11 +308,31 @@ class Interpreter:
         min_pad = self.get_param(directive, 2, default=0)
         pad_char = self.get_param(directive, 3, default=" ")
 
-        padding = min_pad * pad_char
-        while len(padding) + len(output) < min_col:
-            padding += col_inc * pad_char
+        min_padding = min_pad * pad_char
 
-        self.output(padding + output if directive.at_sign else output + padding)
+        if directive.at_sign:
+            segments = ["", min_padding, output]
+
+        else:
+            segments = [output, min_padding, ""]
+
+        self.output(self.justify(segments, min_col, col_inc, pad_char))
+
+    @staticmethod
+    def justify(segments: list, min_col: int, col_inc: int, pad_char: str):
+        if col_inc > 0:
+            while min_col < len("".join(segments)):
+                min_col += col_inc
+
+        index = 1
+        while len("".join(segments)) < min_col:
+            segments[index] += pad_char
+            index += 2
+
+            if index >= len(segments):
+                index = 1
+
+        return "".join(segments)
 
     # FORMAT Layout Control
     def eval_tabulate(self, directive: Directive):
@@ -326,6 +355,58 @@ class Interpreter:
             inc = max(inc, 1 if col_inc else 0)
 
         self.output(" " * inc)
+
+    def eval_justification(self, directive: BlockDirective):
+        min_col = self.get_param(directive, 0, default=0)
+        col_inc = self.get_param(directive, 1, default=1)
+        min_pad = self.get_param(directive, 2, default=0)
+        pad_char = self.get_param(directive, 3, default=" ")
+
+        # Handle the overflow clause
+        if directive.default_token:
+            interp = self.child(args=self.args)
+
+            try:
+                interp.eval_clause(directive.clauses.pop(0))
+
+            except StopIteration:
+                return
+
+            overflow = interp.buffer
+            line_pad = self.get_param(directive.default_token, 0, default=0)
+            line_width = self.get_param(directive.default_token, 1, default=72)
+
+        else:
+            overflow = ""
+            line_pad = 0
+            line_width = 0
+
+        segments = []
+        min_padding = min_pad * pad_char
+
+        if directive.colon:
+            segments.extend(["", min_padding])
+
+        for clause in directive.clauses:
+            interp = self.child(args=self.args)
+
+            try:
+                interp.eval_clause(clause)
+
+            except StopIteration:
+                break
+
+            segments.extend([interp.buffer, min_padding])
+
+        if directive.at_sign:
+            segments.extend(["", min_padding])
+
+        output = self.justify(segments[:-1], min_col, col_inc, pad_char)
+
+        if self.get_position() + len(output) + line_pad > line_width:
+            output = overflow + output
+
+        self.output(output)
 
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
@@ -355,7 +436,7 @@ class Interpreter:
             if len(directive.clauses) != 2:
                 raise ValueError("~:[ must contain exactly two clauses")
 
-            if directive.default:
+            if directive.default_token:
                 raise TypeError("default clause in ~:[")
 
             no, yes = directive.clauses
@@ -385,7 +466,7 @@ class Interpreter:
                 self.eval_clause(directive.clauses[index])
 
             except IndexError:
-                if directive.default:
+                if directive.default_token:
                     self.eval_clause(directive.clauses[-1])
 
     def eval_iteration(self, directive: BlockDirective):
@@ -404,7 +485,7 @@ class Interpreter:
         args = self.args if directive.at_sign else self.args.consume()
         if directive.colon:
             # ~:}
-            if not args and directive.special:
+            if not args and directive.closing_token.colon:
                 args = [[]]
 
             try:
@@ -435,7 +516,7 @@ class Interpreter:
 
             try:
                 # ~:}
-                if directive.special and limit != 0:
+                if directive.closing_token.colon and limit != 0:
                     interp.eval_ast_root()
                     iterations += 1
 
@@ -528,12 +609,17 @@ class Interpreter:
 
 def fourmat(program: str | BlockDirective, args: list | Args):
     interp = Interpreter(program, args=args)
-    interp.eval_ast_root()
+    try:
+        interp.eval_ast_root()
+
+    except StopIteration:
+        pass
+
     return interp.buffer
 
 
 def fivemat(program: str, *, max_loops: int = None):
-    parsed = parse(tokenize(program))
+    parsed = parse(tokenize(decode_escapes(program)))
     tape = []
 
     try:
