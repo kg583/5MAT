@@ -591,20 +591,20 @@ class Interpreter:
         def escape():
             raise StopIteration(directive.colon)
 
-        try:
-            match [self.get_param(directive, index) for index in range(len(directive.params))]:
-                case [] if directive.colon and self.outer == 0: escape()
+        params = [self.get_param(directive, index) for index in range(len(directive.params))]
+        if len(params) == 3 and not type(params[0]) is type(params[1]) is type(params[2]):
+            return
 
-                case [] if not directive.colon and self.args.hash() == 0: escape()
+        match params:
+            case [] if directive.colon and self.outer == 0: escape()
 
-                case [a] if a == 0: escape()
+            case [] if not directive.colon and self.args.hash() == 0: escape()
 
-                case [a, b] if a == b: escape()
+            case [a] if a == 0: escape()
 
-                case [a, b, c] if a <= b <= c: escape()
+            case [a, b] if a == b: escape()
 
-        except TypeError:
-            pass
+            case [a, b, c] if a <= b <= c: escape()
 
 
 def fourmat(program: str | BlockDirective, args: list | Args):
