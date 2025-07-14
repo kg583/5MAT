@@ -254,7 +254,25 @@ class Interpreter:
         base = self.get_param(directive, 0, default=None)
         if base is None:
             # TODO: English names and such
-            return
+            if directive.at_sign:
+                if not 0 < arg < (5000 if directive.colon else 4000):
+                    raise ValueError("invalid Roman numeral")
+
+                def numeral(ten: str, five: str, one: str, val: int) -> str:
+                    if directive.colon or val % 5 < 4:
+                        return (val >= 5) * five + (val % 5) * one
+
+                    elif val == 4:
+                        return one + five
+
+                    elif val == 9:
+                        return one + ten
+
+                self.output(arg // 1000 * "M")
+                self.output(numeral("M", "D", "C", arg // 100 % 10))
+                self.output(numeral("C", "L", "X", arg // 10 % 10))
+                self.output(numeral("X", "V", "I", arg % 10))
+                return
 
         elif not (isinstance(base, int) and 2 <= base <= 36):
             raise ValueError("~r base must be an integer between 2 and 36")
