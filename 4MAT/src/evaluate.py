@@ -1,7 +1,6 @@
 import codecs
 import math
 import re
-import unicodedata
 
 from .directives import *
 from .parse import parse, tokenize
@@ -19,30 +18,6 @@ def decode_escapes(string: str) -> str:
             return match[0]
 
     return re.sub(r"\\[abfnrtv]|\\x..", decode_match, string).replace("↡", "\f")
-
-
-def char_name(char: str) -> str:
-    match char:
-        # Standard characters
-        case "\n":
-            return "Newline"
-        case " ":
-            return "Space"
-
-        # Semi-standard characters
-        case "\t":
-            return "Tab"
-        case "\f":
-            return "Page"
-        case "\x7f":
-            return "Rubout"
-        case "\a":
-            return "Linefeed"
-        case "\b":
-            return "Backspace"
-
-        case _:
-            return unicodedata.name(char).title()
 
 
 @dataclass
@@ -221,10 +196,33 @@ class Interpreter:
             raise TypeError("~c arg is not a character")
 
         if directive.colon:
-            self.output(char_name(char))
+            match char:
+                # Standard characters
+                case "\n":
+                    self.output("Newline")
+                case " ":
+                    self.output("Space")
+
+                # Semi-standard characters
+                case "\t":
+                    self.output("Tab")
+                case "\f":
+                    self.output("Page")
+                case "\x7f":
+                    self.output("Rubout")
+                case "\a":
+                    self.output("Linefeed")
+                case "\b":
+                    self.output("Backspace")
+
+                case _:
+                    self.output(char)
+
+        elif directive.at_sign:
+            self.output("#\\" + char)
 
         else:
-            self.output(("#\\" if directive.at_sign else "") + char)
+            self.output(char)
 
     def print_repeated(self, directive: Directive, char: str):
         self.output(char * self.get_param(directive, 0, default=1))

@@ -15,5 +15,4 @@ The first is tedious but straightforward if you know how to read and test; the s
 But, if it proves *un*reasonable, we happily abandon CLISP's ways. Below are the known ways in which we do so (while still adhering to the HyperSpec), which should have minimal impact on 5MAT programs.
 
 - Symbols are not supported; Python ain't got 'em, and they display like strings anyway.
-- Character names used by `~:c` are derived from official Unicode names, whereas some of CLISP's character names are older than Unicode itself. The only character names guaranteed to match CLISP are those of [standard and semi-standard characters](https://www.lispworks.com/documentation/HyperSpec/Body/f_char_n.htm#char-name).
 - Special key sequences are not displayed by `~:@c`, making it equivalent to `~:c`.
