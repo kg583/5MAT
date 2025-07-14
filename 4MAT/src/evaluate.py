@@ -2,6 +2,8 @@ import codecs
 import math
 import re
 
+from dataclasses import dataclass
+
 from .directives import *
 from .parse import parse, tokenize
 
@@ -38,8 +40,8 @@ class Args:
     def clamp(self):
         self.index = min(max(self.index, 0), len(self.args))
 
-    def consume(self):
-        arg = self.peek()
+    def consume(self, expected=None):
+        arg = self.peek(expected=expected)
         self.index += 1
         return arg
 
@@ -50,8 +52,12 @@ class Args:
         self.index = index
         self.clamp()
 
-    def peek(self):
+    def peek(self, expected=None):
         arg = self.args[self.index]
+
+        # Can't pass the type directly due to PyCharm type checking bug
+        if expected is not None and not isinstance(arg, type(expected)):
+            raise TypeError(f"got argument '{arg}', expected type '{type(expected)}'")
 
         # NILs
         if arg in (None, [], ()):
@@ -77,7 +83,7 @@ class Interpreter:
         if isinstance(args, Args):
             self.args = args
         else:
-            self.args = Args(args)
+            self.args = Args(args=args)
 
         self.buffer = ""
         self.position = position
@@ -190,9 +196,9 @@ class Interpreter:
 
     # FORMAT Basic Output
     def eval_character(self, directive: Directive):
-        char = self.args.consume()
+        char = self.args.consume(expected=str())
 
-        if not isinstance(char, str) or len(char) != 1:
+        if len(char) != 1:
             raise TypeError("~c arg is not a character")
 
         if directive.colon:
@@ -487,9 +493,9 @@ class Interpreter:
 
         # Empty body
         if not directive.clauses[0]:
-            directive.clauses = parse(tokenize(self.args.consume())).clauses
+            directive.clauses = parse(tokenize(self.args.consume(expected=str()))).clauses
 
-        args = self.args if directive.at_sign else self.args.consume()
+        args = self.args if directive.at_sign else self.args.consume(expected=list())
         if directive.colon:
             # ~:}
             if not args and directive.closing_token.colon:
@@ -538,10 +544,10 @@ class Interpreter:
 
     def eval_recursive(self, directive: Directive):
         if directive.at_sign:
-            interp = self.child(self.args.consume(), args=self.args)
+            interp = self.child(self.args.consume(expected=str()), args=self.args)
 
         else:
-            interp = self.child(self.args.consume(), args=self.args.consume())
+            interp = self.child(self.args.consume(expected=str()), args=self.args.consume(expected=list()))
 
         interp.eval_ast_root()
         self.output(interp.buffer)
