@@ -26,23 +26,18 @@ def char_name(char: str) -> str:
         # Standard characters
         case "\n":
             return "Newline"
-
         case " ":
             return "Space"
 
         # Semi-standard characters
         case "\t":
             return "Tab"
-
         case "\f":
             return "Page"
-
         case "\x7f":
             return "Rubout"
-
         case "\a":
             return "Linefeed"
-
         case "\b":
             return "Backspace"
 
@@ -299,6 +294,10 @@ class Interpreter:
         else:
             output = str(arg)
 
+        if not directive.params:
+            self.output(output)
+            return
+
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
@@ -316,13 +315,14 @@ class Interpreter:
 
     @staticmethod
     def justify(segments: list, min_col: int, col_inc: int, pad_char: str):
+        length = len("".join(segments))
         if col_inc > 0:
-            while min_col < len("".join(segments)):
-                min_col += col_inc
+            min_col += math.ceil(max(length - min_col, 0) / col_inc) * col_inc
 
         index = 1
-        while len("".join(segments)) < min_col:
+        while length < min_col:
             segments[index] += pad_char
+            length += 1
             index += 2
 
             if index >= len(segments):
