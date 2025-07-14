@@ -117,10 +117,17 @@ class Interpreter:
         self.outer = outer
 
     def child(self, program: str | BlockDirective = BlockDirective("", []), *, args: list | Args) -> 'Interpreter':
-        return Interpreter(program, args=args, position=self.get_position(), outer=self.outer)
+        return Interpreter(program, args=args, position=self.position, outer=self.outer)
 
     def output(self, data: str):
         self.buffer += data
+
+        # Update position
+        if "\n" in data:
+            self.position = len(data) - 1 - data.rfind("\n")
+
+        else:
+            self.position += len(data)
 
     def get_param(self, directive: Directive, index: int, default=None):
         param = directive.get_param(index, default)
@@ -137,13 +144,6 @@ class Interpreter:
             raise ValueError(f"invalid type for ~{directive.kind} parameter {index}")
 
         return param
-
-    def get_position(self) -> int:
-        if "\n" in self.buffer:
-            return len(self.buffer) - 1 - self.buffer.rfind("\n")
-
-        else:
-            return len(self.buffer) + self.position
 
     def eval(self, token: str | Directive):
         if isinstance(token, str):
@@ -336,22 +336,20 @@ class Interpreter:
 
     # FORMAT Layout Control
     def eval_tabulate(self, directive: Directive):
-        position = self.get_position()
-
         if directive.at_sign:
             col_rel = self.get_param(directive, 0, default=1)
             col_inc = self.get_param(directive, 1, default=1)
 
-            k = math.ceil((position + col_rel) / (col_inc or 1))
-            inc = k * col_inc - (position + col_rel)
+            k = math.ceil((self.position + col_rel) / (col_inc or 1))
+            inc = k * col_inc - (self.position + col_rel)
             inc = max(inc, 1)
 
         else:
             col_num = self.get_param(directive, 0, default=1)
             col_inc = self.get_param(directive, 1, default=1)
 
-            k = max(math.ceil((position - col_num) / (col_inc or 1)), 1)
-            inc = k * col_inc - (position - col_num)
+            k = max(math.ceil((self.position - col_num) / (col_inc or 1)), 1)
+            inc = k * col_inc - (self.position - col_num)
             inc = max(inc, 1 if col_inc else 0)
 
         self.output(" " * inc)
@@ -418,7 +416,7 @@ class Interpreter:
 
         output = self.justify(segments[:-1], min_col, col_inc, pad_char)
 
-        if overflow and self.get_position() + len(output) + line_pad > line_width:
+        if overflow and self.position + len(output) + line_pad > line_width:
             output = overflow + output
 
         self.output(output)
