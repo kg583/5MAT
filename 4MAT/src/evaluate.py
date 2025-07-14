@@ -3,9 +3,6 @@ import math
 import re
 import unicodedata
 
-from dataclasses import dataclass
-from importlib import import_module
-
 from .directives import *
 from .parse import parse, tokenize
 
@@ -250,13 +247,12 @@ class Interpreter:
 
     # FORMAT Radix Control
     def eval_radix(self, directive: Directive):
-        base = self.get_param(directive, 0, default=None)
         arg = self.args.consume()
-
         if not isinstance(arg, int):
-            self.eval_aesthetic(directive)
+            self.eval_aesthetic(directive, arg)
             return
 
+        base = self.get_param(directive, 0, default=None)
         if base is None:
             # TODO: English names and such
             return
@@ -294,8 +290,8 @@ class Interpreter:
         self.output(f"{''.join(output):{pad_char}>{min_col}}")
 
     # FORMAT Printer Operations
-    def eval_aesthetic(self, directive: Directive):
-        arg = self.args.consume()
+    def eval_aesthetic(self, directive: Directive, arg=None):
+        arg = self.args.consume() if arg is None else arg
         
         if arg is None:
             output = "()" if directive.colon else "NIL"
