@@ -8,7 +8,122 @@ from .directives import *
 from .parse import parse, tokenize
 
 
-DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+class Numbers:
+    DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    UNITS = [
+        "", "one", "two", "three", "four",
+        "five", "six", "seven", "eight", "nine"
+    ]
+
+    TEENS = [
+        "ten", "eleven", "twelve", "thirteen", "fourteen",
+        "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+    ]
+
+    TENS = [
+        "", "", "twenty", "thirty", "forty",
+        "fifty", "sixty", "seventy", "eighty", "ninety"
+    ]
+
+    SHORT_SCALE = [
+        "n", "m", "b", "tr", "quadr", "quint", "sext", "sept", "oct", "non"
+    ]
+
+    UNITS_SHORT = [
+        "", "un", "duo", "tre", "quattuor", "quin", "sex", "septen", "octo", "novem"
+    ]
+
+    TENS_SHORT = [
+        "", "deci", "viginti", "triginta", "quadraginta",
+        "quinquaginta", "sexaginta", "septuaginta", "octoginta", "nonaginta"
+    ]
+
+    HUNDREDS_SHORT = [
+        "", "centi", "ducenti", "trecenti", "quadrigenti",
+        "quingenti", "sescenti", "septingenti", "octingenti", "nongenti"
+    ]
+
+    @classmethod
+    def _name_2(cls, value: int) -> str:
+        value, rem = divmod(value, 10)
+        match value, rem:
+            case 0, _:
+                return cls.UNITS[rem]
+
+            case 1, _:
+                return cls.TEENS[rem]
+
+            case _, 0:
+                return cls.TENS[value]
+
+            case _, _:
+                return f"{cls.TENS[value]}-{cls.UNITS[rem]}"
+
+    @classmethod
+    def _name_3(cls, value: int) -> str:
+        value, rem = divmod(value, 100)
+        match value, rem:
+            case 0, _:
+                return cls._name_2(rem)
+
+            case _, 0:
+                return f"{cls.UNITS[value]} hundred"
+
+            case _, _:
+                return f"{cls.UNITS[value]} hundred and {cls._name_2(rem)}"
+
+    @classmethod
+    def _name_6(cls, value: int) -> str:
+        value, rem = divmod(value, 1000)
+        match value, rem:
+            case 0, _:
+                return cls._name_3(rem)
+
+            case _, 0:
+                return f"{cls._name_3(value)} thousand"
+
+            case _, _:
+                return f"{cls._name_3(value)} thousand, {cls._name_3(rem)}"
+
+    @classmethod
+    def _name_short(cls, power: int) -> str:
+        if power < 10:
+            name = cls.SHORT_SCALE[power]
+
+        else:
+            name = cls.UNITS_SHORT[power % 10]
+            name += cls.TENS_SHORT[power // 10 % 10]
+            name += cls.HUNDREDS_SHORT[power // 100]
+
+        return f"{name}illi"
+
+    @classmethod
+    def _name_power(cls, power: int) -> str:
+        name = ""
+        while power:
+            power, rem = divmod(power, 1000)
+            name = cls._name_short(rem) + name
+
+        return f"{name}on"
+
+    @classmethod
+    def name(cls, value: int) -> str:
+        if value == 0:
+            return "zero"
+
+        value, rem = divmod(value, 10**6)
+        name = cls._name_6(rem)
+
+        power = 1
+        while value:
+            value, rem = divmod(value, 1000)
+            if rem:
+                name = f"{cls._name_3(rem)} {cls._name_power(power)}, {name}"
+
+            power += 1
+
+        return re.sub("[ao]o|[aoi]i", lambda match: match[0][-1], name.rstrip(", "))
 
 
 def decode_escapes(string: str) -> str:
@@ -253,7 +368,6 @@ class Interpreter:
 
         base = self.get_param(directive, 0, default=None)
         if base is None:
-            # TODO: English names and such
             if directive.at_sign:
                 if not 0 < arg < (5000 if directive.colon else 4000):
                     raise ValueError("invalid Roman numeral")
@@ -274,6 +388,10 @@ class Interpreter:
                 self.output(numeral("X", "V", "I", arg % 10))
                 return
 
+            else:
+                self.output(Numbers.name(arg))
+                return
+
         elif not (isinstance(base, int) and 2 <= base <= 36):
             raise ValueError("~r base must be an integer between 2 and 36")
 
@@ -291,10 +409,10 @@ class Interpreter:
             number, remainder = divmod(number, base)
 
             if directive.colon and output and length % comma_interval == 0:
-                output = [DIGITS[remainder], comma_char, *output]
+                output = [Numbers.DIGITS[remainder], comma_char, *output]
 
             else:
-                output = [DIGITS[remainder], *output]
+                output = [Numbers.DIGITS[remainder], *output]
 
             length += 1
 
