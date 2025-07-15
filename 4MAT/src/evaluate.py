@@ -271,6 +271,8 @@ class Interpreter:
             case 's':
                 # TODO: Add correct escapes to output
                 self.eval_aesthetic(directive)
+            case 'w':
+                self.eval_aesthetic(directive)
 
             # FORMAT Layout Control
             case 't':
