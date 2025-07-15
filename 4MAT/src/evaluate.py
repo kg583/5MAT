@@ -641,12 +641,11 @@ class Interpreter:
             if index < 0:
                 raise ValueError("negative ~[ arg")
 
-            try:
+            if 0 <= index < len(directive.clauses):
                 self.eval_clause(directive.clauses[index])
 
-            except IndexError:
-                if directive.default_token:
-                    self.eval_clause(directive.clauses[-1])
+            elif directive.default_token:
+                self.eval_clause(directive.clauses[-1])
 
     def eval_iteration(self, directive: BlockDirective):
         limit = self.get_param(directive, 0)
