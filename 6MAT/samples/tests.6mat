@@ -6,7 +6,7 @@ DEFINE MyRoutine! {
 
 INIT {
     PRINA "Beginning tests"
-    LOOP 3 { PRINC '.' }
+    LOOP 3 { PRINC '~' }
     PRFF
 
     IFNR! 9 [ FRESH 9 ]

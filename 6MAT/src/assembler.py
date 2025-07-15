@@ -269,7 +269,7 @@ def match_args(tokens: list[Token], context: Context) -> tuple[str, list[Token]]
                         f"'{chr(ord(name[1]) - 1)}": f"'{chr(ord(character) - 1)}",
                         f"'{chr(ord(name[1]))}": f"'{chr(ord(character))}",
                         f"'{chr(ord(name[1]) + 1)}": f"'{chr(ord(character) + 1)}",
-                        f'"{name[1]}"': character
+                        f'"{name[1]}"': character.replace("~", "~~")
                     }
 
                 case "reads" | "peeks":
