@@ -502,23 +502,23 @@ class Interpreter:
 
     # FORMAT Layout Control
     def eval_tabulate(self, directive: Directive):
-        if directive.at_sign:
-            col_rel = self.get_param(directive, 0, default=1)
-            col_inc = self.get_param(directive, 1, default=1)
+        col = self.get_param(directive, 0, default=1)
+        inc = self.get_param(directive, 1, default=1)
 
-            k = math.ceil((self.position + col_rel) / (col_inc or 1))
-            inc = k * col_inc - (self.position + col_rel)
-            inc = max(inc, 1)
+        if col < 0 or inc < 0:
+            raise ValueError("negative ~t arg")
+
+        if directive.at_sign:
+            k = math.ceil((self.position + col) / (inc or 1))
+            dist = k * inc - (self.position + col)
+            dist = max(dist, 1)
 
         else:
-            col_num = self.get_param(directive, 0, default=1)
-            col_inc = self.get_param(directive, 1, default=1)
+            k = max(math.ceil((self.position - col) / (inc or 1)), 1)
+            dist = k * inc - (self.position - col)
+            dist = max(dist, 1 if inc else 0)
 
-            k = max(math.ceil((self.position - col_num) / (col_inc or 1)), 1)
-            inc = k * col_inc - (self.position - col_num)
-            inc = max(inc, 1 if col_inc else 0)
-
-        self.output(" " * inc)
+        self.output(" " * dist)
 
     def eval_justification(self, directive: BlockDirective):
         # Buffer optimization
