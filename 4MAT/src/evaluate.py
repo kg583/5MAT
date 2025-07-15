@@ -108,11 +108,11 @@ class Numbers:
         return f"{name}on"
 
     @classmethod
-    def name(cls, value: int) -> str:
-        if value == 0:
+    def cardinal(cls, number: int) -> str:
+        if number == 0:
             return "zero"
 
-        value, rem = divmod(value, 10**6)
+        value, rem = divmod(abs(number), 10**6)
         name = cls._name_6(rem)
 
         power = 1
@@ -123,7 +123,35 @@ class Numbers:
 
             power += 1
 
-        return re.sub("[ao]o|[aoi]i", lambda match: match[0][-1], name.rstrip(", "))
+        return "minus " * (number < 0) + re.sub("[ao]o|[aio]i", lambda match: match[0][-1], name.rstrip(", "))
+
+    @classmethod
+    def ordinal(cls, number: int) -> str:
+        name = cls.cardinal(number)
+
+        if name.endswith("one"):
+            return f"{name[:-3]}first"
+
+        elif name.endswith("two"):
+            return f"{name[:-3]}second"
+
+        elif name.endswith("three"):
+            return f"{name[:-5]}third"
+
+        elif name.endswith("ve"):
+            return f"{name[:-2]}fth"
+
+        elif name.endswith("t"):
+            return f"{name}h"
+
+        elif name.endswith("e"):
+            return f"{name[:-1]}th"
+
+        elif name.endswith("y"):
+            return f"{name[:-1]}ieth"
+
+        else:
+            return f"{name}th"
 
 
 def decode_escapes(string: str) -> str:
@@ -391,7 +419,7 @@ class Interpreter:
                 return
 
             else:
-                self.output(Numbers.name(arg))
+                self.output(Numbers.ordinal(arg) if directive.colon else Numbers.cardinal(arg))
                 return
 
         elif not (isinstance(base, int) and 2 <= base <= 36):
