@@ -293,6 +293,15 @@ class Interpreter:
                 self.eval_radix(directive.copy(kind='r', params=[16, *directive.params]))
 
             # FORMAT Floating-Point Printers
+            case 'f':
+                self.eval_fixed_float(directive)
+            case 'e':
+                self.eval_exponential_float(directive)
+            case 'g':
+                self.eval_general_float(directive)
+            case '$':
+                self.eval_monetary_float(directive)
+
             # FORMAT Printer Operations
             case 'a':
                 self.eval_aesthetic(directive)
@@ -391,12 +400,18 @@ class Interpreter:
 
     # FORMAT Radix Control
     def eval_radix(self, directive: Directive):
-        arg = self.args.consume()
-        if not isinstance(arg, int):
-            self.eval_aesthetic(directive, arg)
+        base = self.get_param(directive, 0, default=None)
+        min_col = self.get_param(directive, 1, default=0)
+        pad_char = self.get_param(directive, 2, default=" ")
+        comma_char = self.get_param(directive, 3, default=",")
+        comma_interval = self.get_param(directive, 4, default=3)
+
+        if not isinstance(self.args.peek(), int):
+            # CLISP clears the modifiers for some reason
+            self.eval_aesthetic(directive.copy(kind="a", colon=False, at_sign=False, params=[min_col, None, pad_char]))
             return
 
-        base = self.get_param(directive, 0, default=None)
+        arg = self.args.consume()
         if base is None:
             if directive.at_sign:
                 if not 0 < arg < (5000 if directive.colon else 4000):
@@ -426,11 +441,6 @@ class Interpreter:
             raise ValueError("~r base must be an integer between 2 and 36")
 
         # Actual numbers
-        min_col = self.get_param(directive, 1, default=0)
-        pad_char = self.get_param(directive, 2, default=" ")
-        comma_char = self.get_param(directive, 3, default=",")
-        comma_interval = self.get_param(directive, 4, default=3)
-
         number = abs(arg)
         output = []
         length = 0
@@ -454,26 +464,34 @@ class Interpreter:
 
         self.output(f"{''.join(output):{pad_char}>{min_col}}")
 
+    # FORMAT Floating-Point Printers
+    def eval_fixed_float(self, directive: Directive):
+        pass
+
+    def eval_exponential_float(self, directive: Directive):
+        pass
+
+    def eval_general_float(self, directive: Directive):
+        pass
+
+    def eval_monetary_float(self, directive: Directive):
+        pass
+
     # FORMAT Printer Operations
-    def eval_aesthetic(self, directive: Directive, arg=None):
-        arg = self.args.consume() if arg is None else arg
-        
-        if arg is None:
-            output = "()" if directive.colon else "NIL"
-
-        else:
-            output = str(arg)
-
-        if not directive.params:
-            self.output(output)
-            return
-
+    def eval_aesthetic(self, directive: Directive):
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
         pad_char = self.get_param(directive, 3, default=" ")
 
         min_padding = min_pad * pad_char
+
+        arg = self.args.consume()
+        if arg is None:
+            output = "()" if directive.colon else "NIL"
+
+        else:
+            output = str(arg)
 
         if directive.at_sign:
             segments = ["", min_padding, output]
