@@ -16,3 +16,4 @@ But, if it proves *un*reasonable, we happily abandon CLISP's ways. Below are the
 
 - Symbols are not supported; Python ain't got 'em, and they display like strings anyway.
 - Special key sequences are not displayed by `~:@c`, making it equivalent to `~:c`.
+- Formatted floats may differ greatly in their insignificant digits compared to CLISP's output.

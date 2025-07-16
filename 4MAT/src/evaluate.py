@@ -3,6 +3,7 @@ import math
 import re
 
 from dataclasses import dataclass
+from numbers import Real
 
 from .directives import *
 from .parse import parse, tokenize
@@ -408,7 +409,7 @@ class Interpreter:
 
         if not isinstance(self.args.peek(), int):
             # CLISP clears the modifiers for some reason
-            self.eval_aesthetic(directive.copy(kind="a", colon=False, at_sign=False, params=[min_col, None, pad_char]))
+            self.eval_aesthetic(Directive(kind="a", params=[min_col, None, pad_char]))
             return
 
         arg = self.args.consume()
@@ -465,17 +466,106 @@ class Interpreter:
         self.output(f"{''.join(output):{pad_char}>{min_col}}")
 
     # FORMAT Floating-Point Printers
+    @classmethod
+    def base_float(cls, arg: Real, directive: Directive) -> str:
+        return f"{float(arg):{cls.sign(directive)}#}"
+
+    @staticmethod
+    def sign(directive: Directive) -> str:
+        return '+' if directive.at_sign else '-'
+
+    def float_default(self, width: int | None) -> float | None:
+        if not isinstance(self.args.peek(), Real):
+            self.eval_aesthetic(Directive(kind="a", params=[width]))
+            return
+
+        return float(self.args.consume())
+
     def eval_fixed_float(self, directive: Directive):
-        pass
+        w = self.get_param(directive, 0)
+        d = self.get_param(directive, 1)
+        k = self.get_param(directive, 2, default=0)
+        overflow_char = self.get_param(directive, 3)
+        pad_char = self.get_param(directive, 4, default=" ")
+
+        if (arg := self.float_default(w)) is None:
+            return
+
+        arg *= 10 ** k
+        if d is None:
+            output = self.base_float(arg, directive)
+            if abs(arg) < 1 and w is not None and len(output) > w:
+                output = output.replace("0.", ".")
+
+            output = output[:w]
+
+        else:
+            output = f"{arg:{self.sign(directive)}#.{d}f}"
+            if abs(arg) < 1 and w is not None and len(output) > w:
+                output = output.replace("0.", ".")
+
+        if len(output) > w or "." not in output:
+            self.output(overflow_char * w)
+            return
+
+        if w is not None:
+            output = f"{output:{pad_char}>{w}}"
+
+        self.output(output)
 
     def eval_exponential_float(self, directive: Directive):
         pass
 
     def eval_general_float(self, directive: Directive):
-        pass
+        w = self.get_param(directive, 0)
+        d = self.get_param(directive, 1)
+        e = self.get_param(directive, 2, default=2)
+        overflow_char = self.get_param(directive, 3)
+        pad_char = self.get_param(directive, 4, default=" ")
+        exponent_char = self.get_param(directive, 5, default="E")
+
+        if (arg := self.float_default(w)) is None:
+            return
+
+        # Why
+        n = math.floor(math.log10(abs(arg))) + 1
+        ee = e + 2
+        ww = None if w is None else w - ee
+        d = max(len(self.base_float(arg, directive)), min(n, 7)) if d is None else d
+        dd = d - n
+
+        if 0 <= dd <= d:
+            self.eval_fixed_float(directive.copy(kind="f", params=[ww, dd, None, overflow_char, pad_char]))
+            self.eval_tabulate(Directive(kind="t", at_sign=True, params=[ee]))
+
+        else:
+            self.eval_exponential_float(directive.copy(kind="e",
+                                                       params=[w, d, e, overflow_char, pad_char, exponent_char]))
 
     def eval_monetary_float(self, directive: Directive):
-        pass
+        d = self.get_param(directive, 0, default=2)
+        n = self.get_param(directive, 1, default=1)
+        w = self.get_param(directive, 2, default=0)
+        pad_char = self.get_param(directive, 3, default=" ")
+
+        if (arg := self.float_default(w)) is None:
+            return
+
+        if arg < 0:
+            sign = "-"
+
+        elif directive.at_sign:
+            sign = "+"
+
+        else:
+            sign = ""
+
+        output = f"{abs(arg):0>{n + d + 1}.{d}f}"
+        if directive.colon:
+            self.output(f"{sign}{output:{pad_char}>{w - len(sign) if w >= len(sign) else ''}}")
+
+        else:
+            self.output(f"{sign + output:{pad_char}>{w}}")
 
     # FORMAT Printer Operations
     def eval_aesthetic(self, directive: Directive):
