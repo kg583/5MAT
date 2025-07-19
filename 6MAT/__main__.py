@@ -27,7 +27,8 @@ parser.add_argument("--preserve-groups", action="store_true",
                     help="preserve unscoped grouping blocks")
 parser.add_argument("--preserve-indents", action="store_true",
                     help="preserve newlines and indentation")
-
+parser.add_argument("--debug-trace", action="store_true",
+                    help="insert trace information. massively (2-3x) increases code size, disables optimizations")
 
 if __name__ == "__main__":
     args, disables = parser.parse_known_args()
@@ -49,17 +50,22 @@ if __name__ == "__main__":
             case _:
                 raise ValueError(f"unrecognized file extension: '{args.filename}'")
 
-        print(f"Optimizing {path}.5mat...")
-        opts = BASIC_OPTS
+        if not args.debug_trace:
+            print(f"Optimizing {path}.5mat...")
+            opts = BASIC_OPTS
 
-        if args.unsafe:
-            opts |= UNSAFE_OPTS
+            if args.unsafe:
+                opts |= UNSAFE_OPTS
 
-        if args.golf:
-            opts |= GOLF_OPTS
+            if args.golf:
+                opts |= GOLF_OPTS
 
-        code, saved = optimize(code, opts, [name.removeprefix("--no-") for name in disables], **vars(args))
+            code, saved = optimize(code, opts, [name.removeprefix("--no-") for name in disables], **vars(args))
+            print(f"Saved {saved} characters!")
+        else:
+            print(f"Optimizations disabled due to presence of --debug-trace flag.")
+
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)
 
-        print(f"Saved {saved} characters!")
+        print(f"Output written to {path}.5mat!")

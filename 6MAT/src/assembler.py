@@ -376,6 +376,8 @@ def match_tokens(tokens: list[Token], context: Context) -> tuple[str, list[Token
 
                 case "instr":
                     code, tokens = match_args([token, *tokens], context)
+                    if context.flags.get("debug_trace"):
+                        code = f"~{','.join(f'\'{repr(x)[1:-1]}' for x in str(token))}!~:!~@!" + code
                     assembled += code
 
                 case "lbrace":

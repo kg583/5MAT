@@ -2,12 +2,13 @@ import codecs
 import math
 import re
 
-from dataclasses import dataclass
 from numbers import Real
 
 from .directives import *
 from .parse import parse, tokenize
 
+import logging
+logger = logging.getLogger(__name__)
 
 class Numbers:
     DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -348,6 +349,10 @@ class Interpreter:
             # FORMAT Miscellaneous Pseudo-Operations
             case '^':
                 self.eval_escape_upward(directive)
+
+            # DEBUG directives (added by the authors of this interpreter)
+            case '!':
+                self.eval_debug(directive)
 
             case _:
                 print(f"Unrecognized directive ~{directive.kind}")
@@ -903,6 +908,25 @@ class Interpreter:
 
             case [a, b, c] if a <= b <= c: escape()
 
+    # DEBUG directives (added by the authors of this interpreter)
+    def eval_debug(self, directive: Directive):
+        if directive.at_sign:
+            if directive.colon:
+                logger.warning("~:@! is reserved for future use.")
+                return
+
+            logger.debug(f"WRITE\t\t      {repr(self.buffer)[1:-1]}")
+            return
+
+
+        if directive.colon:
+            first_line, second_line = str(self.args).splitlines()
+            # hope we don't end up race conditioning this?
+            logger.debug(f"READ\t\t{first_line}")
+            logger.debug(f"READ\t\t{second_line}")
+        else:
+            logger.info(f"INFO\t{''.join([" " if x is None else x for x in directive.params])}")
+
 
 def fourmat(program: str | BlockDirective, args: list | Args):
     interp = Interpreter(program, args=args)
@@ -926,5 +950,6 @@ def fivemat(program: str, *, max_loops: int = None):
             print(end=tape[tape.rfind("\f") + 1:])
             iterations += 1
 
-    except Exception:
+    except Exception as e:
+        logger.error(e, exc_info=True)
         pass
