@@ -18,7 +18,7 @@ class Directive:
         self.kind = self.kind.lower()
 
     def get_param(self, index: int, default=None):
-        if 0 <= index < len(self.params):
+        if index < len(self.params):
             val = self.params[index]
             return default if val is None else val
 
