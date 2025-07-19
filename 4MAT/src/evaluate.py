@@ -216,6 +216,17 @@ class Args:
         self.index += dist
         self.clamp()
 
+    def __str__(self):
+        before_elem = self.args[:self.index]
+        after_elem = self.args[self.index:]
+        if all(isinstance(arg, str) for arg in self.args):
+            seen_fmt = repr(''.join(before_elem))[1:-1]
+            next_fmt = repr(''.join(after_elem))[1:-1]
+        else:
+            seen_fmt = ''.join(map(repr, before_elem))
+            next_fmt = ''.join(map(repr, after_elem))
+        return f"seen: {seen_fmt}\nnext: {' ' * len(seen_fmt)}{next_fmt}"
+
 
 class Interpreter:
     def __init__(self, program: str | BlockDirective, *, args: list | Args, position: int = 0, outer: int = None):
