@@ -27,16 +27,19 @@ class BlockLeaf(BlockTree):
 
 @dataclass
 class BlockBranch(BlockTree):
-    condition: str
-    if_true: BlockTree
-    if_false: BlockTree
+    positive_condition: str
+    negative_condition: str
+
+    positive_branch: BlockTree
+    negative_branch: BlockTree
 
     def to_sixmat(self, s: SixMat):
-        with s.block_instn("IFEQ!", A.read(), A.chr(self.condition)):
-            self.if_true.to_sixmat(s)
+        # IFNE is slightly cheaper than IFEQ due to not having to use the third argument of ~^
+        with s.block_instn("IFNE!", A.read(), A.chr(self.negative_condition)):
+            self.positive_branch.to_sixmat(s)
             s.instn("SKIP", A.remaining())  # sometimes this is important
         s.instn("BRZR")
-        self.if_false.to_sixmat(s)
+        self.negative_branch.to_sixmat(s)
 
 
 def tree_layout(generated_blocks: dict[QualifiedKey, GeneratedRegistryEntry]):
@@ -51,19 +54,16 @@ def tree_layout(generated_blocks: dict[QualifiedKey, GeneratedRegistryEntry]):
             paths[leaf.key] = prefix
             return leaf
 
-        # we can fiddle with this condition as we please, just needs to divide in two
+        condition = ControlChar.path(depth, True)
+        negated = ControlChar.path(depth, False)
+
+        # we can fiddle with the division as we please; it just needs to divide in two
         # something less sensitive to small changes in #(blocks) could be nice but isn't really necessary.
-        left_group = leaves[::2]
-        right_group = leaves[1::2]
+        positive_branch = arrange(leaves[::2], prefix + condition, depth + 1)
+        negative_branch = arrange(leaves[1::2], prefix + negated, depth + 1)
 
-        condition_char = ControlChar.path(depth, True)
-        left_prefix = prefix + condition_char
-        right_prefix = prefix + ControlChar.path(depth, False)
+        return BlockBranch(condition, negated, positive_branch, negative_branch)
 
-        left_branch = arrange(left_group, left_prefix, depth + 1)
-        right_branch = arrange(right_group, right_prefix, depth + 1)
-
-        return BlockBranch(condition_char, left_branch, right_branch)
 
     hell_leaves = []
     normal_leaves = []
