@@ -104,11 +104,16 @@ class SixMat:
         self.indent()
         self.result += f"|{program}|\n"
 
-    def raw_text(self, text: str):
+    def raw_text(self, text: str, *, indent=False):
         """
-        Function for inserting text directly into the output. No checks or reformatting is performed; use sparingly.
+        Function for inserting text directly into the output. No checks are performed; use sparingly.
         """
-        self.result += text
+        if indent:
+            for line in text.splitlines():
+                self.indent()
+                self.result += f"{line}\n"
+        else:
+            self.result += text
 
 
 __all__ = ["A", "SixMat"]

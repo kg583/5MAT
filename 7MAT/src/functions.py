@@ -1,32 +1,31 @@
-import inspect
+from collections import defaultdict
 from typing import Callable
 from warnings import warn
 
-from .linker import Linker
-from .sixmat import SixMat
+from .block_layout import Linker, BlockRegistry
+from .sixmat import SixMat, A
+from .constants import ControlChar
 
 class Fn:
     @staticmethod
-    def jump(s: SixMat, target: Callable | str, specifier = None, perform_checks = True):
+    def jump(s: SixMat, target: Callable | str, *parameters, perform_checks=True):
         """
         Don't use this for function calls!
         """
-        jumper = inspect.currentframe().f_back.f_code.co_qualname
         key = target if isinstance(target, str) else target.__qualname__
 
         if perform_checks:
-            # yeah yeah i get it maybe i shouldn't depend on linker internals
             try:
-                Linker._check_key_specifier(key, specifier)
+                from .block_layout.block_registry import QualifiedKey
+                BlockRegistry.check_qualified_key(QualifiedKey(key, *parameters))
             except Exception as e:
                 warn(str(e))
 
-            if Linker._registry.get(key).requires_hell and not Linker._registry.get(jumper).creates_hell:
-                warn(f"Attempted to jump to {key}, which expects a set-up hell, from {jumper}, which does not set up hell.")
+        s.instn("COPYC!", A.chr(ControlChar.HELL_FILL_CHAR))
+        s.instn("PRINC", A.chr(ControlChar.HELL_FILL_CHAR))
 
-        with s.block_instn("LOOP"):
-            s.instn("COPY")
-        s.instn("PRFF")
-        Linker.insert_path(s, key, specifier)
+        Linker.insert_path(s, key, *parameters)
         s.instn("PRFF")
 
+
+__all__ = ["Fn"]
