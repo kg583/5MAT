@@ -941,13 +941,13 @@ def fourmat(program: str | BlockDirective, args: list | Args):
     return interp.buffer
 
 
-def fivemat(program: str, *, max_loops: int = None):
+def fivemat(program: str, *, max_lifetimes: int = None):
     parsed = parse(tokenize(decode_escapes(program)))
     tape = []
 
     try:
         iterations = 0
-        while max_loops is None or iterations < max_loops:
+        while max_lifetimes is None or iterations < max_lifetimes:
             tape = fourmat(parsed, [list(tape)])
             print(end=tape[tape.rfind("\f") + 1:])
             iterations += 1

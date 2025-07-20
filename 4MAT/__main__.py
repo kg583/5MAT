@@ -5,7 +5,7 @@ import logging
 logging.basicConfig(filename="trace.log", level=logging.DEBUG)
 
 def main():
-    fivemat(open(sys.argv[-1], encoding="UTF-8").read(), max_loops=100)
+    fivemat(open(sys.argv[-1], encoding="UTF-8").read(), max_lifetimes=100)
 
 """
 arg options...
