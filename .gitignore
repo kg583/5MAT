@@ -3,4 +3,4 @@
 *.pstats
 
 6MAT/devices/*.5mat
-4MAT/trace.log
+*.log

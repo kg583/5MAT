@@ -1,13 +1,15 @@
 import codecs
+import logging
 import math
 import re
 
+from dataclasses import dataclass
 from numbers import Real
 
 from .directives import *
 from .parse import parse, tokenize
 
-import logging
+
 logger = logging.getLogger(__name__)
 
 class Numbers:
@@ -59,7 +61,7 @@ class Numbers:
             case _, 0:
                 return cls.TENS[value]
 
-            case _, _:
+            case _:
                 return f"{cls.TENS[value]}-{cls.UNITS[rem]}"
 
     @classmethod
@@ -72,7 +74,7 @@ class Numbers:
             case _, 0:
                 return f"{cls.UNITS[value]} hundred"
 
-            case _, _:
+            case _:
                 return f"{cls.UNITS[value]} hundred and {cls._name_2(rem)}"
 
     @classmethod
@@ -85,7 +87,7 @@ class Numbers:
             case _, 0:
                 return f"{cls._name_3(value)} thousand"
 
-            case _, _:
+            case _:
                 return f"{cls._name_3(value)} thousand, {cls._name_3(rem)}"
 
     @classmethod
@@ -608,7 +610,7 @@ class Interpreter:
         self.output(self.justify(segments, min_col, col_inc, pad_char))
 
     @staticmethod
-    def justify(segments: list, min_col: int, col_inc: int, pad_char: str):
+    def justify(segments: list[str], min_col: int, col_inc: int, pad_char: str) -> str:
         length = len("".join(segments))
         if col_inc > 0:
             min_col += math.ceil(max(length - min_col, 0) / col_inc) * col_inc
@@ -684,11 +686,8 @@ class Interpreter:
             line_pad = 0
             line_width = 0
 
-        segments = []
+        segments = [""]
         min_padding = min_pad * pad_char
-
-        if directive.colon:
-            segments.extend(["", min_padding])
 
         for clause in directive.clauses[index:]:
             interp = self.child(args=self.args)
@@ -699,12 +698,15 @@ class Interpreter:
             except StopIteration:
                 break
 
-            segments.extend([interp.buffer, min_padding])
+            segments.extend([min_padding, interp.buffer])
 
         if directive.at_sign:
-            segments.extend(["", min_padding])
+            segments.extend([min_padding, ""])
 
-        output = self.justify(segments[:-1], min_col, col_inc, pad_char)
+        if directive.colon or len(segments) == 1:
+            segments = ["", min_padding, *segments]
+
+        output = self.justify(segments, min_col, col_inc, pad_char)
 
         if overflow and self.position + len(output) + line_pad > line_width:
             output = overflow + output
