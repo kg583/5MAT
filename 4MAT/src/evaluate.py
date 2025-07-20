@@ -686,7 +686,7 @@ class Interpreter:
             line_pad = 0
             line_width = 0
 
-        segments = [""]
+        segments = []
         min_padding = min_pad * pad_char
 
         for clause in directive.clauses[index:]:
@@ -698,8 +698,9 @@ class Interpreter:
             except StopIteration:
                 break
 
-            segments.extend([min_padding, interp.buffer])
+            segments.extend([interp.buffer, min_padding])
 
+        segments = segments[:-1]
         if directive.at_sign:
             segments.extend([min_padding, ""])
 
