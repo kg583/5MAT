@@ -381,6 +381,16 @@ PRNZz           _K                  ~#[~:;`PRINz _K`~]
 
 PRZRz           _K                  ~#[`PRINz _K`~]
 
+READ                                ~/read/
+
+READC                               ~/read-char/
+
+READH                               ~/read-char-no-hang/
+
+READL                               ~/read-line/
+
+READW                               ~/read-preserving-whitespace/
+
 SKIP        0                       ``
 SKIP        1                       `SKIP`
 SKIP        +N                      ~+N*

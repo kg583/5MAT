@@ -355,6 +355,25 @@ Print `N` newlines (`\n`).
 #### `TILDE +N = 1`
 Print `N` tildes (`~`).
 
+## Reading
+
+**Reading** contents from STDIN results in those characters being printed. A single read operation always consumes exactly one character from the tape, and will crash if no input remains unless noted otherwise.
+
+#### `READ`
+Read an entire Lisp object from STDIN and print its string representation, crashing if the input is incomplete. This instruction calls the Lisp function [`read`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_rd.htm#read).
+
+#### `READC`
+Read and print a single character from STDIN, crashing if no input remains. This instruction calls the Lisp function [`read-char`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_cha.htm#read-char).
+
+#### `READH`
+Read and print a single character from STDIN, printing nothing if no input remains. This instruction calls the Lisp function [`read-char-no-hang`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_c_1.htm#read-char-no-hang).
+
+#### `READL`
+Read and print a single line from STDIN, including its line separator, crashing if no input remains. This instruction calls the Lisp function [`read-line`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_lin.htm#read-line).
+
+#### `READW`
+Read an entire Lisp object from STDIN and print its string representation with whitespace preserved, crashing if the input is incomplete. This instruction calls the Lisp function [`read-preserving-whitespace`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_rd.htm#read-preserving-whitespace).
+
 
 ## Special Forms
 
