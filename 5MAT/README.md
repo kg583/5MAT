@@ -106,6 +106,8 @@ The above generalizes easily to any base and any system of digits.
 - [`~/read-line/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_lin.htm#read-line)
 - [`~/read-preserving-whitespace/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_rd.htm#read-preserving-whitespace)
 
+Note that exactly one character from the tape is consumed by any of the above calls.
+
 ### Miscellany
 
 - 5MAT programs can be made "readable" using the `~\n` directive.
