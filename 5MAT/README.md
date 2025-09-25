@@ -108,6 +108,8 @@ The above generalizes easily to any base and any system of digits.
 
 Note that exactly one character from the tape is consumed by any of the above calls.
 
+For example, to set the first line of input as the initial tape contents, use `~:[~:*~/read-line/~;~]`.
+
 ### Miscellany
 
 - 5MAT programs can be made "readable" using the `~\n` directive.

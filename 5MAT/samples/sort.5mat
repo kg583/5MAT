@@ -1,5 +1,5 @@
-~1[  string to sort ~]~
-~:[bahrqorwkrlamsne~~~|~;~]~:*~
+~1[   get the string to sort from STDIN ~]~
+~:[~:*~/read-line/~~~|~;~]~:*~
 
 ~{~
         ~@{~v,'↡^~}~1[                 Find the next FF ~]~
