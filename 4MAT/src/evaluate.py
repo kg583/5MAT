@@ -9,8 +9,8 @@ from .callables import lisp_functions
 from .directives import *
 from .parse import parse, tokenize
 
-
 logger = logging.getLogger(__name__)
+
 
 class Numbers:
     DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -116,7 +116,7 @@ class Numbers:
         if number == 0:
             return "zero"
 
-        value, rem = divmod(abs(number), 10**6)
+        value, rem = divmod(abs(number), 10 ** 6)
         name = cls._name_6(rem)
 
         power = 1
@@ -502,7 +502,7 @@ class Interpreter:
     def float_default(self, width: int | None) -> float | None:
         if not isinstance(self.args.peek(), Real):
             self.eval_aesthetic(Directive(kind="a", params=[width]))
-            return
+            return None
 
         return float(self.args.consume())
 
@@ -539,7 +539,7 @@ class Interpreter:
         self.output(output)
 
     def eval_exponential_float(self, directive: Directive):
-        pass
+        raise NotImplementedError("exponential floats not implemented")
 
     def eval_general_float(self, directive: Directive):
         w = self.get_param(directive, 0)
@@ -870,7 +870,6 @@ class Interpreter:
         if directive.colon:
             if directive.at_sign:
                 self.output(output.upper())
-
             else:
                 self.output(output.title())
 
@@ -882,7 +881,6 @@ class Interpreter:
                     if char.isalpha():
                         self.output(char.upper())
                         break
-
                     else:
                         self.output(char.lower())
 

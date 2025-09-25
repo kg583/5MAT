@@ -23,8 +23,7 @@ def tokenize(source) -> list[str | Directive]:
                 re.DOTALL | re.IGNORECASE,
             )
             if match is None:
-                print(f"Error on token {token}")
-                exit(1)
+                raise SyntaxError(f"Error on token {token}")
 
             params = []
             if len(match[1]) > 0:
@@ -68,23 +67,19 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
 
             if token.kind == ";":
                 if stack[-1].kind not in "[<":
-                    print(f"~; is only supported in ~[ and ~< blocks")
-                    exit(1)
+                    raise SyntaxError(f"~; is only supported in ~[ and ~< blocks")
 
                 if token.colon:
                     if stack[-1].default_token:
-                        print(f"multiple ~:; separators provided")
-                        exit(1)
+                        raise SyntaxError(f"multiple ~:; separators provided")
 
                     if stack[-1].kind == "<" and len(stack[-1].clauses) > 1:
-                        print(f"overflow clause is not first ~< clause")
-                        exit(1)
+                        raise SyntaxError(f"overflow clause is not first ~< clause")
 
                     stack[-1].default_token = token
 
                 elif stack[-1].kind == "[" and stack[-1].default_token:
-                    print(f"default clause is not final ~[ clause")
-                    exit(1)
+                    raise SyntaxError(f"default clause is not final ~[ clause")
 
                 stack[-1].clauses.append([])
                 continue
@@ -99,12 +94,10 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
 
                 closed_block = stack.pop()
                 if closed_block.kind == "":
-                    print(f"Unmatched ~{token.kind}")
-                    exit(1)
+                    raise SyntaxError(f"Unmatched ~{token.kind}")
 
                 if pairings[closed_block.kind] != token.kind:
-                    print(f"Unbalanced ~{closed_block.kind} (was closed with ~{token.kind})")
-                    exit(1)
+                    raise SyntaxError(f"Unbalanced ~{closed_block.kind} (was closed with ~{token.kind})")
 
                 closed_block.closing_token = token
                 stack[-1].clauses[-1].append(closed_block)
@@ -113,7 +106,6 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
         stack[-1].clauses[-1].append(token)
 
     if len(stack) > 1:
-        print(f"Unclosed ~{stack[1].kind}")
-        exit(1)
+        raise SyntaxError(f"Unclosed ~{stack[1].kind}")
 
     return stack[0]
