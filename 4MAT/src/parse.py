@@ -8,7 +8,7 @@ def tokenize(source) -> list[str | Directive]:
 
     # this doesn't /really/ work in the case of malformed embedded directives, I don't think?
     textual_tokens = re.split(
-        r"(~(?:[+-]?\d+|'.|[v#])?(?:,(?:[+-]?\d+|'.|[v#])?)*(?::?@?|@?:?).)", stripped_source
+        r"(~(?:[+-]?\d+|'.|[v#])?(?:,(?:[+-]?\d+|'.|[v#])?)*(?::?@?|@?:?)(?:/[^/\s]+/|[^/]))", stripped_source, flags=re.IGNORECASE
     )
 
     tokens = []
@@ -18,9 +18,9 @@ def tokenize(source) -> list[str | Directive]:
 
         if token.startswith("~"):
             match = re.fullmatch(
-                r"~((?:[+-]?\d+|'.|[v#])?(?:,(?:[+-]?\d+|'.|[v#])?)*)(:?@?|@?:?)(.)",
+                r"~((?:[+-]?\d+|'.|[v#])?(?:,(?:[+-]?\d+|'.|[v#])?)*)(:?@?|@?:?)(/[^/\s]+/|[^/])",
                 token,
-                re.DOTALL,
+                re.DOTALL | re.IGNORECASE,
             )
             if match is None:
                 print(f"Error on token {token}")
@@ -60,6 +60,10 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
         if isinstance(token, Directive):
             if token.kind in "{[<(":  # opening block
                 stack.append(BlockDirective.from_embedded(token))
+                continue
+
+            if token.kind.startswith("/"):
+                stack[-1].clauses[-1].append(FunctionCallDirective.from_embedded(token))
                 continue
 
             if token.kind == ";":

@@ -2,10 +2,10 @@ import codecs
 import logging
 import math
 import re
-
-from dataclasses import dataclass
+import sys
 from numbers import Real
 
+from .callables import lisp_functions
 from .directives import *
 from .parse import parse, tokenize
 
@@ -232,7 +232,8 @@ class Args:
 
 
 class Interpreter:
-    def __init__(self, program: str | BlockDirective, *, args: list | Args, position: int = 0, outer: int = None):
+    def __init__(self, program: str | BlockDirective, *, args: list | Args, position: int = 0, outer: int = None,
+                 input_stream=sys.stdin):
         if isinstance(program, str):
             self.ast = parse(tokenize(program))
         else:
@@ -247,8 +248,10 @@ class Interpreter:
         self.position = position
         self.outer = outer
 
+        self.input_stream = input_stream
+
     def child(self, program: str | BlockDirective = BlockDirective("", []), *, args: list | Args) -> 'Interpreter':
-        return Interpreter(program, args=args, position=self.position, outer=self.outer)
+        return Interpreter(program, args=args, position=self.position, outer=self.outer, input_stream=self.input_stream)
 
     def output(self, data: str):
         self.buffer += data
@@ -325,6 +328,10 @@ class Interpreter:
                 self.eval_aesthetic(directive)
             case 'w':
                 self.eval_aesthetic(directive)
+
+            # FORMAT Pretty Printer Operations
+            case '/':
+                self.eval_call_function(directive)
 
             # FORMAT Layout Control
             case 't':
@@ -608,6 +615,14 @@ class Interpreter:
             segments = [output, min_padding, ""]
 
         self.output(self.justify(segments, min_col, col_inc, pad_char))
+
+    def eval_call_function(self, directive: FunctionCallDirective):
+        if directive.function_name not in lisp_functions:
+            raise NotImplementedError(f"~/{directive.function_name}/ unrecognized or unimplemented function")
+
+        func = lisp_functions[directive.function_name]
+        output = func(self.input_stream, self.args.consume(), directive.colon, directive.at_sign, *directive.params)
+        self.output(output)
 
     @staticmethod
     def justify(segments: list[str], min_col: int, col_inc: int, pad_char: str) -> str:
@@ -931,8 +946,8 @@ class Interpreter:
             logger.info(f"INFO\t{''.join([" " if x is None else x for x in directive.params])}")
 
 
-def fourmat(program: str | BlockDirective, args: list | Args):
-    interp = Interpreter(program, args=args)
+def fourmat(program: str | BlockDirective, args: list | Args, input_stream=sys.stdin):
+    interp = Interpreter(program, args=args, input_stream=input_stream)
     try:
         interp.eval_ast_root()
 
@@ -942,14 +957,14 @@ def fourmat(program: str | BlockDirective, args: list | Args):
     return interp.buffer
 
 
-def fivemat(program: str, *, max_lifetimes: int = None):
+def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin):
     parsed = parse(tokenize(decode_escapes(program)))
     tape = []
 
     try:
         iterations = 0
         while max_lifetimes is None or iterations < max_lifetimes:
-            tape = fourmat(parsed, [list(tape)])
+            tape = fourmat(parsed, [list(tape)], input_stream=input_stream)
             print(end=tape[tape.rfind("\f") + 1:])
             iterations += 1
 

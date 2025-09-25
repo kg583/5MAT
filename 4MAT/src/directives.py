@@ -50,3 +50,14 @@ class BlockDirective(Directive):
         prefix_params = ",".join(map(repr, self.params))
         return (f"({self.kind}{at_sign}{colon}{' ' + prefix_params if len(self.params) >= 1 else ''}|"
                 f"{' ' + repr(self.clauses) if len(self.clauses) >= 1 else ''})")
+
+
+@dataclass
+class FunctionCallDirective(Directive):
+    function_name: str = None
+
+    @classmethod
+    def from_embedded(cls, embedded: Directive):
+        function_name = embedded.kind.split('/')[1].split(':')[-1].upper()
+        embedded.kind = '/'
+        return FunctionCallDirective(function_name=function_name, **vars(embedded))
