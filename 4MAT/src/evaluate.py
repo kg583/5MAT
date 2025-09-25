@@ -491,9 +491,9 @@ class Interpreter:
         self.output(f"{''.join(output):{pad_char}>{min_col}}")
 
     # FORMAT Floating-Point Printers
-    @classmethod
-    def base_float(cls, arg: Real, directive: Directive) -> str:
-        return f"{float(arg):{cls.sign(directive)}#}"
+    @staticmethod
+    def base_float(arg: Real, directive: Directive) -> str:
+        return f"{float(arg):{Interpreter.sign(directive)}#}"
 
     @staticmethod
     def sign(directive: Directive) -> str:
@@ -519,35 +519,88 @@ class Interpreter:
         arg *= 10 ** k
         if d is None:
             output = self.base_float(arg, directive)
-            if abs(arg) < 1 and w is not None and len(output) > w:
-                output = output.replace("0.", ".")
-
-            output = output[:w]
 
         else:
             output = f"{arg:{self.sign(directive)}#.{d}f}"
-            if abs(arg) < 1 and w is not None and len(output) > w:
-                output = output.replace("0.", ".")
-
-        if len(output) > w or "." not in output:
-            self.output(overflow_char * w)
-            return
 
         if w is not None:
-            output = f"{output:{pad_char}>{w}}"
+            w = max(w, 0)
+            if abs(arg) < 1 and len(output) > w:
+                output = output.replace("0.", ".", 1)
+
+            if len(output) > w or "." not in output:
+                if overflow_char:
+                    self.output(overflow_char * w)
+                    return
+
+            else:
+                output = f"{output:{pad_char}>{w}}"[:w]
 
         self.output(output)
 
     def eval_exponential_float(self, directive: Directive):
-        raise NotImplementedError("exponential floats not implemented")
+        w = self.get_param(directive, 0)
+        d = self.get_param(directive, 1)
+        e = self.get_param(directive, 2)
+        k = self.get_param(directive, 3, default=1)
+        overflow_char = self.get_param(directive, 4)
+        pad_char = self.get_param(directive, 5, default=" ")
+        exponent_char = self.get_param(directive, 6, default="E")
+
+        if (arg := self.float_default(w)) is None:
+            return
+
+        exponent = 0
+        while 10 ** k < arg:
+            arg /= 10
+            exponent += 1
+
+        while 10 ** (k - 1) > arg:
+            arg *= 10
+            exponent -= 1
+
+        def with_precision(prec):
+            if prec is None:
+                out = self.base_float(arg, directive)
+
+            else:
+                out = f"{arg:{self.sign(directive)}.{prec if k <= 0 else prec - k + 1}f}"
+
+            out += exponent_char + f"{exponent:+0{max(0, e + 1)}d}"
+            return out
+
+        if w is None or d is not None:
+            output = with_precision(d)
+
+        else:
+            d = max(k, 1)
+            while len(output := with_precision(d)) < w and \
+                    not (f"0{exponent_char}" in output and f".0{exponent_char}" not in output):
+                d += 1
+
+        if w is not None:
+            w = max(w, 0)
+            if abs(arg) < 1 and len(output) > w:
+                output = output.replace("0.", ".", 1)
+
+            if len(output) > w or "." not in output:
+                if overflow_char:
+                    self.output(overflow_char * w)
+                    return
+
+            else:
+                output = f"{output:{pad_char}>{w}}"[:w]
+
+        self.output(output)
 
     def eval_general_float(self, directive: Directive):
         w = self.get_param(directive, 0)
         d = self.get_param(directive, 1)
         e = self.get_param(directive, 2, default=2)
-        overflow_char = self.get_param(directive, 3)
-        pad_char = self.get_param(directive, 4, default=" ")
-        exponent_char = self.get_param(directive, 5, default="E")
+        k = self.get_param(directive, 3)
+        overflow_char = self.get_param(directive, 4)
+        pad_char = self.get_param(directive, 5, default=" ")
+        exponent_char = self.get_param(directive, 6, default="E")
 
         if (arg := self.float_default(w)) is None:
             return
@@ -559,13 +612,14 @@ class Interpreter:
         d = max(len(self.base_float(arg, directive)), min(n, 7)) if d is None else d
         dd = d - n
 
+        self.args.skip(-1)
         if 0 <= dd <= d:
             self.eval_fixed_float(directive.copy(kind="f", params=[ww, dd, None, overflow_char, pad_char]))
             self.eval_tabulate(Directive(kind="t", at_sign=True, params=[ee]))
 
         else:
             self.eval_exponential_float(directive.copy(kind="e",
-                                                       params=[w, d, e, overflow_char, pad_char, exponent_char]))
+                                                       params=[w, d, e, k, overflow_char, pad_char, exponent_char]))
 
     def eval_monetary_float(self, directive: Directive):
         d = self.get_param(directive, 0, default=2)
@@ -941,7 +995,7 @@ class Interpreter:
             logger.debug(f"READ\t\t{first_line}")
             logger.debug(f"READ\t\t{second_line}")
         else:
-            logger.info(f"INFO\t{''.join([" " if x is None else x for x in directive.params])}")
+            logger.info(f"INFO\t{''.join([' ' if x is None else x for x in directive.params])}")
 
 
 def fourmat(program: str | BlockDirective, args: list | Args, input_stream=sys.stdin):
