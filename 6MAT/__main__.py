@@ -28,7 +28,7 @@ parser.add_argument("--preserve-groups", action="store_true",
 parser.add_argument("--preserve-indents", action="store_true",
                     help="preserve newlines and indentation")
 parser.add_argument("--debug-trace", action="store_true",
-                    help="insert trace information. massively (2-3x) increases code size, disables optimizations")
+                    help="insert trace information; massively (2-3x) increases code size, disables optimizations")
 
 if __name__ == "__main__":
     args, disables = parser.parse_known_args()
@@ -62,6 +62,7 @@ if __name__ == "__main__":
 
             code, saved = optimize(code, opts, [name.removeprefix("--no-") for name in disables], **vars(args))
             print(f"Saved {saved} characters!")
+            
         else:
             print(f"Optimizations disabled due to presence of --debug-trace flag.")
 

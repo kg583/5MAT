@@ -151,7 +151,8 @@ CRASH_OPTS = {
     Opt(rf"~@?\{{(?P<body>({CONST})*?)~:?}}", "infinite-loop", flags=re.DOTALL): "~?",
 
     # Reading past the end of the tape
-    Opt(rf"~#\[({CONST})*?~[a-z]", "invalid-read"): "~#[~?"
+    Opt(rf"~#\[({CONST})*?~[a-z]", "invalid-conditional-read"): "~#[~?",
+    Opt(rf"~#\*({CONST})*?~[a-z]", "invalid-read"): "~?"
 }
 
 BOUNDEDNESS_OPTS = {
@@ -162,6 +163,10 @@ BOUNDEDNESS_OPTS = {
     # Short loops
     Opt(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[ac]|{CONST})*?)~:?}}", "unrolled-loop"):
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
+
+    # Repeated constants
+    Opt(r"([^~\s]+?)\1+", "repeat-consts"):
+        lambda match: min(f"~{len(match[0]) // len(match[1])}@{{{match[1]}~}}", match[0], key=len)
 }
 
 SPECIAL_DIRECTIVES = {
@@ -192,7 +197,11 @@ SPECIAL_DIRECTIVES = {
         lambda match: f"~{match['width']},v,v,v$",
 
     # ~@c
-    Opt(r"#\\~:c", "character-reader-name"): "~@c"
+    Opt(r"#\\~:c", "character-reader-name"): "~@c",
+
+    # ~@t
+    Opt(r"([^\s]) {5,}", "tabulation"):
+        lambda match: f"{match[1]}~{len(match[0])}@t"
 }
 
 DEFAULT_PARAMETERS = {
