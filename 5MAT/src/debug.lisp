@@ -27,7 +27,10 @@
             (t c))))
       'string)))
 
+(defvar out (make-string-output-stream))
+(defvar echo (make-echo-stream *standard-input* out))
 (defvar tape nil)
+
 (defun output(string)
   (if *debug*
       (print string)
@@ -35,7 +38,8 @@
         (subseq string (or (position #\ff string :from-end t) 0)))))
 
 (defun driver()
-  (setq tape (coerce (format nil *program* tape) 'list)))
+  (format echo *program* tape)
+  (setq tape (coerce (get-output-stream-string out) 'list)))
 
 (setq *program* (decode *program*))
 

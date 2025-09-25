@@ -23,8 +23,13 @@
             (t c))))
       'string)))
 
-; Output up to the last form feed
+; Define the echo stream for I/O and the tape
+(defvar out (make-string-output-stream))
+(defvar echo (make-echo-stream *standard-input* out))
+
 (defvar tape nil)
+
+; Output up to the last form feed
 (defun output (string)
   (format t "~{~a~}"
     (subseq string (or (position #\ff string :from-end t) 0))))
@@ -34,7 +39,6 @@
 
 ; Loop forever (until error)
 (loop
+  (format echo *program* tape) ; Write the new tape to the echo stream
   (output (setq tape
-    (coerce
-      (format nil *program* tape) ; Write the new tape
-      'list))))                   ; Coerce to a list since FORMAT can't loop over strings
+    (coerce (get-output-stream-string out) 'list)))) ; Coerce to a list since FORMAT can't loop over strings

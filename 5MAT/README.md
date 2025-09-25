@@ -10,7 +10,7 @@ To make this setup viable, though, we need one other concession. While there *ar
 
 In all, we find ourselves with a *tape* of characters that is repeatedly passed through a FORMAT string, processing each character to make a new copy of the tape. While a Turing machine doesn't care about "output" in the human sense, leaving meaningful answers to computations to live on the tape in some particular place, it'd be nice for 5MAT to actually print things to STDOUT.
 
-We accomplish this by dividing the tape in two: a data section, which remains hidden, and an output section, which is always printed. Since output could presumably be any printable text, we'll use `\f` (`0x0C`), the [form feed](https://en.m.wikipedia.org/w/index.php?title=Page_break&useskin=vector#Form_feed) control character, to separate the sections. Programs can place the `\f` wherever they like, in particular placing it at the front of the tape to output nothing (perhaps during a lengthy computation step). Only the last `\f` is checked by the driver, allowing the program to use earlier copies to further conveniently divide their data sections.
+We accomplish this by dividing the tape in two: a data section, which remains hidden, and an output section, which is always printed. Since output could presumably be any printable text, we'll use `\f` (`0x0C`), the [form feed](https://en.m.wikipedia.org/w/index.php?title=Page_break&useskin=vector#Form_feed) control character, to separate the sections. Programs can place the `\f` wherever they like, in particular placing it at the end of the tape to output nothing (perhaps during a lengthy computation step). Only the last `\f` is checked by the driver, allowing the program to use earlier copies to further conveniently divide their data sections.
 
 For convenience, since a vertical spacing character not seen since the days of yore might not play nice with certain text editors, `↡` (`0x21A1`), the Unicode symbol for form feed, may be used in place of `\f`.
 
@@ -97,6 +97,15 @@ Unary arithmetic is trivial in 5MAT; decimal, not so much. Check out `samples/co
 
 The above generalizes easily to any base and any system of digits.
 
+### I/O
+
+5MAT programs run off a bidirectional "echo" stream uniting STDIN and STDOUT. As discussed above, 5MAT programs write to STDOUT the contents of the tape following the last form feed character. Thanks to a happy function signature coincidence, `~/` can be used to read from STDIN. Specifically, any of the following external calls may be made, their return values being written to the tape as characters:
+- [`~/read/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_rd.htm#read)
+- [`~/read-char/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_cha.htm#read-char)
+- [`~/read-char-no-hang/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_c_1.htm#read-char-no-hang)
+- [`~/read-line/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_lin.htm#read-line)
+- [`~/read-preserving-whitespace/`](https://www.lispworks.com/documentation/HyperSpec/Body/f_rd_rd.htm#read-preserving-whitespace)
+
 ### Miscellany
 
 - 5MAT programs can be made "readable" using the `~\n` directive.
@@ -104,7 +113,7 @@ The above generalizes easily to any base and any system of digits.
 
 ## Turing Completeness
 
-A proof of 5MAT's Turing completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag). BCTs can emulate any cyclic tag system, which in turn can emulate Turing machines.
+A proof of 5MAT's Turing completeness exists via `samples/bct.5mat`, which can interpret an arbitrary [bitwise cyclic tag](https://esolangs.org/wiki/Bitwise_Cyclic_Tag) program. BCT programs can emulate any cyclic tag system, which in turn can emulate Turing machines.
 
 ```
 ~:[00111~|101~%~;~]~1[ The data string is stored in the output section of the tape. ~]~
@@ -139,7 +148,7 @@ So, while these implementations *are* HyperSpec-compliant, they will not do for 
 
 No discussion of Lisps is complete without the Schemes, but the story here is even shorter. A much barer form of `format`, one without looping or conditionals, is specified by SRFI 28 and SRFI 48, and just about every Scheme limits itself to one of those specs. There are two honorable mentions, though.
 
-1. GNU Guile: The near entirety of `format` (and even some bells and whistles from SRFI 48) is implemented, but alas, it falls short in the `~^` category like it lispy brethren.
+1. GNU Guile: The near entirety of `format` (and even some bells and whistles from SRFI 48) is implemented, but alas, it falls short in the `~^` category like its lispy brethren.
 2. ChezScheme: Despite claims to choose to conform to the HyperSpec, `~^` doesn't accept three parameters at all, and also behaves as if it is always in a `~:{~}` block for some reason.
 
 ChezScheme actually presents an entertaining nearly-viable backend for 5MAT. Since we can successfully implement [Rule 110](https://en.wikipedia.org/wiki/Rule_110) without needing to break out of loops, we maintain Turing-completeness, though I don't think *anybody* is deranged enough to start building the nMAT stack off of *that*.
