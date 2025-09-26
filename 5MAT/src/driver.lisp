@@ -25,7 +25,7 @@
 
 ; Define the echo stream for I/O and the tape
 (defvar out (make-string-output-stream))
-(defvar echo (make-echo-stream *standard-input* out))
+(defvar echo (make-echo-stream *terminal-io* out))
 
 (defvar tape nil)
 

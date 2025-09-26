@@ -28,7 +28,7 @@
       'string)))
 
 (defvar out (make-string-output-stream))
-(defvar echo (make-echo-stream *standard-input* out))
+(defvar echo (make-echo-stream *terminal-io* out))
 (defvar tape nil)
 
 (defun output(string)
