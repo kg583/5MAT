@@ -41,7 +41,7 @@ def cleanup_directive(modifiers: str, directive: str) -> str:
 
 
 CHAR = r"'\\.|'[^\\]"
-CONST = r"~[%&|.]|~\n\s*|[^~]"
+CONST = r"~[%&|.]|~\n\s*|~\d*,\d*t|[^~]"
 
 MOVE_OPTS = {
     # Any move followed by an absolute move
@@ -161,7 +161,7 @@ BOUNDEDNESS_OPTS = {
         lambda match: f"~{dist_to_arg(arg_to_dist(match['arg_1']) + arg_to_dist(match['arg_2']))}{match['mod']}*",
 
     # Short loops
-    Opt(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[ac]|{CONST})*?)~:?}}", "unrolled-loop"):
+    Opt(rf"~(?P<count>[1-3])@?\{{(?P<body>(~[acsw]|{CONST})*?)~:?}}", "unrolled-loop"):
         lambda match: min(match['body'] * int(match['count']), match[0], key=len),
 
     # Repeated constants
@@ -172,7 +172,7 @@ BOUNDEDNESS_OPTS = {
 SPECIAL_DIRECTIVES = {
     # ~p
     Opt(r"ies~\*", "plural-y"): "~@p",
-    Opt(r"s~\*", "plural"): "~p",
+    Opt(r"(?<!~)s~\*", "plural"): "~p",
 
     # ~$
     Opt(r"~(?P<width>-?\d+|#),*@a", "dollar"):
