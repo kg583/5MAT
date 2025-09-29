@@ -322,12 +322,12 @@ class Interpreter:
 
             # FORMAT Printer Operations
             case 'a':
-                self.eval_aesthetic(directive)
+                self.eval_aesthetic(directive, escapes=False)
             case 's':
-                # TODO: Add correct escapes to output
-                self.eval_aesthetic(directive)
+                self.eval_aesthetic(directive, escapes=True)
             case 'w':
-                self.eval_aesthetic(directive)
+                # TODO: differentiate this from ~s
+                self.eval_aesthetic(directive, escapes=True)
 
             # FORMAT Pretty Printer Operations
             case '/':
@@ -375,6 +375,30 @@ class Interpreter:
             self.eval(token)
 
     # FORMAT Basic Output
+    @staticmethod
+    def character_name(char: str) -> str:
+        match char:
+            # Standard characters
+            case "\n":
+                return "Newline"
+            case " ":
+                return "Space"
+
+            # Semi-standard characters
+            case "\t":
+                return "Tab"
+            case "\f":
+                return "Page"
+            case "\x7f":
+                return "Rubout"
+            case "\a":
+                return "Linefeed"
+            case "\b":
+                return "Backspace"
+
+            case _:
+                return char
+
     def eval_character(self, directive: Directive):
         char = self.args.consume(expected=str())
 
@@ -382,30 +406,10 @@ class Interpreter:
             raise TypeError("~c arg is not a character")
 
         if directive.colon:
-            match char:
-                # Standard characters
-                case "\n":
-                    self.output("Newline")
-                case " ":
-                    self.output("Space")
-
-                # Semi-standard characters
-                case "\t":
-                    self.output("Tab")
-                case "\f":
-                    self.output("Page")
-                case "\x7f":
-                    self.output("Rubout")
-                case "\a":
-                    self.output("Linefeed")
-                case "\b":
-                    self.output("Backspace")
-
-                case _:
-                    self.output(char)
+            self.output(self.character_name(char))
 
         elif directive.at_sign:
-            self.output("#\\" + char)
+            self.output("#\\" + self.character_name(char))
 
         else:
             self.output(char)
@@ -647,7 +651,7 @@ class Interpreter:
             self.output(f"{sign + output:{pad_char}>{w}}")
 
     # FORMAT Printer Operations
-    def eval_aesthetic(self, directive: Directive):
+    def eval_aesthetic(self, directive: Directive, escapes: bool = False):
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
@@ -658,6 +662,10 @@ class Interpreter:
         arg = self.args.consume()
         if arg is None:
             output = "()" if directive.colon else "NIL"
+
+        # TODO: escape more things
+        elif escapes and isinstance(arg, str) and len(arg) == 1:
+            output = "#\\" + self.character_name(arg)
 
         else:
             output = str(arg)
