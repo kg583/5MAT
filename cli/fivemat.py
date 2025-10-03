@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
-    parser = subparsers.add_parser(name="5MATG", aliases=["5", "fivemat"],
+    parser = subparsers.add_parser(name="5MAT", aliases=["5", "fivemat"],
                                    description="Executes 5MAT programs")
     parser.set_defaults(func=run)
 
