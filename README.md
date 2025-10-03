@@ -13,9 +13,9 @@ Like most sensible languages, Common Lisp has a handy-dandy function for produci
 
 The [Common Lisp HyperSpec](https://www.lispworks.com/documentation/HyperSpec/Body/22_c.htm) is the definitive description of exactly what `format` does and does not do. Many implementations exist across the many Lisps and Schemes of the world, but we choose to use [GNU CLISP's](https://gitlab.com/gnu-clisp/clisp/-/blob/master/src/format.lisp?ref_type=heads). A common theme in this project, the code is a beautiful mess, but still leaves much to be desired in terms of speed and interoperability.
 
-Thus, `4MAT/` contains a standalone, spec-compliant `format` implementation, written in Python. There are still many pieces to implement, including those not needed for the next step: making `format` Turing-complete (though we will get around to them, for completeness[^1]).
+Thus, `lib/fourmat/` contains a standalone, spec-compliant `format` implementation, written in Python. Documentation can be found in `docs/4MAT.md`. There are still many pieces to implement, including those not needed for the next step: making `format` Turing-complete (though we will get around to them, for completeness[^1]).
 
-[^1]: The [pretty printer](https://www.lispworks.com/documentation/HyperSpec/Body/22_ce.htm) directives will *not* be implemented because they're whack.
+[^1]: The [pretty printer](https://www.lispworks.com/documentation/HyperSpec/Body/22_ce.htm) directives will *not* be implemented because they're wack.
 
 ## 5MAT
 
@@ -27,7 +27,7 @@ Indeed, `format` is armed with the power to loop, backtrack, and dance wildly ac
 
 [^2]: https://github.com/carlini/printf-tac-toe
 
-Don't believe me? Head down into the `5MAT/` directory to see how it works for yourself! Only a few realizations (beyond base knowledge of `format`) are necessary to make it all come together, and once familiar with its fundamental directives, reading and writing 5MAT *can* become quite natural. A basic driver and slightly less basic debugger are included, as well as many instructive sample programs.
+Don't believe me? Head down into the `lib/fivemat/` directory to see how it works for yourself! Documentation is available in `docs/5MAT.md`, with a normative Lisp version of the interpreter in `docs/lisp/`. Many instructive sample programs can be found in `docs/samples/5MAT/`. Only a few realizations (beyond base knowledge of `format`) are necessary to make it all come together, and once familiar with its fundamental directives, reading and writing 5MAT *can* become quite natural.
 
 
 ## 6MAT
@@ -38,10 +38,7 @@ Anything is possible in 5MAT, and devising basic programs to show a glimpse of h
 
 Enter 6MAT, one abstraction level up from raw 5MAT. Programs are written using an assembly-like syntax, with instructions and control flow blocks corresponding to sequences of format directives. Certain common 5MAT snippets can be realized with just one instruction, and directives useless to 5MAT's computation model need not clutter your mind.
 
-The `6MAT/` directory contains a detailed instruction and paradigm guide, as well as an assembler and optimizer which can be run from the command line.
-```
-python -m 6MAT <filename>.6mat
-```
+The `lib/sixmat/` directory contains an assembler and optimizer. `docs/6MAT.md` contains a detailed instruction and paradigm guide, and many instructive sample programs can be found in `docs/samples/6MAT/`.
 
 
 ## 7MAT
@@ -50,4 +47,4 @@ But can we go further beyond? 6MAT is more-or-less directly translation into 5MA
 
 And what does one do with assembly languages besides compile into them. Thus, we devise 7MAT, a low-level declarative language with variables, data types, and a plethora of other features that comprise the bare minimum for actually usable languages.
 
-The process of compiling 7MAT to 6MAT requires far more inventive thinking than anything previous, requiring a sophisticated tape layout and calling convention to permit actions such as adding two numbers together without any mental overhead for the programmer. Devising these devices is an ongoing process, so stay tuned; our progress thus far is visible in the `7MAT/` directory.
+The process of compiling 7MAT to 6MAT requires far more inventive thinking than anything previous, requiring a sophisticated tape layout and calling convention to permit actions such as adding two numbers together without any mental overhead for the programmer. Devising these devices is an ongoing process, so stay tuned; our progress thus far is visible in the `lib/sevenmat/` directory.

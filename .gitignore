@@ -2,5 +2,5 @@
 *.pyc
 *.pstats
 
-6MAT/devices/*.5mat
+docs/samples/6MAT/**/*.5mat
 *.log
