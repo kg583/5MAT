@@ -12,6 +12,50 @@ from .parse import parse, tokenize
 logger = logging.getLogger(__name__)
 
 
+def char_name(char: str) -> str:
+    match char:
+        # Standard characters
+        case "\n": return "Newline"
+        case " ": return "Space"
+
+        # Semi-standard characters
+        case "\t": return "Tab"
+        case "\f": return "Page"
+        case "\x7f": return "Rubout"
+        case "\r": return "Return"
+        case "\b": return "Backspace"
+
+        # Other CLISP names
+        case "\x01": return "Soh"
+        case "\x02": return "Stx"
+        case "\x03": return "Etx"
+        case "\x04": return "Eot"
+        case "\x05": return "Enq"
+        case "\x06": return "Ack"
+        case "\x07": return "Bell"
+        case "\x0b": return "Vt"
+        case "\x0e": return "So"
+        case "\x0f": return "Si"
+        case "\x10": return "Dle"
+        case "\x11": return "Dc1"
+        case "\x12": return "Dc2"
+        case "\x13": return "Dc3"
+        case "\x14": return "Dc4"
+        case "\x15": return "Nak"
+        case "\x16": return "Syn"
+        case "\x17": return "Etb"
+        case "\x18": return "Can"
+        case "\x19": return "Em"
+        case "\x1a": return "Sub"
+        case "\x1b": return "Escape"
+        case "\x1c": return "Fs"
+        case "\x1d": return "Gs"
+        case "\x1e": return "Rs"
+        case "\x1f": return "Us"
+
+        case _: return char
+
+
 class Numbers:
     DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -364,30 +408,6 @@ class Interpreter:
             self.eval(token)
 
     # FORMAT Basic Output
-    @staticmethod
-    def character_name(char: str) -> str:
-        match char:
-            # Standard characters
-            case "\n":
-                return "Newline"
-            case " ":
-                return "Space"
-
-            # Semi-standard characters
-            case "\t":
-                return "Tab"
-            case "\f":
-                return "Page"
-            case "\x7f":
-                return "Rubout"
-            case "\a":
-                return "Linefeed"
-            case "\b":
-                return "Backspace"
-
-            case _:
-                return char
-
     def eval_character(self, directive: Directive):
         char = self.args.consume(expected=str())
 
@@ -395,10 +415,10 @@ class Interpreter:
             raise TypeError("~c arg is not a character")
 
         if directive.colon:
-            self.output(self.character_name(char))
+            self.output(char_name(char))
 
         elif directive.at_sign:
-            self.output("#\\" + self.character_name(char))
+            self.output("#\\" + char_name(char))
 
         else:
             self.output(char)
@@ -654,7 +674,7 @@ class Interpreter:
 
         # TODO: escape more things
         elif escapes and isinstance(arg, str) and len(arg) == 1:
-            output = "#\\" + self.character_name(arg)
+            output = "#\\" + char_name(arg)
 
         else:
             output = str(arg)
