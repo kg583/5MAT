@@ -36,7 +36,7 @@ def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
     parser.set_defaults(func=run)
 
     parser.add_argument("filename",
-                        type=argparse.FileType("r"),
+                        type=argparse.FileType("r", encoding='utf-8'),
                         help="The .4mat file to execute")
     parser.add_argument("--log", default="trace.log",
                         help="Log file (used by debug instructions)")

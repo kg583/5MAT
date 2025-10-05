@@ -9,14 +9,13 @@ if TYPE_CHECKING:
     from argparse import _SubParsersAction
 
 
-
 def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
     parser = subparsers.add_parser(name="5MAT", aliases=["5", "fivemat"],
                                    description="Executes 5MAT programs")
     parser.set_defaults(func=run)
 
     parser.add_argument("filename",
-                        type=argparse.FileType('r'),
+                        type=argparse.FileType('r', encoding='utf-8'),
                         help="The .5mat file to execute")
     parser.add_argument("--log", default="trace.log",
                         help="Log file (used by debug instructions)")
@@ -25,7 +24,7 @@ def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
 
     parser.add_argument(
         "--in",
-        type=argparse.FileType('r'),
+        type=argparse.FileType('r', encoding='utf-8'),
         help="Take input from file (default: stdin)",
         default=sys.stdin
     )
