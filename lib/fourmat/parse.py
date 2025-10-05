@@ -49,11 +49,13 @@ def tokenize(source) -> list[str | Directive]:
             )
         else:
             tokens.append(token)
-
     return tokens
 
 
-def parse(tokens: list[str | Directive]) -> BlockDirective:
+def parse(tokens: list[str | Directive] | str) -> BlockDirective:
+    if isinstance(tokens, str):
+        tokens = tokenize(tokens)
+
     stack = [BlockDirective("", [])]
     for token in tokens:
         if isinstance(token, Directive):
