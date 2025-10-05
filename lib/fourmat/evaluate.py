@@ -1,4 +1,3 @@
-import codecs
 import logging
 import math
 import re

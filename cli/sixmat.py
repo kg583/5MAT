@@ -69,7 +69,7 @@ def run(args: argparse.Namespace, disables: list[str]) -> None:
             print(f"Saved {saved} characters!")
 
         else:
-            print(f"Optimizations disabled due to presence of --debug-trace flag.")
+            print("Optimizations disabled due to presence of --debug-trace flag.")
 
         with open(path + ".5mat", "w+", encoding="utf8") as outfile:
             outfile.write(code)

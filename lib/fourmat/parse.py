@@ -69,19 +69,19 @@ def parse(tokens: list[str | Directive] | str) -> BlockDirective:
 
             if token.kind == ";":
                 if stack[-1].kind not in "[<":
-                    raise SyntaxError(f"~; is only supported in ~[ and ~< blocks")
+                    raise SyntaxError("~; is only supported in ~[ and ~< blocks")
 
                 if token.colon:
                     if stack[-1].default_token:
-                        raise SyntaxError(f"multiple ~:; separators provided")
+                        raise SyntaxError("multiple ~:; separators provided")
 
                     if stack[-1].kind == "<" and len(stack[-1].clauses) > 1:
-                        raise SyntaxError(f"overflow clause is not first ~< clause")
+                        raise SyntaxError("overflow clause is not first ~< clause")
 
                     stack[-1].default_token = token
 
                 elif stack[-1].kind == "[" and stack[-1].default_token:
-                    raise SyntaxError(f"default clause is not final ~[ clause")
+                    raise SyntaxError("default clause is not final ~[ clause")
 
                 stack[-1].clauses.append([])
                 continue

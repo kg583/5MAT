@@ -77,7 +77,7 @@ class Writer:
             return None
 
     def else_stmt(self) -> "Writer":
-        self.write_line(f"else")
+        self.write_line("else")
         return self.scope()
 
     def switch_stmt(self, condition: str) -> "Writer":

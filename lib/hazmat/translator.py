@@ -15,7 +15,7 @@ def numeric_param(directive, index, default=0):
         case Special.Hash:
             param = "HASH"
 
-        case n:
+        case _:
             if isinstance(param, str):
                 param = ord(param)
 
@@ -167,6 +167,7 @@ class Translator:
                     self.writer.write_line(f"{varname} = w->size;")
                     self.writer.write_line("break;")
                 self.writer.write_line(f"w->size = {varname};")
+            return
 
     # FORMAT Control-Flow Operations
     def emit_goto(self, directive: Directive):
@@ -177,7 +178,8 @@ class Translator:
         if directive.at_sign:
             param = numeric_param(directive, 0, default=0)
             if param == "V":
-                raise ValueError("Cannot ~v@*")
+                self.emit_crash()
+                return
 
             self.writer.write_line(f"r = start + {param};")
             self.writer.if_stmt("r > end", body="r = end;")
@@ -192,7 +194,7 @@ class Translator:
                 self.writer.if_stmt("r < start", body="r = start;")
             elif param == "HASH":
                 # ~#* is incredibly common in 5MAT code... might as well simplify.
-                self.writer.write_line(f"r = end;")
+                self.writer.write_line("r = end;")
             else:
                 self.writer.write_line(f"r += {param};")
                 self.writer.if_stmt("r > end", body="r = end;")
@@ -248,7 +250,7 @@ class Translator:
             if self.in_outer_scope:
                 with self.writer.while_loop("outer_idx == 0"):
                     self.translate_clause(directive.clauses[0])
-                    self.writer.write_line(f"outer_idx += 1;")
+                    self.writer.write_line("outer_idx += 1;")
                     return
 
             if directive.params:
@@ -291,11 +293,11 @@ class Translator:
             case [a, b]:
                 if a == "V" and not isinstance(b, int):
                     # avoid undefined behavior...
-                    self.writer.write_line(f"a = V;")
+                    self.writer.write_line("a = V;")
                     self.writer.if_stmt(f"a == {b}", body=escape_operation)
                 else:
                     self.writer.if_stmt(f"{a} == {b}", body=escape_operation)
 
             case [a, b, c]:
                 self.writer.write_line(f"a = {a}; b = {b}; c = {c};")
-                self.writer.if_stmt(f"a <= b && b <= c", body=escape_operation)
+                self.writer.if_stmt("a <= b && b <= c", body=escape_operation)

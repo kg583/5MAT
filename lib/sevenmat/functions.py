@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Callable
 from warnings import warn
 
