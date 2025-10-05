@@ -1,9 +1,11 @@
 from importlib import import_module
 
 COMMANDS = [
-    "sixmat",
     "fourmat",
     "fivemat",
+    "sixmat",
+
+    "hazmat",
 ]
 
 def register_commands(subparsers):
