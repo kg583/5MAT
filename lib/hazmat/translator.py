@@ -49,6 +49,9 @@ class Translator:
         else:
             self.writer.function_call("buffer_append", "w", cstr(encoded), len(encoded))
 
+    def emit_crash(self):
+        self.writer.function_return("1")
+
     def translate(self, token: str | Directive):
         self.writer.comment(str(token))
         if isinstance(token, str):
@@ -120,7 +123,9 @@ class Translator:
     # FORMAT Basic Output
     def emit_character(self, directive: Directive):
         if self.in_outer_scope:
-            raise TypeError("~c arg must be a character.")
+            self.emit_crash()
+            return
+
         if directive.colon or directive.at_sign:
             if directive.at_sign and not directive.colon:
                self.emit_str("#\\")
@@ -138,7 +143,7 @@ class Translator:
     def emit_repeated(self, directive: Directive, char: str):
         match directive.get_param(0, default=1):
             case Special.V:
-                raise ValueError(f"~{directive.kind} parameter must be numeric or #")
+                self.emit_crash()
             case Special.Hash:
                 # this can be optimized but who tf writes ~#~
                 self.writer.function_call("buffer_ensure_capacity", "w", "HASH")
@@ -146,8 +151,9 @@ class Translator:
                     self.emit_str(char, prealloc=True)
             case n:
                 if isinstance(n, str):
-                    raise ValueError(f"~{directive.kind} parameter must be numeric or #")
-                self.emit_str(char * n)
+                    self.emit_crash()
+                else:
+                    self.emit_str(char * n)
 
     # FORMAT Layout Control
     def emit_justification(self, directive: BlockDirective):
@@ -178,8 +184,7 @@ class Translator:
         else:
             param = numeric_param(directive, 0, default=1)
             if param == "V":
-                # crash
-                self.writer.function_return("1")
+                self.emit_crash()
                 return
 
             if directive.colon:
@@ -195,7 +200,8 @@ class Translator:
     def emit_conditional(self, directive: BlockDirective):
         if not directive.at_sign and not directive.colon:
             if directive.get_param(0, default=None) in (None, Special.V):
-                raise ValueError(f"Under 5MAT assumptions, ~[ parameter must be numeric or #")
+                self.emit_crash()
+                return
             chosen_path = numeric_param(directive, 0, default=0)
 
             if chosen_path == "HASH":
@@ -226,25 +232,25 @@ class Translator:
         raise NotImplementedError()
 
     def emit_iteration(self, directive: BlockDirective):
-        if len(directive.clauses[0]) == 0:
-            # stupid behavior... recursion but weird
-            self.writer.function_return("1")
+        if (len(directive.clauses[0]) == 0 # stupid behavior - recursion
+                or directive.colon # argument is never a list of sublists
+                or (not directive.at_sign and not self.in_outer_scope)): # once we're on the tape, ~{ won't work
+            self.emit_crash()
             return
 
-        # some explanation is in order... under 5mat assumptions, the parent loop is the only loop that can
         use_do_while = directive.closing_token.colon and not directive.get_param(0, default=0) == Special.Hash
         loop_generator = self.writer.do_while_loop if use_do_while else self.writer.while_loop
 
-        if not directive.at_sign and not self.in_outer_scope or directive.at_sign and self.in_outer_scope or directive.colon:
-            raise ValueError("Invalid loop construct")
+        if directive.colon or (not directive.at_sign and not self.in_outer_scope):
+            self.emit_crash()
 
-        if directive.at_sign and directive.get_param(0, default=0) == 1 or not directive.at_sign:
-            self.in_outer_scope = False
-            with self.writer.if_stmt("outer_idx == 0"):
-                with loop_generator(condition="r != end"):
+        if directive.at_sign:
+            if self.in_outer_scope:
+                with self.writer.while_loop("outer_idx == 0"):
                     self.translate_clause(directive.clauses[0])
-            self.in_outer_scope = True
-        else:
+                    self.writer.write_line(f"outer_idx += 1;")
+                    return
+
             if directive.params:
                 if isinstance(directive.params[0], int):
                     if directive.params[0] != 0:
@@ -256,10 +262,15 @@ class Translator:
             else:
                 with loop_generator(condition="r != end"):
                     self.translate_clause(directive.clauses[0])
+        else:
+            self.in_outer_scope = False
+            with self.writer.if_stmt("outer_idx == 0"):
+                with loop_generator(condition="r != end"):
+                    self.translate_clause(directive.clauses[0])
+            self.in_outer_scope = True
 
     def emit_recursive(self, _directive: Directive):
-        # this is always a crash
-        self.writer.function_return("1")
+        self.emit_crash()
 
     # FORMAT Miscellaneous Pseudo-Operations
     def emit_escape_upward(self, directive: Directive):

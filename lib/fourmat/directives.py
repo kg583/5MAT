@@ -6,7 +6,7 @@ class Special(Enum):
     V = 'v'
     Hash = '#'
 
-    def __repr__(self):
+    def __str__(self):
         return self.value
 
 
@@ -30,10 +30,10 @@ class Directive:
     def copy(self, **changes):
         return replace(self, **changes)
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         at_sign = "@" if self.at_sign else ""
         colon = ":" if self.colon else ""
-        prefix_params = ",".join(map(repr, self.params))
+        prefix_params = ",".join(map(lambda x: f"'{x}" if isinstance(x, str) else str(x), self.params))
         return f"~{prefix_params}{at_sign}{colon}{self.kind}"
 
 
