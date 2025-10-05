@@ -2,10 +2,10 @@
 %ignore WS
 
 // BASIC TERMINALS
-%import common.INT
-!number: "-"? INT
+CONSTANT: /-?\d+/
+POSITIVE_INT: /[1-9]\d*/
 %import python.NAME
-sym_name: NAME
+SYM_NAME.-1: NAME
 comment: /\/\/[^\n]*/
 // we could %ignore comments but I want comments I make in the 7MAT to appear in the 6MAT
 
@@ -17,22 +17,22 @@ comment: /\/\/[^\n]*/
 
 // EXPRESSIONS
 ?expr: shift_expr
-?shift_expr: arith_expr (_shift_op number)?
+?shift_expr: arith_expr (_shift_op POSITIVE_INT)?
 ?arith_expr: term (_add_op term)*
 ?term: factor (_mul_op factor)*
 ?factor: _unary_op? atom_expr
 
 comma_list: expr ("," expr)*
-?atom_expr: sym_name "(" [comma_list] ")" -> func_call
-          | sym_name "[" expr "]"         -> arr_access
-          | sym_name "." atom_expr        -> attr_access
+?atom_expr: SYM_NAME "(" [comma_list] ")" -> func_call
+          | SYM_NAME "[" expr "]"         -> arr_access
+          | SYM_NAME "." atom_expr        -> attr_access
           | atom
 
 ?atom: "(" expr ")"
      | "TRUE"   -> const_true
      | "FALSE"  -> const_false
-     | sym_name -> var_ref
-     | number
+     | SYM_NAME -> var_ref
+     | CONSTANT
 
 // TESTS (conditional expressions)
 test: or_test
@@ -41,12 +41,10 @@ test: or_test
 ?comparison: expr [_comp_op expr]
 
 // TYPES
-!named_type: "Dec" | "Bin" | "Str"
-type: named_type
-    | /Int_(3[0-6]|[12]\d|[2-9])/ -> type_int_base
-    | "struct" sym_name           -> type_struct
-    | type "[" "]"                -> mutable_arr
-    | type "[" number "]"         -> immutable_arr
+type: /Str(_\d{1,3})?/                      -> type_str
+    | /Int(3[0-6]|[12]\d|[2-9])(_\d{1,3})?/ -> type_int
+    | "struct" SYM_NAME                     -> type_struct
+    | type "[" POSITIVE_INT? "]"                  -> type_arr
 
 // STATEMENTS
 if: "if" "(" test ")" "{" code_block "}" ["else" "{" code_block "}"]
@@ -54,14 +52,14 @@ while: "while" "(" test ")" "{" code_block "}"
 return: "return" expr? ";"
 print: "print" expr ";"
 
-var_decl: type sym_name ";"
-lhs: sym_name              -> var_assign
-   | sym_name "[" expr "]" -> arr_assign
-   | sym_name ("." lhs)+   -> ind_assign
+var_decl: type SYM_NAME ";"
+lhs: SYM_NAME              -> var_assign
+   | SYM_NAME "[" expr "]" -> arr_assign
+   | SYM_NAME ("." lhs)+   -> ind_assign
 
 assignment: lhs "=" expr ";"
 
-proc_call: sym_name "(" comma_list? ")" ";"
+func_call: SYM_NAME "(" comma_list? ")" ";"
 
 // CODE HIERARCHY
 start: _global_def*
@@ -69,17 +67,17 @@ _global_def: struct_def
            | fn_def
 
 members_list: var_decl+
-struct_def: "struct" sym_name "{" members_list "}" ";"?
+struct_def: "struct" SYM_NAME "{" members_list "}" ";"?
 
-args_list: type sym_name ("," type sym_name)*
-fn_def: "func" sym_name "(" args_list? ")" ["->" type] "{" code_block "}"
+args_list: type SYM_NAME ("," type SYM_NAME)*
+fn_def: "func" SYM_NAME "(" args_list? ")" ["->" type] "{" code_block "}"
 
 code_block: statement+
 ?statement: if
           | while
           | var_decl
           | assignment
-          | proc_call
+          | func_call
           | return
           | print
           | comment
