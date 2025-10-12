@@ -1,0 +1,14 @@
+struct my_struct {
+    Int16_5[10] hex_array;
+    Int16[] random_data;
+    Str_10 string;
+}
+
+func my_func(Int36_5 my_var, Int16_5 value, struct my_struct hex) -> Int36_5 {
+    hex.hex_array[5] = value;
+    if (my_var == 10) { // conditional path taken
+        return 2 * my_var + -1;
+    } else {
+        return 2;
+    }
+}

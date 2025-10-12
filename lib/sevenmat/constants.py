@@ -3,9 +3,9 @@ import string
 
 class ControlChar:
     # reminder: hell is chars 0x08 and lower. don't use those here unless the control is happening in hell
-    HELL_FILL_CHAR = '\x07' # hell's bells
+    HELL_FILL_CHAR = '\x07'  # hell's bells
 
-    STACK_FRAME_SEP = '\f'
+    STACK_FRAME_SEP = '\x0c'
     """
     Separates stack frames.
     """
@@ -30,17 +30,24 @@ class ControlChar:
     Separates printing and non-printing sections of the tape. Recognized by the print/collation routine.
     """
 
+    UTILITY_CHAR = '\x11'
+    """
+    General-purpose control character. Used by internal routines.
+    """
+
     @staticmethod
     def path(index: int, branch_taken: bool) -> str:
         charset = string.ascii_uppercase if branch_taken else string.ascii_lowercase
         # *please* email us if you find yourself using more than 2**26 blocks
         return charset[index % len(charset)]
 
-    HELL_PATH_DESIGNATOR = '#' # selected because it sorta looks like an H i guess
+    HELL_PATH_DESIGNATOR = '#'  # selected because it sorta looks like an H i guess
     """
     Blocks that need to set up hell because they possibly jump to a block that requires an instantiated hell have paths
     starting with this character.
     """
 
 
-__all__ = ["ControlChar"]
+DIGITS = string.digits + string.ascii_uppercase  # + string.ascii_lowercase
+
+__all__ = ["ControlChar", "DIGITS"]
