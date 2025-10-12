@@ -5,6 +5,8 @@ from cli import register_commands
 
 def main():
     parser = argparse.ArgumentParser(prog='nmat')
+    parser.suggest_on_error = True
+
     subparsers = parser.add_subparsers()
     register_commands(subparsers)
 

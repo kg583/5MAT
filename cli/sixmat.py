@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
-    parser = subparsers.add_parser(name="6MAT", aliases=["6", "sixmat"],
+    parser = subparsers.add_parser(name="6MAT", aliases=["6"],
                                    description="Assembles 6MAT programs into 5MAT with optional formatting and optimizations")
     parser.set_defaults(func=run)
 

@@ -31,7 +31,7 @@ def checked_list_literal_eval(s: str):
 
 
 def register(subparsers: "_SubParsersAction[argparse.ArgumentParser]") -> None:
-    parser = subparsers.add_parser(name="4MAT", aliases=["4", "fourmat"],
+    parser = subparsers.add_parser(name="4MAT", aliases=["4"],
                                    description="Executes 4MAT programs")
     parser.set_defaults(func=run)
 
