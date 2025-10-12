@@ -4,6 +4,7 @@ COMMANDS = [
     "fourmat",
     "fivemat",
     "sixmat",
+    "sevenmat",
 
     "hazmat",
 ]
