@@ -2,134 +2,15 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 import operator
-import re
-import sys
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 
 from lib.fourmat.parse import *
-from lib.sixmat.util import *
 
 
-INF = sys.maxsize
-
-
-def clamp(value: int) -> int:
-    return max(value, 0)
-
-def expand(a: tuple[int, int], b: tuple[int, int]):
-    if a is None:
-        return b
-
-    if b is None:
-        return a
-
-    return min(a[0], b[0]), max(a[1], b[1])
-
-
-@dataclass(frozen=True)
-class Pointer:
-    from_start: tuple[int, int] = None
-    from_end: tuple[int, int] = None
-
-    on_tape: bool = False
-    tape_length: int = None
-
-    def __str__(self) -> str:
-        return f"[{self.from_start} : {self.from_end}]"
-
-    def __contains__(self, item: int) -> bool:
-        return self.from_end[0] <= item <= self.from_end[1]
-
-    def __invert__(self) -> 'Pointer':
-        return self.copy(from_start=self.from_end, from_end=self.from_start)
-
-    def __add__(self, other: int) -> 'Pointer':
-        return self.copy(from_start=(clamp(self.from_start[0] + other), clamp(self.from_start[1] + other)),
-                         from_end=(clamp(self.from_end[0] - other), clamp(self.from_end[1] - other)))
-
-    def __sub__(self, other: int) -> 'Pointer':
-        return self + -other
-
-    def __or__(self, other: 'Pointer') -> 'Pointer':
-        return self.copy(from_start=expand(self.from_start, other.from_start),
-                         from_end=expand(self.from_end, other.from_end),
-                         tape_length=other.tape_length)
-
-    def clear(self) -> 'Pointer':
-        return self.copy(from_start=None, from_end=None)
-
-    def start(self) -> 'Pointer':
-        if self.on_tape:
-            return self.copy(from_start=(0, 0), from_end=(self.tape_length or 0, self.tape_length or INF))
-
-        else:
-            return self.copy(from_start=(0, 0), from_end=(1, 1))
-
-    def end(self) -> 'Pointer':
-        return ~self.start()
-
-    def enter_tape(self) -> 'Pointer':
-        return self.copy(on_tape=True).start()
-
-    def leave_tape(self) -> 'Pointer':
-        return self.copy(on_tape=False).end()
-
-    def copy(self, **changes) -> 'Pointer':
-        return replace(self, **changes)
-
-    def step(self, directive) -> 'Pointer':
-        if isinstance(directive, (Condition, str)):
-            return self
-
-        match directive.kind:
-            case 'a' | 'e' | 'f' | 'g' | '$':
-                return self + 1 + directive.params.count(Special.V)
-
-            case 'c':
-                return self + 1
-
-            case 't' | '%' | '&' | '|' | '~':
-                return self
-
-            case '*' if directive.at_sign:
-                match directive.get_param(0, 0):
-                    case Special.Hash:
-                        return ~self
-
-                    case n:
-                        return self.start() + n
-
-            case '*' if directive.colon:
-                match directive.get_param(0, 1):
-                    case Special.Hash:
-                        return self - self.from_end[0] | self - self.from_end[1]
-
-                    case n:
-                        return self - n
-
-            case '*':
-                match directive.get_param(0, 1):
-                    case Special.Hash:
-                        return self.end()
-
-                    case n:
-                        return self + n
-
-            case '^':
-                return self + directive.params.count(Special.V)
-
-            case '?':
-                return self + 1
-
-            case '/':
-                return self + 1
-
-            case '[' if directive.colon or directive.at_sign:
-                return self + 1
-
-            case _:
-                return self
+class InvalidDirective(TypeError):
+    def __init__(self, directive: Directive | str):
+        super().__init__(f"invalid directive: {directive}")
 
 
 Operand = Special | int | str
@@ -225,7 +106,7 @@ class Condition:
 @dataclass(eq=False)
 class Node:
     directive: Directive | Condition | str
-    pointer: Pointer = Pointer()
+    on_tape: bool = False
 
     def __hash__(self) -> int:
         return id(self)
@@ -255,7 +136,8 @@ def build_cfg(program: str) -> nx.DiGraph:
                 current = build_block(directive, current, current.copy(directive=directive.closing_token), outer)
 
             else:
-                print(f"Stepping {directive} ...")
+                # TODO: Use the logger
+                print(f"Stepping\t{directive}")
                 cfg.add_edge(current, current := current.copy(directive=directive))
 
                 if isinstance(directive, Directive):
@@ -273,7 +155,7 @@ def build_cfg(program: str) -> nx.DiGraph:
                                         terminate = current.condition(*params)
 
                                     except TypeError:
-                                        raise ValueError("invalid break")
+                                        raise InvalidDirective(directive)
 
                             cfg.add_edge(current, terminate)
                             cfg.add_edge(terminate, outer)
@@ -289,7 +171,7 @@ def build_cfg(program: str) -> nx.DiGraph:
 
 
     def build_block(block: BlockDirective, current: Node, end: Node, outer) -> Node:
-        print(f"Walking {block} ...")
+        print(f"Walking \t{block}")
 
         match block.kind:
             case '[' if block.colon:
@@ -329,7 +211,7 @@ def build_cfg(program: str) -> nx.DiGraph:
 
             case '{':
                 if block.colon:
-                    raise ValueError("invalid loop")
+                    raise InvalidDirective(block)
 
                 clause = block.clauses[0]
                 iterations = 0
@@ -337,11 +219,10 @@ def build_cfg(program: str) -> nx.DiGraph:
 
                 terminate = current.condition("!")
                 if not block.at_sign:
-                    if current.pointer.on_tape:
-                        raise ValueError("invalid loop")
+                    if current.on_tape:
+                        raise InvalidDirective(block)
 
-                    current.pointer = Pointer(on_tape=True)
-                    end.pointer = end.pointer.copy(on_tape=True)
+                    current.on_tape = end.on_tape = True
 
                 if block.closing_token.colon and loops != 0:
                     build_clause(clause, current, end := end.copy(), end)
