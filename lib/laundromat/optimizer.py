@@ -164,14 +164,14 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
         while len(children := cfg[node := child]) == 1:
             child, = children
 
-            if isinstance(child.directive, Condition):
+            if (child.is_condition or child.is_conditional) and cfg.in_degree(child) == 1:
                 cfg.remove_edge(node, child)
                 cfg.add_edge(node, child := [*cfg[child]][0])
 
             step(node, child)
             print(f"Visited {child}\t{pointers[child]}")
 
-            if marks[child] and str(child) not in ("~{", "~@{"):
+            if marks[child] and not child.is_loop:
                 return
 
         if len(children) > 1:
@@ -216,7 +216,8 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
         removed = old - len(cfg)
         print(f"Removed {removed} node{'s' if removed != 1 else ''}!")
 
-        if not prune:
+        if not removed:
+            print("All done!")
             return cfg
 
 

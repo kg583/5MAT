@@ -114,6 +114,18 @@ class Node:
     def __str__(self) -> str:
         return f"{self.directive}"
 
+    @property
+    def is_condition(self) -> bool:
+        return isinstance(self.directive, Condition)
+
+    @property
+    def is_conditional(self) -> bool:
+        return isinstance(self.directive, Directive) and self.directive.kind in "[]"
+
+    @property
+    def is_loop(self) -> bool:
+        return isinstance(self.directive, Directive) and self.directive.kind in "{}"
+
     def copy(self, **changes) -> 'Node':
         return replace(self, **changes)
 
