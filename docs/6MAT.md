@@ -84,7 +84,7 @@ Break out of the current block if the tape pointer is `N` characters from the en
 Break out of the current scope if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `BRZR`
-Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) `BRNR! 0`.
+Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`BRNR! 0`](#brnr-n).
 
 #### `BRxx? _I, _J`
 Break out of the current scope if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
@@ -136,10 +136,10 @@ Execute the group or block if the tape pointer is `N` characters from the end of
 Execute the group or block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `IFZR [{ ... }]`
-Execute the group or block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) `IFNR! 0 [{ ... }]`.
+Execute the group or block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`IFNR! 0 [{ ... }]`](#ifnr-n---).
 
 #### `IFyy! _I, _J { ... }`
-Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke `BRxx _I, _J` at the top of the block, where `xx` is the negation of `yy`.
+Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke [`BRxx _I, _J`](#brxx-_i-_j) at the top of the block, where `xx` is the negation of `yy`.
 
 | Condition | Break   | Supported Types  |
 |-----------|---------|------------------|
@@ -164,7 +164,7 @@ Execute the block at most `N` times, terminating if the tape is exhausted at the
 
 ### Case Blocks
 
-#### `CASER! [ ... ]`
+#### `CASER! [{ ... }]`
 Conditionally execute groups based on the value of `$R`, which may be tested against any contiguous span of integers starting from `0`. Additionally, a terminal `DEFAULT` clause may be provided, which executes if `$R` is not equal to any listed value.
 ```
 CASER! [{
@@ -226,7 +226,7 @@ Move the tape pointer backward by `N` characters.
 Move the tape pointer backward past the `N`th preceding appearance of `C`. Crashes if there are less than `N` preceding appearances of `C`.
 
 #### `BACKF! +N = 1`
-Move the tape pointer backward past the `N`th preceding appearance of `\f`. Equivalent to `BACKC! '\f', +N`.
+Move the tape pointer backward past the `N`th preceding appearance of `\f`. Equivalent to [`BACKC! '\f', +N`](#backc-c-n--1).
 
 #### `SKIP +N = 1`
 Move the tape pointer forward by `N` characters.
@@ -235,7 +235,7 @@ Move the tape pointer forward by `N` characters.
 Move the tape pointer forward past the `N`th succeeding appearance of `C`.
 
 #### `SKIPF! +N = 1`
-Move the tape pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to `SKIPC! '\f', +N`.
+Move the tape pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to [`SKIPC! '\f', +N`](#skipc-c-n--1).
 
 ### Absolute Tape Movement
 
@@ -263,17 +263,17 @@ Irrecoverably terminate execution immediately. All output produced during the cu
 #### `CRFF! !V`
 Read or peek a character from the tape and crash if it is `\f`.
 
-#### `CRNR!`
+#### `CRNR! +N`
 Crash if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `CRNZ`
 Crash if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `CRZR`
-Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `CRNR 0`.
+Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to [`CRNR! 0`](#crnr-n).
 
 #### `CRyy! _I, _J`
-Crash if condition `yy` holds for `_I` and `_J`. Equivalent to `{ BRxx _I, _J | CRASH }`, where `xx` is the negation of `yy`.
+Crash if condition `yy` holds for `_I` and `_J`. Equivalent to [`{ BRxx _I, _J | CRASH }`](#brxx-_i-_j), where `xx` is the negation of `yy`.
 
 | Condition | Break   | Supported Types |
 |-----------|---------|-----------------|
@@ -324,20 +324,20 @@ Print `_K` using `PRINz _K` if the tape pointer is `N` characters from the end o
 Print `_K` using `PRINz _K` if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `PRZRz _K`
-Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `PRNRz 0 _K`.
+Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`PRNRz 0 _K`](#prnrz-_k).
 
 ### Copying
 
 **Copying** instructions print some span of the tape without modification.
 
 #### `COPY +N = 1`
-Copy exactly `N` characters. Equivalent to `PRINA $N`.
+Copy exactly `N` characters. Equivalent to (but more readable than) [`PRINA $N`](#prina-_i).
 
 #### `COPYC! 'C, +N = 1`
 Copy characters up to but not including the `N`th succeeding appearance of `C`.
 
 #### `COPYF! +N = 1`
-Copy characters up to but not including the `N`th succeeding appearance of `\f`. Equivalent to `COPYC! '\f', +N'`.
+Copy characters up to but not including the `N`th succeeding appearance of `\f`. Equivalent to [`COPYC! '\f', +N`](#copyc-c-n--1).
 
 #### `COPYR! 'C, +N = 1`
 Copy characters in reverse up to but not including the `N`th previous appearance of `C`. `$R` is not permitted.
@@ -399,12 +399,12 @@ JUST %N, %M, %L, !V {
 }
 ```
 
-An `OVER` instruction may be included as the first clause (see below). Each clause acts a buffer block (see `BUFFER`).
+An `OVER` instruction may be included as the first clause (see below). Each clause acts a buffer block (see [`BUFFER`](#buffer---)).
 
 #### `OVER %P = 0, %O = 72 { ... }`
-Create a buffer by executing the block. If the output of the containing `JUST` instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
+Create a buffer by executing the block. If the output of the containing [`JUST`](#justz-n--0-m--1-l--0-v--space---) instruction exceeds `O-P` characters, this buffer is printed *before* the justified content. Otherwise, it is discarded.
 
-Since the block is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
+Since this clause is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
 
 ```
 JUST %N, %M, %L, !V {
@@ -418,10 +418,10 @@ JUST %N, %M, %L, !V {
 See the [HyperSpec Section on Justification](https://www.lispworks.com/documentation/HyperSpec/Body/22_cfb.htm) for a full specification of these instructions' target directives' behavior.
 
 #### `TABA +N = 1, +M = 1`
-Print spaces (` `) until at least `N+k*M` characters have been printed this lifetime for the smallest possible choice of `k`.
+Print spaces (` `) until at least `N+k*M` characters have been printed since the last newline was printed this lifetime for the smallest possible choice of `k`.
 
 #### `TABR +N = 1, +M = 1`
-Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed this lifetime for the smallest choice of `k`.
+Print `N` spaces (` `), then print spaces until at least `k*M` characters have been printed since the last newline was printed this lifetime for the smallest choice of `k`.
 
 #### `LOWER [ ... ]`
 Fold all characters printed within the group to lowercase.
