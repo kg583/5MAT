@@ -46,6 +46,8 @@ class Translator:
         if len(encoded) == 1:
             self.writer.function_call("buffer_append_char" if not prealloc else "buffer_append_char_raw", "w",
                                       encoded[0])
+        elif len(set(encoded)) == 1:
+            self.writer.function_call("buffer_append_repeated", "w", encoded[0], len(encoded))
         else:
             self.writer.function_call("buffer_append", "w", cstr(encoded), len(encoded))
 

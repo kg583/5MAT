@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <memory.h>
 
 #define HASH (end - r)
 #define V (*r++)
@@ -56,9 +57,14 @@ static inline void buffer_append_char(OutputBuffer *restrict buf, char c) {
 static inline void buffer_append(OutputBuffer *restrict buf,
                                  const char *restrict s, size_t len) {
     buffer_ensure_capacity(buf, len);
-    for (size_t i = 0; i < len; i++) {
-        buf->data[buf->size++] = s[i];
-    }
+    memcpy(buf->data + buf->size, s, len);
+    buf->size += len;
+}
+
+static inline void buffer_append_repeated(OutputBuffer *restrict buf, char c, size_t count) {
+    buffer_ensure_capacity(buf, count);
+    memset(buf->data + buf->size, c, count);
+    buf->size += count;
 }
 
 static inline void buffer_free(OutputBuffer *buf) {
@@ -162,7 +168,7 @@ int fivemat() {
         free(r);
 
         if (ret_val) {
-            free(w.data);
+            buffer_free(&w);
             return ret_val;
         }
 
@@ -184,8 +190,7 @@ int fivemat() {
         //printf("%s", print_start);
         printf("%s", w.data);
 
-
-        free(w.data);
+        buffer_free(&w);
         buffer_init(&w, w.size);
     }
 }
