@@ -84,7 +84,7 @@ Break out of the current block if the tape pointer is `N` characters from the en
 Break out of the current scope if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `BRZR`
-Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR 0`.
+Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to `BRNR! 0`.
 
 #### `BRxx? _I, _J`
 Break out of the current scope if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
