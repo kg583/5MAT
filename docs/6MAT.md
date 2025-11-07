@@ -77,7 +77,7 @@ Break out of the current scope. The tape pointer is unaltered.
 #### `BRFF`
 Read a character from the tape and break if it is `\f`.
 
-#### `BRNR`
+#### `BRNR! +N`
 Break out of the current block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `BRNZ`
