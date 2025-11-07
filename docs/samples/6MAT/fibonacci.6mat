@@ -28,7 +28,7 @@ DO {
             SKIP $R
             BACK 1
         }
-        BRNR! 1
+        BRNR 1
 
         COPYF!
         PRFF

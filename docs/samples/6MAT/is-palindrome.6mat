@@ -42,7 +42,7 @@ DO {
 
         GOTO 2
         LOOP {
-            BRNR! 2
+            BRNR 2
             PRINC $V
         }
         PRFF

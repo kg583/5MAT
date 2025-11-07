@@ -104,10 +104,7 @@ BRNE!   %N  $R                      ~#,%N-1,%N^~%N,%N+1,#^
 #BRNE   "X  $0                      ``
 #BRNE   "X  $n                      `BRNE! 'X', $V``#BRNE .X, $n-1`
 
-BRNR!   +N                          ~#[`#BRNR +N`~]
-
-#BRNR   0                           ~0^
-#BRNR   +N                          ~;`#BRNR +N-1`
+BRNR    +N                          ~#,+N^
 
 BRNZ                                ~#[~:;~0^~]
 
@@ -375,7 +372,7 @@ PRINR   %N              $V          ~%Na
 PRFF    +N                          ~+N|
 PRFF                                ~|
 
-PRNRz   +N      _K                  ~<`BREQ $R, +N``PRINz _K`~>
+PRNRz!  +N      _K                  ~<`BRNE! $R, +N``PRINz _K`~>
 
 PRNZz           _K                  ~#[~:;`PRINz _K`~]
 
