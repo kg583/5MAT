@@ -239,7 +239,7 @@ class Args:
             raise TypeError(f"got argument '{arg}', expected type '{type(expected)}'")
 
         # NILs
-        if arg in (None, [], ()):
+        if arg in (None, False, [], ()):
             return None
 
         return arg
