@@ -2,7 +2,9 @@ import logging
 import math
 import re
 import sys
+
 from numbers import Real
+from typing import Callable
 
 from lib.fourmat.callables import lisp_functions
 from lib.fourmat.directives import *
@@ -511,6 +513,35 @@ class Interpreter:
     def sign(directive: Directive) -> str:
         return '+' if directive.at_sign else '-'
 
+    @staticmethod
+    def float_format(fraction: Callable[[int | None], str], exponent: str,
+                     w: int | None, d: int | None, overflow: str | None, pad_char: str) -> str:
+
+        output = fraction(d) + exponent
+        if w is not None:
+            w = max(w, 0)
+            if d is None:
+                d = 0
+
+                # How precise can this be?
+                while len(fraction(d) + exponent) <= w and (fraction(d).endswith(".0") or not fraction(d).endswith("0")):
+                    output = fraction(d) + exponent
+                    d += 1
+
+            # Is the leading zero making things too wide?
+            if output.lstrip("+-").startswith("0.") and len(output) > w:
+                output = output.replace("0.", ".", 1)
+
+            # Is the output too wide anyway?
+            if len(output) > w:
+                if overflow:
+                    output = overflow
+
+            else:
+                output = f"{output:{pad_char}>{w}}"
+
+        return output
+
     def float_default(self, width: int | None) -> float | None:
         if not isinstance(self.args.peek(), Real):
             self.eval_aesthetic(Directive(kind="a", params=[width]))
@@ -529,26 +560,16 @@ class Interpreter:
             return
 
         arg *= 10 ** k
-        if d is None:
-            output = self.base_float(arg, directive)
 
-        else:
-            output = f"{arg:{self.sign(directive)}#.{d}f}"
-
-        if w is not None:
-            w = max(w, 0)
-            if abs(arg) < 1 and len(output) > w:
-                output = output.replace("0.", ".", 1)
-
-            if len(output) > w or "." not in output:
-                if overflow_char:
-                    self.output(overflow_char * w)
-                    return
+        def fraction(precision: int | None) -> str:
+            if precision is None:
+                return self.base_float(arg, directive)
 
             else:
-                output = f"{output:{pad_char}>{w}}"[:w]
+                return f"{arg:{self.sign(directive)}#.{precision}f}"
 
-        self.output(output)
+        overflow = None if overflow_char is None else overflow_char * w
+        self.output(self.float_format(fraction, "", w, d, overflow, pad_char))
 
     def eval_exponential_float(self, directive: Directive):
         w = self.get_param(directive, 0)
@@ -562,46 +583,34 @@ class Interpreter:
         if (arg := self.float_default(w)) is None:
             return
 
-        exponent = 0
-        while 10 ** k < arg:
+        exp = 0
+        while 10 ** k < abs(arg):
             arg /= 10
-            exponent += 1
+            exp += 1
 
-        while 10 ** (k - 1) > arg:
+        while 10 ** (k - 1) > abs(arg):
             arg *= 10
-            exponent -= 1
+            exp -= 1
 
-        def with_precision(prec):
-            if prec is None:
-                out = self.base_float(arg, directive)
+        def fraction(precision: int | None) -> str:
+            if precision is None:
+                return self.base_float(arg, directive)
 
             else:
-                out = f"{arg:{self.sign(directive)}.{prec if k <= 0 else prec - k + 1}f}"
+                return f"{arg:{self.sign(directive)}.{precision if k <= 0 else precision - k + 1}f}"
 
-            out += exponent_char + f"{exponent:+0{max(0, e + 1)}d}"
-            return out
+        if e is None:
+            e = len(str(exp))
 
-        if w is None or d is not None:
-            output = with_precision(d)
+        overflow = None if overflow_char is None else overflow_char * w
+        exponent = exponent_char + f"{exp:+0{max(0, e + 1)}d}"
+
+        # Is the exponent too wide?
+        if len(exponent) > e + 2 and overflow is not None:
+            output = overflow
 
         else:
-            d = max(k, 1)
-            while len(output := with_precision(d)) < w and \
-                    not (f"0{exponent_char}" in output and f".0{exponent_char}" not in output):
-                d += 1
-
-        if w is not None:
-            w = max(w, 0)
-            if abs(arg) < 1 and len(output) > w:
-                output = output.replace("0.", ".", 1)
-
-            if len(output) > w or "." not in output:
-                if overflow_char:
-                    self.output(overflow_char * w)
-                    return
-
-            else:
-                output = f"{output:{pad_char}>{w}}"[:w]
+            output = self.float_format(fraction, exponent, w, d, overflow, pad_char)
 
         self.output(output)
 
