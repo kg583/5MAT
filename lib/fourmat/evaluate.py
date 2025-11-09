@@ -13,6 +13,10 @@ from .parse import parse, tokenize
 logger = logging.getLogger(__name__)
 
 
+def is_nil(obj) -> bool:
+    return obj is None or obj is False or obj == [] or obj == ()
+
+
 def char_name(char: str) -> str:
     match char:
         # Standard characters
@@ -212,7 +216,7 @@ class Args:
         return self.args.__iter__()
 
     def __post_init__(self):
-        if self.args is None:
+        if is_nil(self.args):
             self.args = []
 
         if not isinstance(self.args, list):
@@ -240,8 +244,7 @@ class Args:
         if expected is not None and not isinstance(arg, type(expected)):
             raise TypeError(f"got argument '{arg}', expected type '{type(expected)}'")
 
-        # NILs
-        if arg in (None, False, [], ()):
+        if is_nil(arg):
             return None
 
         return arg
