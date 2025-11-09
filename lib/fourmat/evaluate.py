@@ -213,7 +213,7 @@ class Args:
     index: int = 0
 
     def __iter__(self):
-        return self.args.__iter__()
+        return iter(self.args[self.index:])
 
     def __post_init__(self):
         if is_nil(self.args):
