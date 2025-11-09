@@ -936,7 +936,12 @@ class Interpreter:
         # TODO: Implement without recursion?
 
         interp = self.child(directive, args=self.args)
-        interp.eval_clause(directive.clauses[0])
+        try:
+            interp.eval_clause(directive.clauses[0])
+
+        except StopIteration:
+            pass
+
         output = interp.buffer
 
         if directive.colon:
