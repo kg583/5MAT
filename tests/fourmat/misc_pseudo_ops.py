@@ -23,6 +23,19 @@ class MiscPseudoOpsSpecTests(unittest.TestCase):
         self.assertEqual(fourmat("~15<~S~;~^~S~;~^~S~>", ["FOO", "BAR"]), "FOO         BAR")
         self.assertEqual(fourmat("~15<~S~;~^~S~;~^~S~>", ["FOO", "BAR", "BAZ"]), "FOO   BAR   BAZ")
 
+    def test_ignored_newline(self):
+        # And both of these.
+        def type_clash_error(fn, nargs, argnum, right_type, wrong_type):
+            return fourmat(("~&~S requires its ~:[~:R~;~*~]~\n"
+                            "argument to be of type ~S,~%but it was called ~\n"
+                            "with an argument of type ~S.~%"),
+                           [fn, nargs==1, argnum, right_type, wrong_type])
+
+        self.assertEqual(type_clash_error("AREF", None, 2, "INTEGER", "VECTOR"),
+                         "AREF requires its second argument to be of type INTEGER,\nbut it was called with an argument of type VECTOR.\n")
+        self.assertEqual(type_clash_error("CAR", 1, 1, "LIST", "SHORT-FLOAT"),
+                         "CAR requires its argument to be of type LIST,\nbut it was called with an argument of type SHORT-FLOAT.\n")
+
 
 if __name__ == '__main__':
     unittest.main()
