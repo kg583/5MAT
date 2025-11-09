@@ -23,8 +23,8 @@ class BasicOutput(unittest.TestCase):
 
     def test_fresh_line(self):
         self.assertEqual(fourmat("~%~5&", []), "\n" * 5)
-        self.assertEqual(fourmat("~&", []), "\n")
-        self.assertEqual(fourmat("~1000@{~&~}", [0]), "\n")
+        self.assertEqual(fourmat("~&X", []), "X")
+        self.assertEqual(fourmat("X~1000@{~&~}X", [0]), "X\nX")
 
 
 if __name__ == '__main__':
