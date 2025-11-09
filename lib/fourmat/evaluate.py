@@ -509,16 +509,15 @@ class Interpreter:
 
     # FORMAT Floating-Point Printers
     @staticmethod
-    def base_float(arg: Real, directive: Directive) -> str:
-        return f"{float(arg):{Interpreter.sign(directive)}#}"
-
-    @staticmethod
-    def sign(directive: Directive) -> str:
-        return '+' if directive.at_sign else '-'
-
-    @staticmethod
-    def float_format(fraction: Callable[[int | None], str], exponent: str,
+    def float_format(arg, directive: Directive, func: Callable[[int | None], str], exponent: str,
                      w: int | None, d: int | None, overflow: str | None, pad_char: str) -> str:
+        def fraction(precision: int):
+            sign = '+' if directive.at_sign else '-'
+            if precision is None:
+                return f"{float(arg):{sign}#}"
+
+            else:
+                return f"{arg:{sign}#.{func(precision)}f}"
 
         output = fraction(d) + exponent
         if w is not None:
@@ -527,8 +526,8 @@ class Interpreter:
                 d = 0
 
                 # How precise can this be?
-                while len(fraction(d) + exponent) <= w and (fraction(d).endswith(".0") or not fraction(d).endswith("0")):
-                    output = fraction(d) + exponent
+                while len((f := fraction(d)) + exponent) <= w and (f.endswith((".", ".0")) or not f.endswith("0")):
+                    output = f + exponent
                     d += 1
 
             # Is the leading zero making things too wide?
@@ -563,16 +562,10 @@ class Interpreter:
             return
 
         arg *= 10 ** k
-
-        def fraction(precision: int | None) -> str:
-            if precision is None:
-                return self.base_float(arg, directive)
-
-            else:
-                return f"{arg:{self.sign(directive)}#.{precision}f}"
-
         overflow = None if overflow_char is None else overflow_char * w
-        self.output(self.float_format(fraction, "", w, d, overflow, pad_char))
+
+        self.output(self.float_format(arg, directive, lambda precision: precision,
+                                      "", w, d, overflow, pad_char))
 
     def eval_exponential_float(self, directive: Directive):
         w = self.get_param(directive, 0)
@@ -595,13 +588,6 @@ class Interpreter:
             arg *= 10
             exp -= 1
 
-        def fraction(precision: int | None) -> str:
-            if precision is None:
-                return self.base_float(arg, directive)
-
-            else:
-                return f"{arg:{self.sign(directive)}.{precision if k <= 0 else precision - k + 1}f}"
-
         if e is None:
             e = len(str(exp))
 
@@ -613,7 +599,8 @@ class Interpreter:
             output = overflow
 
         else:
-            output = self.float_format(fraction, exponent, w, d, overflow, pad_char)
+            output = self.float_format(arg, directive, lambda precision: precision if k <= 0 else precision - k + 1,
+                                       exponent, w, d, overflow, pad_char)
 
         self.output(output)
 

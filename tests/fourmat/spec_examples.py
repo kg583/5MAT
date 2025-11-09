@@ -33,6 +33,20 @@ class ExampleSpecTests(unittest.TestCase):
         self.assertEqual(foo(1.1e13), "*********| 11.00$+12|+.001E+16| 1.10E+13")
         self.assertEqual(foo(1.1e120), "*********|??????????|%%%%%%%%%|1.10E+120")
 
+        self.assertEqual(fourmat("|~13,6,2,VE|", [-5, 3.14159]), "| 0.000003E+06|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [-4, 3.14159]), "| 0.000031E+05|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [-3, 3.14159]), "| 0.000314E+04|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [-2, 3.14159]), "| 0.003142E+03|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [-1, 3.14159]), "| 0.031416E+02|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [0, 3.14159]), "| 0.314159E+01|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [1, 3.14159]), "| 3.141590E+00|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [2, 3.14159]), "| 31.41590E-01|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [3, 3.14159]), "| 314.1590E-02|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [4, 3.14159]), "| 3141.590E-03|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [5, 3.14159]), "| 31415.90E-04|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [6, 3.14159]), "| 314159.0E-05|")
+        self.assertEqual(fourmat("|~13,6,2,VE|", [7, 3.14159]), "| 3141590.E-06|")
+
     def test_justify(self):
         self.assertEqual(fourmat("~10<foo~;bar~>", []), "foo    bar")
         self.assertEqual(fourmat("~10:<foo~;bar~>", []), "  foo  bar")
