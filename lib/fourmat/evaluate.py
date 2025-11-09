@@ -499,6 +499,9 @@ class Interpreter:
 
             length += 1
 
+        if not output:
+            output = ["0"]
+
         if directive.at_sign and arg >= 0:
             output = ["+", *output]
 
