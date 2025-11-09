@@ -213,7 +213,13 @@ class Args:
     index: int = 0
 
     def __iter__(self):
-        return iter(self.args[self.index:])
+        return iter(self.remaining())
+
+    def __len__(self) -> int:
+        return len(self.remaining())
+
+    def __next__(self):
+        return self.consume()
 
     def __post_init__(self):
         if is_nil(self.args):
@@ -875,22 +881,28 @@ class Interpreter:
             directive.clauses = parse(tokenize(self.args.consume(expected=str()))).clauses
 
         args = self.args if directive.at_sign else self.args.consume(expected=list())
+        iterations = 0
+
         if directive.colon:
             # ~:}
             if not args and directive.closing_token.colon:
                 args = [[]]
 
             try:
-                lst_hash = len(args)
+                remaining = len(args)
 
             except TypeError:
                 raise TypeError("~{ argument is not a list")
 
-            for sublist in args[:limit]:
+            for sublist in args:
+                if limit is not None and iterations >= limit:
+                    break
+
                 interp = self.child(directive, args=sublist)
 
-                lst_hash -= 1
-                interp.outer = lst_hash
+                iterations += 1
+                remaining -= 1
+                interp.outer = remaining
 
                 try:
                     interp.eval_ast_root()
@@ -904,7 +916,6 @@ class Interpreter:
 
         else:
             interp = self.child(directive, args=args)
-            iterations = 0
 
             try:
                 # ~:}

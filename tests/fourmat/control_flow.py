@@ -15,6 +15,16 @@ class ControlFlowSpecExamples(unittest.TestCase):
         self.assertEqual(fourmat(foo, ["FOO", "BAR", "BAZ"]), "Items: FOO, BAR, and BAZ.")
         self.assertEqual(fourmat(foo, ["FOO", "BAR", "BAZ", "QUUX"]), "Items: FOO, BAR, BAZ, and QUUX.")
 
+    def test_iteration(self):
+        self.assertEqual(fourmat("The winners are:~{ ~S~}.", [["FRED", "HARRY", "JILL"]]), "The winners are: FRED HARRY JILL.")
+
+        # ~S has been replaced with ~A since symbols are not a supported type
+        pairs = "Pairs: <A,1> <B,2> <C,3>."
+        self.assertEqual(fourmat("Pairs:~{ <~A,~A>~}.", [["A", 1, "B", 2, "C", 3]]), pairs)
+        self.assertEqual(fourmat("Pairs:~:{ <~A,~A>~}.", [[["A", 1], ["B", 2], ["C", 3]]]), pairs)
+        self.assertEqual(fourmat("Pairs:~@{ <~A,~A>~}.", ["A", 1, "B", 2, "C", 3]), pairs)
+        self.assertEqual(fourmat("Pairs:~:@{ <~A,~A>~}.", [["A", 1], ["B", 2], ["C", 3]]), pairs)
+
 
 class ControlFlow(unittest.TestCase):
     def test_goto(self):
