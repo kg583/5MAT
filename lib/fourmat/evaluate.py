@@ -589,7 +589,7 @@ class Interpreter:
             exp -= 1
 
         if e is None:
-            e = len(str(exp))
+            e = len(str(exp)) - 1
 
         overflow = None if overflow_char is None else overflow_char * w
         exponent = exponent_char + f"{exp:+0{max(0, e + 1)}d}"
@@ -607,7 +607,7 @@ class Interpreter:
     def eval_general_float(self, directive: Directive):
         w = self.get_param(directive, 0)
         d = self.get_param(directive, 1)
-        e = self.get_param(directive, 2, default=2)
+        e = self.get_param(directive, 2)
         k = self.get_param(directive, 3)
         overflow_char = self.get_param(directive, 4)
         pad_char = self.get_param(directive, 5, default=" ")
@@ -618,9 +618,9 @@ class Interpreter:
 
         # Why
         n = math.floor(math.log10(abs(arg))) + 1
-        ee = e + 2
+        ee = 4 if e is None else e + 2
         ww = None if w is None else w - ee
-        d = max(len(self.base_float(arg, directive)), min(n, 7)) if d is None else d
+        d = max(len(f"{float(arg):#}") - 1, min(n, 7)) if d is None else d
         dd = d - n
 
         self.args.skip(-1)
@@ -720,12 +720,12 @@ class Interpreter:
 
         if directive.at_sign:
             k = math.ceil((self.position + col) / (inc or 1))
-            dist = k * inc - (self.position + col)
+            dist = k * inc - self.position
             dist = max(dist, 1)
 
         else:
             k = max(math.ceil((self.position - col) / (inc or 1)), 1)
-            dist = k * inc - (self.position - col)
+            dist = k * inc - self.position
             dist = max(dist, 1 if inc else 0)
 
         self.output(" " * dist)

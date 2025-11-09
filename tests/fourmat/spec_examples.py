@@ -47,6 +47,17 @@ class ExampleSpecTests(unittest.TestCase):
         self.assertEqual(fourmat("|~13,6,2,VE|", [6, 3.14159]), "| 314159.0E-05|")
         self.assertEqual(fourmat("|~13,6,2,VE|", [7, 3.14159]), "| 3141590.E-06|")
 
+    def test_general_format(self):
+        foo = lambda x: fourmat("~9,2,1,,'*G|~9,3,2,3,'?,,'$G|~9,3,2,0,'%G|~9,2G", [x] * 4)
+        self.assertEqual(foo(0.0314159), "  3.14E-2|314.2$-04|0.314E-01|  3.14E-2")
+        self.assertEqual(foo(0.314159), "  0.31   |0.314    |0.314    | 0.31    ")
+        self.assertEqual(foo(3.14159), "   3.1   | 3.14    | 3.14    |  3.1    ")
+        self.assertEqual(foo(31.4159), "   31.   | 31.4    | 31.4    |  31.    ")
+        self.assertEqual(foo(314.159), "  3.14E+2| 314.    | 314.    |  3.14E+2")
+        self.assertEqual(foo(3141.59), "  3.14E+3|314.2$+01|0.314E+04|  3.14E+3")
+        self.assertEqual(foo(3.14E12), "*********|314.0$+10|0.314E+13| 3.14E+12")
+        self.assertEqual(foo(3.14E120), "*********|?????????|%%%%%%%%%|3.14E+120")
+
     def test_justify(self):
         self.assertEqual(fourmat("~10<foo~;bar~>", []), "foo    bar")
         self.assertEqual(fourmat("~10:<foo~;bar~>", []), "  foo  bar")
