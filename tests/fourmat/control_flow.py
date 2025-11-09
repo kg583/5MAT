@@ -25,6 +25,13 @@ class ControlFlowSpecExamples(unittest.TestCase):
         self.assertEqual(fourmat("Pairs:~@{ <~A,~A>~}.", ["A", 1, "B", 2, "C", 3]), pairs)
         self.assertEqual(fourmat("Pairs:~:@{ <~A,~A>~}.", [["A", 1], ["B", 2], ["C", 3]]), pairs)
 
+    def test_recursive(self):
+        self.assertEqual(fourmat("~? ~D", ["<~A ~D>", ["Foo", 5], 7]), "<Foo 5> 7")
+        self.assertEqual(fourmat("~? ~D", ["<~A ~D>", ["Foo", 5, 14], 7]), "<Foo 5> 7")
+
+        self.assertEqual(fourmat("~@? ~D", ["<~A ~D>", "Foo", 5, 7]), "<Foo 5> 7")
+        self.assertEqual(fourmat("~@? ~D", ["<~A ~D>", "Foo", 5, 14, 7]), "<Foo 5> 14")
+
 
 class ControlFlow(unittest.TestCase):
     def test_goto(self):
