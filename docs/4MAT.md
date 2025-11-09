@@ -21,7 +21,7 @@ Though 5MAT does not require or support all format directives, we seek to implem
 
 If it proves unreasonable, we happily abandon CLISP's ways. Below are the known ways in which we do so (while still adhering to the HyperSpec), which, per the categories above, should have minimal impact on 5MAT programs.
 
-- Symbols are not supported; Python ain't got 'em, and they display like strings anyway.
+- Symbols are not supported; they display identically to strings in all uppercase.
 - Special key sequences are not displayed by `~:@c`, making it equivalent to `~:c`.
 - Formatted floats may differ greatly in their insignificant digits compared to CLISP's output.
 - "Ordinary free-format" float output, used by `~e` and `~f` when no parameters are specified, may differ from CLISP's output.
