@@ -10,11 +10,11 @@ class MiscPseudoOpsSpecTests(unittest.TestCase):
         self.assertEqual(fourmat(donestr, [3]), "Done. 3 warnings."),
         self.assertEqual(fourmat(donestr, [1, 5]), "Done. 1 warning. 5 errors.")
 
-        # We believe that the HyperSpec is wrong on this next case.
+        # The HyperSpec gets the spacing wrong
         self.assertEqual(fourmat("~:{ ~@?~:^ ...~} ", [[["a"], ["b"]]]), " a ... b ")
 
         tellstr = "~@(~@[~R~]~^ ~A!~)"
-        # This next one too.
+        # The HyperSpec erroneously includes the final !
         self.assertEqual(fourmat(tellstr, [23]), "Twenty-three")
         self.assertEqual(fourmat(tellstr, [None, "losers"]), " Losers!")
         self.assertEqual(fourmat(tellstr, [23, "losers"]), "Twenty-three losers!")
@@ -30,7 +30,7 @@ class MiscPseudoOpsSpecTests(unittest.TestCase):
                             "with an argument of type ~S.~%"),
                            [fn, nargs==1, argnum, right_type, wrong_type])
 
-        # And this next one.
+        # The HyperSpec doesn't actually place a space between '~:R' and 'argument'
         self.assertEqual(type_clash_error("AREF", None, 2, "INTEGER", "VECTOR"),
                          "AREF requires its secondargument to be of type INTEGER,\nbut it was called with an argument of type VECTOR.\n")
         self.assertEqual(type_clash_error("CAR", 1, 1, "LIST", "SHORT-FLOAT"),

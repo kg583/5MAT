@@ -12,7 +12,7 @@ class RadixControlSpecTests(unittest.TestCase):
 
         self.assertEqual(fourmat("~,,' ,4:B", [13]), "1101")
         self.assertEqual(fourmat("~,,' ,4:B", [17]), "1 0001")
-        # We believe that the HyperSpec is wrong on this next case.
+        # We believe the HyperSpec is wrong on this next case
         self.assertEqual(fourmat("~19,'0,' ,4:B", [3333]), "000001101 0000 0101")
         self.assertEqual(fourmat("~3,,,' ,2:R", [17]), "1 22")
         self.assertEqual(fourmat("~,,'|,2:D", [0xFFFF]), "6|55|35")
