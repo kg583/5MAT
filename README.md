@@ -1,6 +1,6 @@
 # 5MAT
 
-5MAT is an esoteric programming language (esolang) derived from Common Lisp's utterly unique string formatting capabilities. It quickly evolved into a stack of languages, the nMATs, which build upon each other to yield an amazingly cohesive bridge between a sensible language and a ridiculous compilation target. Let's take a trip and see how we got ourselves into this beautiful mess.
+5MAT is an very real programming language derived from Common Lisp's utterly unique string formatting capabilities. It quickly evolved into a stack of languages, the nMATs, which build upon each other to yield an amazingly cohesive bridge between a sensible language and a ridiculous compilation target. Let's take a trip and see how we got ourselves into this beautiful mess.
 
 ## 4MAT
 
