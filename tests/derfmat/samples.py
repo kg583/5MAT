@@ -25,7 +25,7 @@ class SampleTests(unittest.TestCase):
 
     def test_bct(self):
         self.sample("bct", "101\n01\n1\n11\n110\n10\n101\n1010\n010\n010\n010\n10",
-                    max_lifetimes=12, sixmat=False)
+                    max_lifetimes=12)
 
     def test_counter(self):
         self.sample("counter", "0\n1\n2\n3\n4\n5\n6\n7\n8",

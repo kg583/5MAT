@@ -1,0 +1,45 @@
+INIT {
+    PRINA "00111"
+    PRFF
+    PRINA "101"
+    TERP
+}
+
+DO {
+    IFNE! $V, '1' {
+        COPYF!
+        PRINC '0'
+        PRFF
+
+        SKIP
+        COPY $R
+    }
+    BRZR
+
+    SKIP
+    COPYF!
+    PRINC '1'
+    GOTO 1
+    COPY
+
+    {
+        SKIPF!
+        BREQ $V, '0'
+        PRFF
+        PRINC '1'
+        LOOP {
+            BREQ $R, 1
+            COPY
+        }
+
+        GOTO 1
+        COPY
+        TERP
+        SKIP $R
+    }
+    BRZR
+
+    PRFF
+    PRINC '0'
+    COPY $R
+}
