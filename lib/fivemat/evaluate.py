@@ -20,7 +20,7 @@ def decode_escapes(string: str) -> str:
     return re.sub(r"\\[abfnrtv]|\\x..", decode_match, string).replace("↡", "\f")
 
 
-def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin):
+def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin, output_stream=sys.stdout):
     parsed = parse(tokenize(decode_escapes(program)))
     tape = []
 
@@ -28,7 +28,7 @@ def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin):
         iterations = 0
         while max_lifetimes is None or iterations < max_lifetimes:
             tape = fourmat(parsed, [list(tape)], input_stream=input_stream)
-            print(end=tape[tape.rfind("\f") + 1:])
+            print(end=tape[tape.rfind("\f") + 1:], file=output_stream)
             iterations += 1
 
     except Exception as e:

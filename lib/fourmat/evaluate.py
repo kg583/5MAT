@@ -1032,7 +1032,7 @@ class Interpreter:
             logger.info(f"INFO\t{''.join([' ' if x is None else x for x in directive.params])}")
 
 
-def fourmat(program: str | BlockDirective, args: list | Args, input_stream=sys.stdin):
+def fourmat(program: str | BlockDirective, args: list | Args, input_stream=sys.stdin) -> str:
     interp = Interpreter(program, args=args, input_stream=input_stream)
     try:
         interp.eval_ast_root()
