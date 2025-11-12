@@ -1,6 +1,7 @@
 INIT {
     PRFF
-    PRINA "HannaH"
+    BACK
+    READL
     PRFF
 }
 
