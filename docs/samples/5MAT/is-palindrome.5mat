@@ -1,5 +1,5 @@
 ~1[ Wrap the input in '~(~)' to make the check case-insensitive ~]~
-~:[~|~:*~/read/~|~;~]~:*~
+~:[~|~:*~/read-line/~|~;~]~:*~
 ~1{~
 ~1[ Crash if we just printed ~]~
 ~#*~:*~<~v,'↡^~?~>~@*~
