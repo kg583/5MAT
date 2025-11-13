@@ -20,6 +20,10 @@ class Directive:
     def __post_init__(self):
         self.kind = self.kind.lower()
 
+    def arity(self, arity: int):
+        if len(self.params) > arity:
+            raise ValueError(f"too many parameters ({len(self.params)} > {arity}) passed to ~{self.kind}")
+
     def get_param(self, index: int, default=None):
         if index < len(self.params):
             val = self.params[index]
