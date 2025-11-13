@@ -111,3 +111,6 @@ def parse(tokens: list[str | Directive] | str) -> BlockDirective:
         raise SyntaxError(f"Unclosed ~{stack[1].kind}")
 
     return stack[0]
+
+
+__all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective", "tokenize", "parse"]

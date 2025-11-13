@@ -34,3 +34,6 @@ def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin, 
     except Exception as e:
         logger.error(e, exc_info=True)
         pass
+
+
+__all__ = ["decode_escapes", "fivemat"]

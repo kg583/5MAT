@@ -3,6 +3,7 @@ import math
 import re
 import sys
 
+from dataclasses import dataclass
 from numbers import Real
 from typing import Callable
 
@@ -1041,3 +1042,7 @@ def fourmat(program: str | BlockDirective, args: list | Args, input_stream=sys.s
         pass
 
     return interp.buffer
+
+
+__all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective", "lisp_functions",
+           "is_nil", "char_name", "Numbers", "Interpreter", "fourmat"]

@@ -1,16 +1,4 @@
-import codecs
-import re
-
-
-def decode_escapes(string: str) -> str:
-    def decode_match(match):
-        try:
-            return codecs.decode(match[0], 'unicode-escape')
-
-        except UnicodeDecodeError:
-            return match[0]
-
-    return re.sub(r"\\[abfnrtv]|\\x..", decode_match, string)
+from lib.fivemat.evaluate import decode_escapes
 
 
 def encode_escapes(string: str) -> str:
@@ -43,3 +31,6 @@ def encode_escapes(string: str) -> str:
         string = string.replace(chr(char), repl)
 
     return string
+
+
+__all__ = ["decode_escapes", "encode_escapes"]

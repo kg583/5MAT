@@ -77,3 +77,6 @@ class FunctionCallDirective(Directive):
         function_name = embedded.kind.split('/')[1].split(':')[-1].upper()
         embedded.kind = '/'
         return FunctionCallDirective(function_name=function_name, **vars(embedded))
+
+
+__all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective"]
