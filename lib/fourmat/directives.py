@@ -54,7 +54,7 @@ class Directive:
         at_sign = "@" if self.at_sign else ""
         colon = ":" if self.colon else ""
         prefix_params = ",".join(map(lambda x: f"'{x}" if isinstance(x, str) else str(x), self.params))
-        return f"~{prefix_params}{at_sign}{colon}{self.kind}"
+        return f"~{prefix_params}{colon}{at_sign}{self.kind}"
 
 
 @dataclass(eq=True)
