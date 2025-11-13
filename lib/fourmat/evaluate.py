@@ -442,7 +442,7 @@ class Interpreter:
         if count == 0:
             return
 
-        if self.buffer[-1] != '\n':
+        if self.position != 0:
             self.output("\n")
 
         self.output("\n" * (count - 1))
