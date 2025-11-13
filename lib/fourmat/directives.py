@@ -10,6 +10,18 @@ class Special(Enum):
         return self.value
 
 
+ARITY = {
+    "c": 1, "%": 1, "&": 1, "|": 1, "~": 1,
+    "r": 5, "d": 4, "b": 4, "o": 4, "x": 4,
+    "f": 5, "e": 7, "g": 7, "$": 4,
+    "a": 4, "s": 4, "w": 4,
+    "t": 2, "<": 4, ";": 2,
+    "*": 1, "[": 1, "{": 1, "?": 0,
+    "(": 0, "p": 0,
+    "^": 3
+}
+
+
 @dataclass(eq=True)
 class Directive:
     kind: str
@@ -20,8 +32,12 @@ class Directive:
     def __post_init__(self):
         self.kind = self.kind.lower()
 
-    def arity(self, arity: int):
-        if len(self.params) > arity:
+        # TODO: ~; is nullary unless it's ~:; inside a justification block
+        arity = ARITY.get(self.kind)
+        if self.kind == "[" and (self.colon or self.at_sign):
+            arity = 0
+
+        if arity is not None and len(self.params) > arity:
             raise ValueError(f"too many parameters ({len(self.params)} > {arity}) passed to ~{self.kind}")
 
     def get_param(self, index: int, default=None):

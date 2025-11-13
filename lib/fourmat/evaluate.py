@@ -434,11 +434,9 @@ class Interpreter:
             self.output(char)
 
     def print_repeated(self, directive: Directive, char: str):
-        directive.arity(1)
         self.output(char * self.get_param(directive, 0, default=1))
 
     def eval_fresh_line(self, directive: Directive):
-        directive.arity(1)
         count = self.get_param(directive, 0, default=1)
 
         if count == 0:
@@ -451,7 +449,6 @@ class Interpreter:
 
     # FORMAT Radix Control
     def eval_radix(self, directive: Directive):
-        directive.arity(5)
         base = self.get_param(directive, 0, default=None)
         min_col = self.get_param(directive, 1, default=0)
         pad_char = self.get_param(directive, 2, default=" ")
@@ -564,7 +561,6 @@ class Interpreter:
         return float(self.args.consume())
 
     def eval_fixed_float(self, directive: Directive):
-        directive.arity(5)
         w = self.get_param(directive, 0)
         d = self.get_param(directive, 1)
         k = self.get_param(directive, 2, default=0)
@@ -581,7 +577,6 @@ class Interpreter:
                                       "", w, d, overflow, pad_char))
 
     def eval_exponential_float(self, directive: Directive):
-        directive.arity(7)
         w = self.get_param(directive, 0)
         d = self.get_param(directive, 1)
         e = self.get_param(directive, 2)
@@ -619,7 +614,6 @@ class Interpreter:
         self.output(output)
 
     def eval_general_float(self, directive: Directive):
-        directive.arity(7)
         w = self.get_param(directive, 0)
         d = self.get_param(directive, 1)
         e = self.get_param(directive, 2)
@@ -648,7 +642,6 @@ class Interpreter:
                                                        params=[w, d, e, k, overflow_char, pad_char, exponent_char]))
 
     def eval_monetary_float(self, directive: Directive):
-        directive.arity(4)
         d = self.get_param(directive, 0, default=2)
         n = self.get_param(directive, 1, default=1)
         w = self.get_param(directive, 2, default=0)
@@ -675,7 +668,6 @@ class Interpreter:
 
     # FORMAT Printer Operations
     def eval_aesthetic(self, directive: Directive, escapes: bool = False):
-        directive.arity(4)
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
@@ -729,7 +721,6 @@ class Interpreter:
 
     # FORMAT Layout Control
     def eval_tabulate(self, directive: Directive):
-        directive.arity(2)
         col = self.get_param(directive, 0, default=1)
         inc = self.get_param(directive, 1, default=1)
 
@@ -762,7 +753,6 @@ class Interpreter:
             self.output(interp.buffer)
             return
 
-        directive.arity(4)
         min_col = self.get_param(directive, 0, default=0)
         col_inc = self.get_param(directive, 1, default=1)
         min_pad = self.get_param(directive, 2, default=0)
@@ -781,7 +771,6 @@ class Interpreter:
             index = 1
             overflow = interp.buffer
 
-            directive.default_token.arity(2)
             line_pad = self.get_param(directive.default_token, 0, default=0)
             line_width = self.get_param(directive.default_token, 1, default=72)
 
@@ -821,8 +810,6 @@ class Interpreter:
 
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
-        directive.arity(1)
-
         if directive.at_sign:
             param = self.get_param(directive, 0, default=0)
             if param < 0:
@@ -843,8 +830,6 @@ class Interpreter:
 
     def eval_conditional(self, directive: BlockDirective):
         if directive.colon:
-            directive.arity(0)
-
             if directive.at_sign:
                 raise TypeError("~:@[ is invalid")
 
@@ -859,8 +844,6 @@ class Interpreter:
             self.eval_clause(no if self.args.consume() is None else yes)
 
         elif directive.at_sign:
-            directive.arity(0)
-
             if self.args.peek() is None:
                 self.args.consume()
                 return
@@ -871,7 +854,6 @@ class Interpreter:
             self.eval_clause(directive.clauses[0])
 
         else:
-            directive.arity(1)
             index = self.get_param(directive, 0, default=Special.V)
 
             if not isinstance(index, int):
@@ -887,7 +869,6 @@ class Interpreter:
                 self.eval_clause(directive.clauses[-1])
 
     def eval_iteration(self, directive: BlockDirective):
-        directive.arity(1)
         limit = self.get_param(directive, 0)
 
         if not isinstance(limit, int | None):
@@ -953,8 +934,6 @@ class Interpreter:
             self.output(interp.buffer)
 
     def eval_recursive(self, directive: Directive):
-        directive.arity(0)
-
         if directive.at_sign:
             interp = self.child(self.args.consume(expected=str()), args=self.args)
 
@@ -967,8 +946,6 @@ class Interpreter:
     # FORMAT Miscellaneous Operations
     def eval_case(self, directive: BlockDirective):
         # TODO: Implement without recursion?
-        directive.arity(0)
-
         interp = self.child(directive, args=self.args)
         try:
             interp.eval_clause(directive.clauses[0])
@@ -1001,8 +978,6 @@ class Interpreter:
                 self.output(output.lower())
 
     def eval_plural(self, directive: Directive):
-        directive.arity(0)
-
         if directive.colon:
             self.args.skip(-1)
 
@@ -1016,8 +991,6 @@ class Interpreter:
 
     # FORMAT Miscellaneous Pseudo-Operations
     def eval_escape_upward(self, directive: Directive):
-        directive.arity(3)
-
         if directive.at_sign:
             raise ValueError("~@^ is invalid")
 
