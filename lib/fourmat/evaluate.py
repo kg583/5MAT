@@ -100,45 +100,42 @@ class Numbers:
 
     @classmethod
     def _name_2(cls, value: int) -> str:
-        value, rem = divmod(value, 10)
-        match value, rem:
-            case 0, _:
+        match divmod(value, 10):
+            case 0, rem:
                 return cls.UNITS[rem]
 
-            case 1, _:
+            case 1, rem:
                 return cls.TEENS[rem]
 
-            case _, 0:
-                return cls.TENS[value]
+            case quot, 0:
+                return cls.TENS[quot]
 
-            case _:
-                return f"{cls.TENS[value]}-{cls.UNITS[rem]}"
+            case quot, rem:
+                return f"{cls.TENS[quot]}-{cls.UNITS[rem]}"
 
     @classmethod
     def _name_3(cls, value: int) -> str:
-        value, rem = divmod(value, 100)
-        match value, rem:
-            case 0, _:
+        match divmod(value, 100):
+            case 0, rem:
                 return cls._name_2(rem)
 
-            case _, 0:
-                return f"{cls.UNITS[value]} hundred"
+            case quot, 0:
+                return f"{cls.UNITS[quot]} hundred"
 
-            case _:
-                return f"{cls.UNITS[value]} hundred and {cls._name_2(rem)}"
+            case quot, rem:
+                return f"{cls.UNITS[quot]} hundred and {cls._name_2(rem)}"
 
     @classmethod
     def _name_6(cls, value: int) -> str:
-        value, rem = divmod(value, 1000)
-        match value, rem:
-            case 0, _:
+        match divmod(value, 1000):
+            case 0, rem:
                 return cls._name_3(rem)
 
-            case _, 0:
-                return f"{cls._name_3(value)} thousand"
+            case quot, 0:
+                return f"{cls._name_3(quot)} thousand"
 
-            case _:
-                return f"{cls._name_3(value)} thousand, {cls._name_3(rem)}"
+            case quot, rem:
+                return f"{cls._name_3(quot)} thousand, {cls._name_3(rem)}"
 
     @classmethod
     def _name_short(cls, power: int) -> str:
