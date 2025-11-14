@@ -857,7 +857,7 @@ class Interpreter:
         else:
             index = self.get_param(directive, 0, default=Special.V)
 
-            if not isinstance(index, int):
+            if not isinstance(index, (int, Special)):
                 raise TypeError("invalid index for ~[")
 
             if index < 0:
@@ -872,11 +872,12 @@ class Interpreter:
     def eval_iteration(self, directive: BlockDirective):
         limit = self.get_param(directive, 0)
 
-        if not isinstance(limit, int | None):
-            raise TypeError("invalid iteration limit")
+        if limit is not None:
+            if not isinstance(limit, int):
+                raise TypeError("invalid iteration limit")
 
-        if limit is not None and limit < 0:
-            raise ValueError("negative iteration limit")
+            if limit < 0:
+                raise ValueError("negative iteration limit")
 
         # Empty body
         if not directive.clauses[0]:
@@ -946,7 +947,6 @@ class Interpreter:
 
     # FORMAT Miscellaneous Operations
     def eval_case(self, directive: BlockDirective):
-        # TODO: Implement without recursion?
         interp = self.child(directive, args=self.args)
         try:
             interp.eval_clause(directive.clauses[0])
