@@ -3,7 +3,7 @@ import unittest
 from lib.fourmat.evaluate import *
 
 
-class ControlFlowSpecExamples(unittest.TestCase):
+class ControlFlowSpecTests(unittest.TestCase):
     def test_conditional(self):
         self.assertEqual(fourmat("~@[ print level = ~D~]~@[ print length = ~D~]", [None, 5]), " print length = 5")
 

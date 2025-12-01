@@ -541,6 +541,10 @@ class Interpreter:
             if output.lstrip("+-").startswith("0.") and len(output) > w:
                 output = output.replace("0.", ".", 1)
 
+            # What about a trailing zero?
+            if output.endswith(".0") and len(output) > w:
+                output = output[:-1]
+
             # Is the output too wide anyway?
             if len(output) > w:
                 if overflow:
