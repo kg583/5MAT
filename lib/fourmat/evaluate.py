@@ -1008,7 +1008,7 @@ class Interpreter:
 
             case [] if not directive.colon and self.args.hash() == 0: escape()
 
-            case [a] if a == 0: escape()
+            case [a] if a == 0 or is_nil(a): escape()
 
             case [a, b] if a == b: escape()
 
