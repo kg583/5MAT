@@ -1000,6 +1000,9 @@ class Interpreter:
             raise StopIteration(directive.colon)
 
         params = [self.get_param(directive, index) for index in range(len(directive.params))]
+        while params and params[-1] is None:
+            params.pop()
+
         if len(params) == 3 and not type(params[0]) is type(params[1]) is type(params[2]):
             return
 
@@ -1008,7 +1011,7 @@ class Interpreter:
 
             case [] if not directive.colon and self.args.hash() == 0: escape()
 
-            case [a] if a == 0 or is_nil(a): escape()
+            case [a] if a == 0: escape()
 
             case [a, b] if a == b: escape()
 
