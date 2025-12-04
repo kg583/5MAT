@@ -23,6 +23,10 @@ class SampleTests(unittest.TestCase):
             buffer.seek(0)
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
 
+    def test_12_days_of_christmas(self):
+        self.sample("12-days-of-christmas", "On the First day of Christmas\nMy true love sent to me",
+                    length=54, sixmat=False)
+
     def test_bct(self):
         self.sample("bct", "101\n01\n1\n11\n110\n10\n101\n1010\n010\n010\n010\n10",
                     max_lifetimes=12)
