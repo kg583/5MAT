@@ -57,10 +57,8 @@ class SampleTests(unittest.TestCase):
         self.sample("is-palindrome", "False", "palindrome")
 
     def test_sort(self):
-        self.sample("sort", "0356789", "8675309",
-                    sixmat=False)
-        self.sample("sort", "  5AGMTaeirst", "5MAT is Great",
-                    sixmat=False)
+        self.sample("sort", "0356789", "8675309")
+        self.sample("sort", "  5AGMTaeirst", "5MAT is Great")
 
     def test_truth_machine(self):
         self.sample("truth-machine", "0", "0",

@@ -1,0 +1,39 @@
+INIT {
+    BACK
+    READL
+    PRINC '~'
+    PRFF
+}
+
+DO {
+    SKIPF!
+    CRNZ
+
+    GOTO 0
+    LOOP {
+        BRNR 2
+        IFGT! $V, $V {
+            BACK
+            COPY
+            BACK 2
+            COPY
+
+            SKIP
+            COPY $R
+        }
+
+        IFNZ {
+            BACK 2
+            COPY
+        }
+    }
+
+    IFNZ {
+        PRFF
+        GOTO 0
+        LOOP {
+            BRNR 2
+            COPY
+        }
+    }
+}
