@@ -43,14 +43,14 @@ Instruction arguments are denoted in this document and the instruction grammar u
 - `!V`: A character literal, `$V`, or `?V`
 - `$V`: A character literal, or `$V`
 - `'C`: A character literal
-- `!n`: A string literal, or `$n`, or `?n`
+- `!n`: A string literal, `$n`, or `?n`
 - `$n`: A string literal, or `$n`
 - `"X`: A string literal
 - `_I`: Any previously listed type (with potential restrictions)
 
 Default values for arguments are denoted like `_I = default`. Passing `NIL` as an argument is equivalent to passing the default value. If an instruction has adjacent defaulted arguments of the same type, they are bound from left to right; e.g. if `FOO %N = 1, %M = 2` is called with `FOO 3`, then `3` is bound to `%N`.
 
-Multiple `!n` arguments are never permitted in a single instruction call. If an instruction accepts `!n` and `"X` in a call, `n` must be the length of the string literal.
+Multiple `!n` arguments are never permitted in a single instruction call. If an instruction accepts `!n` and `"X` in a call, `n` must be the length of the string literal. Passing `!n` when fewer than `n` characters remain on the tape will result in a crash.
 
 ## Control Flow
 
@@ -155,6 +155,8 @@ As such, the following calls are disallowed.
 - `IFGE! $V, !V { ... }`
 - `IFLE! $V, !V { ... }`
 - `IFLT! $V, !V { ... }`
+
+Furthermore, peeking in the second argument is somewhat inefficient in the general case to account for the tape pointer being near the end of the tape. Prefer using `$V` and backing up manually based on prior knowledge of the tape pointer.
 
 #### `LOOP { ... }`
 Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the tape pointer does *not* move by default at any point, and thus failing to cause net movement of the tape pointer during execution will result in a crash.
@@ -293,7 +295,7 @@ As such, the following calls are disallowed.
 
 ## Printing
 
-**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current lifetime if it appears after the last `\f` character. Printed characters cannot be overwritten or undone within a lifetime.
+**Printing** a character results in its appearance in the next contents of the tape; it is only **output** to STDOUT at the end of the current lifetime if it appears after the last `\f` character. Printed characters *cannot* be overwritten or undone within a lifetime.
 
 #### `PRINA _I`
 Print `_I` as it appears, which may be a character or string variable.
@@ -331,7 +333,7 @@ Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. 
 **Copying** instructions print some span of the tape without modification.
 
 #### `COPY +N = 1`
-Copy exactly `N` characters. Equivalent to (but more readable than) [`PRINA $N`](#prina-_i).
+Copy exactly `N` characters (or until the tape is exhausted). More efficient than [`PRINA +N`](#prina-_i) in the case that at least `N` characters remain on the tape (i.e. `$R >= N`), and will not crash.
 
 #### `COPYC! 'C, +N = 1`
 Copy characters up to but not including the `N`th succeeding appearance of `C`.
@@ -392,7 +394,7 @@ The value of `z` dictates padding options at the edges of the field.
 | `JUSTC`     | Padding may be added at either edge of the field |
 
 ```
-JUST %N, %M, %L, !V {
+JUSTz %N, %M, %L, !V {
     [{ ... }]
     [{ ... }]
     ...
@@ -407,7 +409,7 @@ Create a buffer by executing the block. If the output of the containing [`JUST`]
 Since this clause is always executed, breaking out of it cancels the entirety of the containing `JUST` instruction. Tape pointer movement is not undone.
 
 ```
-JUST %N, %M, %L, !V {
+JUSTz %N, %M, %L, !V {
     OVER %P, %O [{ ... }]
     [{ ... }]
     [{ ... }]

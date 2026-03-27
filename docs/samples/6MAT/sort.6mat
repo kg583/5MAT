@@ -14,8 +14,8 @@ DO {
         BRNR 2
         IFGT! $V, $V {
             BACK
-            COPY
-            BACK 2
+            PRINA ?1
+            BACK
             COPY
 
             SKIP
