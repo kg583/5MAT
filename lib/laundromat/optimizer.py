@@ -75,24 +75,15 @@ class Pointer:
     def copy(self, **changes) -> 'Pointer':
         return replace(self, **changes)
 
-    def step(self, directive) -> 'Pointer':
-        if isinstance(directive, (Condition, str)):
-            return self
+    def step(self, node: Node) -> 'Pointer':
+        if node.consumes is not None:
+            return self + node.consumes
 
-        match directive.kind:
-            case 'a' | 'd' | 'e' | 'f' | 'g' | '$' | 'r':
-                return self + 1 + directive.params.count(Special.V)
-
-            case 'c':
-                return self + 1
-
-            case 't' | '%' | '&' | '|' | '~':
-                return self
-
-            case '*' if directive.at_sign:
-                match directive.get_param(0, 0):
+        match node.directive.kind:
+            case '*' if node.directive.at_sign:
+                match node.directive.get_param(0, 0):
                     case Special.V:
-                        raise InvalidDirective(directive)
+                        raise InvalidDirective(node.directive)
 
                     case Special.Hash:
                         return ~self
@@ -100,10 +91,10 @@ class Pointer:
                     case n:
                         return self.start() + n
 
-            case '*' if directive.colon:
-                match directive.get_param(0, 1):
+            case '*' if node.directive.colon:
+                match node.directive.get_param(0, 1):
                     case Special.V:
-                        raise InvalidDirective(directive)
+                        raise InvalidDirective(node.directive)
 
                     case Special.Hash:
                         return self - self.from_end[0] | self - self.from_end[1]
@@ -112,9 +103,9 @@ class Pointer:
                         return self - n
 
             case '*':
-                match directive.get_param(0, 1):
+                match node.directive.get_param(0, 1):
                     case Special.V:
-                        raise InvalidDirective(directive)
+                        raise InvalidDirective(node.directive)
 
                     case Special.Hash:
                         return self.end()
@@ -122,17 +113,8 @@ class Pointer:
                     case n:
                         return self + n
 
-            case '^':
-                return self + directive.params.count(Special.V)
-
-            case '?':
-                return self + 1
-
-            case '/':
-                return self + 1
-
             # TODO: Correctly handle null tape
-            case '[' if directive.colon or directive.at_sign:
+            case '[' if node.directive.colon or node.directive.at_sign:
                 return self + 1
 
             # TODO: Spell out more cases
@@ -147,7 +129,7 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
         match node.on_tape, child.on_tape:
             case (True, True) | (False, False):
                 try:
-                    pointers[child] |= pointers[node].step(child.directive)
+                    pointers[child] |= pointers[node].step(child)
 
                 except InvalidDirective:
                     prune.add(child)
@@ -159,14 +141,21 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
             case True, False:
                 pointers[child] = pointers[node].leave_tape()
 
+        if child.is_loop and child.directive.kind == "{" and not child.directive.closing_token.colon:
+            pointers[child] = pointers[child].copy(from_end=expand(pointers[child].from_end, (1, 1)))
+
 
     def walk(child: Node):
         while len(children := cfg[node := child]) == 1:
             child, = children
 
-            if (child.is_condition or child.is_conditional) and cfg.in_degree(child) == 1:
-                cfg.remove_edge(node, child)
-                cfg.add_edge(node, child := [*cfg[child]][0])
+            if cfg.in_degree(child) == len(children := [*cfg[child]]) == 1:
+                redundant = child.is_condition or child.is_conditional
+                redundant |= child.writes == child.consumes == 0
+
+                if redundant:
+                    cfg.remove_edge(node, child)
+                    cfg.add_edge(node, child := children[0])
 
             step(node, child)
             print(f"Visited {child}\t{pointers[child]}")
@@ -221,7 +210,7 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
             return cfg
 
 
-CFG = build_cfg("~{~#*~#[abc~:;def~:*~]~}")
+CFG = build_cfg("~{~#*~#[abc~:;def~:*~]~@*~}")
 draw_cfg(CFG)
 
 simplified = simplify(CFG)
