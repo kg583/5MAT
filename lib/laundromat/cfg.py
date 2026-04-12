@@ -94,7 +94,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     # TODO: Actually handle justification
                     build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
 
-                    cfg.add_edge(current, current := escape, condition=Condition())
+                    cfg.add_edge(closing, current := escape, condition=Condition())
                     condition = Condition()
 
                 case '^':
@@ -183,5 +183,15 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
     plt.show()
 
 
-CFG = program_to_cfg("""~{~a~^~?~}~a""")
-draw_cfg(CFG, size=12)
+CFG = program_to_cfg("""~:[█ ~%~;~]~:*~
+~{~<~#,#,101^~?~>█~@{~#,#,3^~
+    ~<~v,' ^~<~v,' ^~<~v,' ^ ~>~:*~>~:*~>~:*~
+    ~<~v,' ^~<~v,' ^~<~v,'█^█~>~:*~>~:*~>~:*~
+    ~<~v,' ^~<~v,'█^~<~v,' ^█~>~:*~>~:*~>~:*~
+    ~<~v,' ^~<~v,'█^~<~v,'█^█~>~:*~>~:*~>~:*~
+    ~<~v,'█^~<~v,' ^~<~v,' ^█~>~:*~>~:*~>~:*~
+    ~<~v,'█^~<~v,' ^~<~v,'█^█~>~:*~>~:*~>~:*~
+    ~<~v,'█^~<~v,'█^~<~v,' ^ ~>~:*~>~:*~>~:*~
+    ~<~v,'█^~<~v,'█^~<~v,'█^ ~>~:*~>~:*~>~
+~}█ ~%~0^~}""")
+draw_cfg(CFG, size=48)
