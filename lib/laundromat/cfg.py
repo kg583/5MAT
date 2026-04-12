@@ -5,175 +5,183 @@ from lib.fourmat.parse import *
 from lib.laundromat.node import *
 
 
-class InvalidDirective(TypeError):
-    def __init__(self, directive: Directive | str):
-        super().__init__(f"invalid directive: {directive}")
+START = Node("!S")
+END   = Node("!E")
+CRASH = Node("!C")
 
 
-START = Node("S")
-END   = Node("E")
-CRASH = Node("C")
-
-
-def build_cfg(program: str) -> nx.DiGraph:
+def program_to_cfg(program: str) -> nx.DiGraph:
     cfg = nx.DiGraph()
 
-    def build_clause(clause: list[Directive | str], current: Node, end: Node, outer):
-        for directive in clause:
-            if isinstance(directive, BlockDirective):
-                cfg.add_edge(current, current := current.copy(directive=directive))
-                current = build_block(directive, current, current.copy(directive=directive.closing_token), outer)
+    def build_clause(clause: list[Directive | str], current: Node, condition: Condition, end: Node, outer: Node):
+        it = iter(clause)
 
-            else:
-                # TODO: Use the logger
-                print(f"Stepping\t{directive}")
-                cfg.add_edge(current, current := current.copy(directive=directive))
+        while directive := next(it, None):
+            cfg.add_edge(current, current := current.copy(directive=directive), condition=condition)
 
-                if isinstance(directive, Directive):
-                    match directive.kind:
-                        case '^':
-                            match directive.params:
-                                case []:
-                                    terminate = current.condition(Special.Hash, 0)
+            match current.kind:
+                case '[':
+                    closing = current.copy(directive=directive.closing_token)
 
-                                case [a]:
-                                    terminate = current.condition(a, 0)
+                    if directive.colon:
+                        if directive.at_sign:
+                            raise InvalidDirective(directive)
 
-                                case params:
-                                    try:
-                                        terminate = current.condition(*params)
+                        build_clause(directive.clauses[0], current, Unary("F"), closing, outer)
+                        build_clause(directive.clauses[1], current, Unary("T"), closing, outer)
 
-                                    except TypeError:
-                                        raise InvalidDirective(directive)
+                    elif directive.at_sign:
+                        build_clause(directive.clauses[0], current, Unary("T"), closing, outer)
+                        cfg.add_edge(current, closing, condition=Unary("F"))
 
-                            cfg.add_edge(current, terminate)
-                            cfg.add_edge(terminate, outer)
+                    else:
+                        match directive.get_param(0):
+                            case Special.V | None:
+                                raise InvalidDirective(directive)
 
-                            cfg.add_edge(current, current := current.condition("!"))
+                            case Special.Hash:
+                                for index, clause in enumerate(directive.clauses[:-1] if directive.default_token else directive.clauses):
+                                    build_clause(clause, current, Binary(Special.Hash, index), closing, outer)
 
-                        case '?':
-                            cfg.add_edge(current, CRASH)
-                            break
+                                default = Ternary(index + 1, index + 1, Special.Hash)
+                                if directive.default_token:
+                                    build_clause(directive.clauses[-1], current, default, closing, outer)
 
-        else:
-            cfg.add_edge(current, end)
+                                else:
+                                    cfg.add_edge(current, closing, condition=default)
 
+                            case n if 0 <= n < len(directive.clauses):
+                                build_clause(directive.clauses[n], current, Condition(), closing, outer)
 
-    def build_block(block: BlockDirective, current: Node, end: Node, outer) -> Node:
-        print(f"Walking \t{block}")
+                            case _:
+                                cfg.add_edge(current, closing, condition=Condition())
 
-        match block.kind:
-            case '[' if block.colon:
-                for clause, condition in zip(block.clauses, ["T", "!"]):
-                    start = current.condition(condition)
-                    cfg.add_edge(current, start)
-                    build_clause(clause, start, end, outer)
+                    current = closing
+                    condition = Condition()
 
-            case '[' if block.at_sign:
-                clause = block.clauses[0]
+                case '{':
+                    closing = current.copy(directive=directive.closing_token)
+                    try:
+                        escape = current.copy(directive=next(it))
 
-                cfg.add_edge(current, true := current.condition("T"))
-                build_clause(clause, true, end, outer)
+                    except StopIteration:
+                        escape = outer
 
-                cfg.add_edge(current, false := current.condition("!"))
-                cfg.add_edge(false, end)
+                    if directive.colon:
+                        raise InvalidDirective(directive)
 
-            case '[':
-                match block.get_param(0):
-                    case Special.V | None:
-                        cfg.add_edge(current, CRASH)
+                    if not directive.at_sign:
+                        if current.pointer.on_tape:
+                            raise InvalidDirective(directive)
 
-                    case Special.Hash:
-                        for index, clause in enumerate(block.clauses[:-1] if block.default_token else block.clauses):
-                            cfg.add_edge(current, start := current.condition(Special.Hash, index))
-                            build_clause(clause, start, end, outer)
+                        current.pointer = current.pointer.copy(on_tape=True)
+                        closing.pointer = closing.pointer.copy(on_tape=True)
 
-                        cfg.add_edge(current, start := current.condition(index + 1, index + 1, Special.Hash))
-                        if block.default_token:
-                            build_clause(block.clauses[-1], start, end, outer)
+                    build_clause(directive.clauses[0], current, Ternary(1, 1, Special.Hash), closing, escape)
 
-                        else:
-                            cfg.add_edge(start, end)
+                    cfg.add_edge(closing, current, condition=Condition())
+                    cfg.add_edge(current, current := escape, condition=Binary(Special.Hash, 0))
+                    condition = Condition()
 
-                    case n if 0 <= n < len(block.clauses):
-                        build_clause(block.clauses[n], current, end, outer)
+                case '<':
+                    closing = current.copy(directive=directive.closing_token)
+                    try:
+                        escape = current.copy(directive=next(it))
 
-            case '{':
-                if block.colon:
-                    raise InvalidDirective(block)
+                    except StopIteration:
+                        escape = outer
 
-                clause = block.clauses[0]
-                iterations = 0
-                loops = block.get_param(0)
+                    # TODO: Actually handle justification
+                    build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
 
-                terminate = current.condition("!")
-                if not block.at_sign:
-                    if current.on_tape:
-                        raise InvalidDirective(block)
+                    cfg.add_edge(current, current := escape, condition=Condition())
+                    condition = Condition()
 
-                    current.on_tape = end.on_tape = True
+                case '^':
+                    match current.directive.params:
+                        case []:
+                            termination = Binary(Special.Hash, 0)
 
-                if block.closing_token.colon and loops != 0:
-                    build_clause(clause, current, end := end.copy(), end)
-                    cfg.add_edge(end, current := current.copy())
-                    iterations += 1
+                        case [a]:
+                            termination = Binary(a, 0)
 
-                match loops:
-                    case Special.Hash | None:
-                        cfg.add_edge(current, start := current.condition(1, 1, Special.Hash))
-                        build_clause(clause, start, end, end)
+                        case [a, b]:
+                            termination = Binary(a, b)
 
-                        cfg.add_edge(current, terminate)
+                        case [a, b, c]:
+                            termination = Ternary(a, b, c)
 
-                        cfg.add_edge(end, current)
+                        case _:
+                            raise InvalidDirective(directive)
 
-                    case n:
-                        while True:
-                            cfg.add_edge(current, start := current.condition(1, 1, Special.Hash))
-                            build_clause(clause, start, end := end.copy(), end)
+                    cfg.add_edge(current, outer, condition=termination)
+                    condition = Negation()
 
-                            cfg.add_edge(current, terminate)
-                            iterations += 1
+                case '?':
+                    cfg.add_edge(current, CRASH, condition=Condition())
+                    return
 
-                            if iterations >= n:
-                                break
+                case _:
+                    condition = Condition()
 
-                            cfg.add_edge(end, current := current.copy())
+        if current != end:
+            cfg.add_edge(current, end, condition=Condition())
 
-                        cfg.add_edge(end, terminate)
-
-                return terminate
-
-            case '<':
-                build_clause(sum(block.clauses, []), current, end, end)
-
-        return end
-
-    build_clause(parse(tokenize(program)).clauses[0], START, END, END)
-    return cfg
+    build_clause(parse(tokenize(program)).clauses[0], START, Condition(), END, END)
+    return cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
 
 
-def draw_cfg(cfg: nx.DiGraph):
+def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
+    plt.figure(1, figsize=(size, size))
     pos = nx.kamada_kawai_layout(cfg)
-    nx.draw_networkx_nodes(cfg, pos=pos, node_shape='none')
-    nx.draw_networkx_edges(cfg, pos=pos)
 
+    node_categories = {
+        "buffer": ([], "salmon"),
+        "conditional": ([], "orange"),
+        "loop": ([], "khaki"),
+        "directive": ([], "skyblue"),
+        "control": ([], "violet"),
+        "string": ([], "silver")
+    }
+
+    # Node types
     for node in cfg:
-        if str(node).startswith("~"):
-            color = "skyblue"
+        if node.is_buffer:
+            category = "buffer"
 
-        elif "=" in str(node) or str(node) == "TAPE":
-            color = "springgreen"
+        elif node.is_conditional:
+            category = "conditional"
 
-        elif str(node) == "!":
-            color = "lightcoral"
+        elif node.is_loop:
+            category = "loop"
 
-        elif str(node) in "SCE":
-            color = "violet"
+        elif node.kind == "str":
+            category = "string"
+
+        elif node.kind in ["!S", "!E", "!C"]:
+            category = "control"
 
         else:
-            color = "silver"
+            category = "directive"
 
-        nx.draw_networkx_labels(cfg.subgraph([node]), pos=pos, bbox=dict(facecolor=color, edgecolor="black"))
+        node_categories[category][0].append(node)
+
+    nx.draw_networkx_labels(cfg, pos, {node: str(node) for node in cfg})
+    for category, (nodes, color) in node_categories.items():
+        nx.draw_networkx_nodes(cfg, nodelist=nodes, pos=pos, node_color=color,
+                               node_size=1200, node_shape="o", edgecolors="gray")
+
+
+    conditions = nx.get_edge_attributes(cfg, "condition")
+    nx.draw_networkx_edges(cfg, pos=pos, edgelist=[edge for edge in cfg.edges if conditions[edge]],
+                           node_size=1300, style="dashed")
+    nx.draw_networkx_edges(cfg, pos=pos, edgelist=[edge for edge in cfg.edges if not conditions[edge]],
+                           node_size=1300, style="solid")
+
+    nx.draw_networkx_edge_labels(cfg, pos=pos, edge_labels=conditions)
 
     plt.show()
+
+
+CFG = program_to_cfg("""~{~a~^~?~}~a""")
+draw_cfg(CFG, size=12)
