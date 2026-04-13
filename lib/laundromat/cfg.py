@@ -65,7 +65,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                         escape = current.copy(directive=next(it))
 
                     except StopIteration:
-                        escape = outer
+                        escape = end
 
                     if directive.colon:
                         raise InvalidDirective(directive)
@@ -89,7 +89,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                         escape = current.copy(directive=next(it))
 
                     except StopIteration:
-                        escape = outer
+                        escape = end
 
                     # TODO: Actually handle justification
                     build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
