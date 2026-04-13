@@ -159,112 +159,125 @@ class Condition:
     def __bool__(self) -> bool:
         return False
 
+    def __invert__(self) -> 'Condition':
+        return self
+
     def __str__(self) -> str:
         return ""
 
-    def check(self, pointer: Pointer) -> tuple[bool, bool]:
-        return True, False
+    def check(self, pointer: Pointer) -> bool:
+        return True
 
 
 @dataclass(frozen=True)
-class Negation(Condition):
+class Nil(Condition):
+    negated: bool = False
+
     def __bool__(self) -> bool:
         return True
 
-    def check(self, pointer: Pointer) -> tuple[bool, bool]:
-        return False, True
-
-
-@dataclass(frozen=True)
-class Unary(Condition):
-    a: Operand
+    def __invert__(self) -> 'Condition':
+        return replace(self, negated=not self.negated)
 
     def __str__(self) -> str:
-        return f"{self.a}"
+        return "T" if self.negated else "NIL"
 
-    def check(self, pointer: Pointer) -> tuple[bool, bool]:
-        return True, not pointer.on_tape
+    def check(self, pointer: Pointer) -> bool:
+        if self.negated:
+            return True
+
+        else:
+            return not pointer.on_tape
 
 
 @dataclass(frozen=True)
-class Binary(Condition):
+class Equal(Condition):
     a: Operand
     b: Operand
+    negated: bool = False
 
     def __bool__(self) -> bool:
         return True
 
-    def __str__(self) -> str:
-        return f"{self.a} = {self.b}"
+    def __invert__(self) -> 'Condition':
+        return replace(self, negated=not self.negated)
 
-    def check(self, pointer: Pointer) -> tuple[bool, bool]:
+    def __str__(self) -> str:
+        return f"{self.a} {'!=' if self.negated else '='} {self.b}"
+
+    def check(self, pointer: Pointer) -> bool:
         lower, upper = pointer.from_end
 
         match [self.a, self.b]:
             case [None, b] | [b, None]:
-                return b is None, b is not None
+                return b is not None if self.negated else b is None
 
             case params if Special.V in params:
                 raise NotImplementedError
 
             case [Special.Hash, Special.Hash]:
-                return True, False
+                return not self.negated
 
             case [Special.Hash, b] | [b, Special.Hash]:
-                return lower <= b <= upper, not lower == b == upper
+                return not lower == b == upper if self.negated else lower <= b <= upper
 
             case [a, b]:
-                return a == b, a != b
+                return a != b if self.negated else a == b
 
 @dataclass(frozen=True)
-class Ternary(Condition):
+class Less(Condition):
     a: Operand
     b: Operand
     c: Operand
+    negated: bool = False
 
     def __bool__(self) -> bool:
         return True
 
-    def __str__(self) -> str:
-        return f"{self.a} <= {self.b} <= {self.c}"
+    def __invert__(self) -> 'Condition':
+        return replace(self, negated=not self.negated)
 
-    def check(self, pointer: Pointer) -> tuple[bool, bool]:
+    def __str__(self) -> str:
+        string = f"{self.a} <= {self.b} <= {self.c}"
+        return f"!({string})" if self.negated else string
+
+    def check(self, pointer: Pointer) -> bool:
         lower, upper = pointer.from_end
 
         match [self.a, self.b, self.c]:
             case params if None in params:
-                return all(x is None for x in params), any(x is not None for x in params)
+                return any(x is not None for x in params) == self.negated
 
             case params if Special.V in params:
                 raise NotImplementedError
 
             case [Special.Hash, Special.Hash, Special.Hash]:
-                return True, False
+                return not self.negated
 
             case [Special.Hash, b, Special.Hash]:
-                return lower <= b <= upper, not lower == b == upper
+                return Equal(b, Special.Hash).check(pointer)
 
             case [Special.Hash, Special.Hash, c]:
-                return lower <= c, c <= upper
+                return c <= upper if self.negated else lower <= c
 
             case [a, Special.Hash, Special.Hash]:
-                return a <= upper, lower <= a
+                return lower <= a if self.negated else a <= upper
 
             case [Special.Hash, b, c]:
-                return lower <= b <= c, b <= upper or b > c
+                return b <= upper or b > c if self.negated else lower <= b <= c
 
             case [a, Special.Hash, c]:
-                return a <= lower <= c or a <= upper <= c, upper < a or c < lower or a > c
+                return upper < a or c < lower or a > c if self.negated else a <= lower <= c or a <= upper <= c
 
             case [a, b, Special.Hash]:
-                return a <= b <= upper, lower <= b or a > b
+                return lower <= b or a > b if self.negated else a <= b <= upper
 
             case [a, b, c]:
                 try:
-                    return a <= b <= c, not (a <= b <= c)
+                    return (a <= b <= c) != self.negated
 
                 except TypeError:
-                    return False, True
+                    return self.negated
 
 
 @dataclass(eq=False)

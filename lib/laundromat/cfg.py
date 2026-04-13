@@ -27,12 +27,12 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                         if directive.at_sign:
                             raise InvalidDirective(directive)
 
-                        build_clause(directive.clauses[0], current, Unary("F"), closing, outer)
-                        build_clause(directive.clauses[1], current, Unary("T"), closing, outer)
+                        build_clause(directive.clauses[0], current, Nil(), closing, outer)
+                        build_clause(directive.clauses[1], current, ~Nil(), closing, outer)
 
                     elif directive.at_sign:
-                        build_clause(directive.clauses[0], current, Unary("T"), closing, outer)
-                        cfg.add_edge(current, closing, condition=Unary("F"))
+                        build_clause(directive.clauses[0], current, ~Nil(), closing, outer)
+                        cfg.add_edge(current, closing, condition=Nil())
 
                     else:
                         match directive.get_param(0):
@@ -41,9 +41,9 @@ def program_to_cfg(program: str) -> nx.DiGraph:
 
                             case Special.Hash:
                                 for index, clause in enumerate(directive.clauses[:-1] if directive.default_token else directive.clauses):
-                                    build_clause(clause, current, Binary(Special.Hash, index), closing, outer)
+                                    build_clause(clause, current, Equal(Special.Hash, index), closing, outer)
 
-                                default = Ternary(index + 1, index + 1, Special.Hash)
+                                default = Less(index + 1, index + 1, Special.Hash)
                                 if directive.default_token:
                                     build_clause(directive.clauses[-1], current, default, closing, outer)
 
@@ -77,10 +77,10 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                         current.pointer = current.pointer.copy(on_tape=True)
                         closing.pointer = closing.pointer.copy(on_tape=True)
 
-                    build_clause(directive.clauses[0], current, Ternary(1, 1, Special.Hash), closing, escape)
+                    build_clause(directive.clauses[0], current, Less(1, 1, Special.Hash), closing, escape)
 
                     cfg.add_edge(closing, current, condition=Condition())
-                    cfg.add_edge(current, current := escape, condition=Binary(Special.Hash, 0))
+                    cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0))
                     condition = Condition()
 
                 case '<':
@@ -100,22 +100,22 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                 case '^':
                     match current.directive.params:
                         case []:
-                            termination = Binary(Special.Hash, 0)
+                            termination = Equal(Special.Hash, 0)
 
                         case [a]:
-                            termination = Binary(a, 0)
+                            termination = Equal(a, 0)
 
                         case [a, b]:
-                            termination = Binary(a, b)
+                            termination = Equal(a, b)
 
                         case [a, b, c]:
-                            termination = Ternary(a, b, c)
+                            termination = Less(a, b, c)
 
                         case _:
                             raise InvalidDirective(directive)
 
                     cfg.add_edge(current, outer, condition=termination)
-                    condition = Negation()
+                    condition = ~termination
 
                 case '?':
                     cfg.add_edge(current, CRASH, condition=Condition())
@@ -125,7 +125,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     condition = Condition()
 
         if current != end:
-            cfg.add_edge(current, end, condition=Condition())
+            cfg.add_edge(current, end, condition=condition)
 
     build_clause(parse(tokenize(program)).clauses[0], START, Condition(), END, END)
     return cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
@@ -173,11 +173,7 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
 
 
     conditions = nx.get_edge_attributes(cfg, "condition")
-    nx.draw_networkx_edges(cfg, pos=pos, edgelist=[edge for edge in cfg.edges if conditions[edge]],
-                           node_size=1300, style="dashed")
-    nx.draw_networkx_edges(cfg, pos=pos, edgelist=[edge for edge in cfg.edges if not conditions[edge]],
-                           node_size=1300, style="solid")
-
+    nx.draw_networkx_edges(cfg, pos=pos)
     nx.draw_networkx_edge_labels(cfg, pos=pos, edge_labels=conditions)
 
     plt.show()
