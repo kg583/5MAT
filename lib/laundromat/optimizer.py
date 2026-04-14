@@ -5,89 +5,77 @@ from lib.laundromat.cfg import *
 
 
 def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
-    def step(node: Node, child: Node):
-        marks[child] -= 1
-
-        match node.pointer.on_tape, child.pointer.on_tape:
-            case (True, True) | (False, False):
-                try:
-                    child.pointer |= node.pointer.step(child)
-
-                    if child.pointer.from_end[0] < 0:
-                        raise InvalidDirective(node.directive)
-
-                except InvalidDirective:
-                    prune.add(child)
-                    cfg.add_edge(node, CRASH, condition=Condition())
-
-            case False, True:
-                child.pointer = node.pointer.enter_tape()
-
-            case True, False:
-                child.pointer = node.pointer.leave_tape()
-
-
-    def walk(child: Node):
-        while len(children := cfg[node := child]) == 1:
-            child, = children
-
-            if cfg.in_degree(child) == len(children := [*cfg[child]]) == 1:
-                redundant = child.is_conditional
-                redundant |= child.writes == child.consumes == 0
-
-                if redundant:
-                    cfg.remove_edge(node, child)
-                    cfg.add_edge(node, child := children[0])
-
-            step(node, child)
-            print(f"Visited {child}\t{child.pointer}")
-
-            if marks[child] and not child.is_loop:
-                return
-
-        if len(children) > 1:
-            for child in children:
-                step(node, child)
-                walk(child)
-
-            if "!" in [str(child.directive) for child in children]:
-                cond, opp = children
-                t, f = cond.directive.check(node.pointer)
-
-                if not t:
-                    prune.add(cond)
-
-                if not f:
-                    prune.add(opp)
-
-            else:
-                for child in children:
-                    if not child.directive.check(node.pointer)[0]:
-                        prune.add(child)
-
-
     while True:
-        print()
+        old_nodes, old_edges = len(cfg), len(cfg.edges())
         cfg = cfg.copy()
 
-        marks = {node: cfg.in_degree(node) for node in cfg}
-        prune = set()
+        # Update pointers
+        for path in nx.all_simple_edge_paths(cfg, source=START, target=[CRASH, END]):
+            for s, t in path:
+                match s.pointer.on_tape, t.pointer.on_tape:
+                    case (True, True) | (False, False):
+                        try:
+                            t.pointer |= cfg[s][t]["condition"].enforce(s.pointer.step(t))
 
-        walk(START)
+                        except InvalidDirective:
+                            cfg.add_edge(s, CRASH, condition=Condition())
 
-        old = len(cfg)
-        cfg.remove_nodes_from(prune)
+                        t.pointer = +t.pointer
+
+                    case False, True:
+                        t.pointer = s.pointer.enter_tape()
+
+                    case True, False:
+                        t.pointer = s.pointer.leave_tape()
+
+                print(f"Updated {str(t):10}{t.pointer}")
+
+            print()
+
+        for node in [*cfg.nodes()]:
+            in_edges = cfg.in_edges(node)
+            children = {**cfg[node]}
+
+            # Contract redundant nodes
+            if len(children) == len(in_edges) == 1 and node.writes == node.consumes == Range.only(0):
+                # TODO: Handle this case
+                if condition := cfg[ancestor := [*in_edges][0][0]][node]["condition"]:
+                    continue
+
+                cfg.add_edge(ancestor, child := [*children][0], condition=condition)
+                cfg.remove_edge(ancestor, node)
+                print(f"Contracted    {node} <- {child}")
+
+            else:
+                for child, attrs in children.items():
+                    # Skip
+                    if not attrs["condition"]:
+                        continue
+
+                    # Check reachability
+                    if not attrs["condition"].check(node.pointer):
+                        cfg.remove_edge(node, child)
+                        print(f"Removed       {node} -> {child}")
+
+                    # Simplify condition
+                    elif attrs["condition"].enforce(node.pointer) == node.pointer:
+                        cfg[node][child]["condition"] = Condition()
+                        print(f"Simplified    {node} -> {child}")
+
+        # Prune unreachable nodes
         cfg = cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
+        print("\nPruning from START node...")
 
-        removed = old - len(cfg)
-        print(f"Removed {removed} node{'s' if removed != 1 else ''}!")
+        removed_nodes, removed_edges = old_nodes - len(cfg), old_edges - len(cfg.edges())
+        print(f"Removed {removed_nodes} node{'s' if removed_nodes != 1 else ''}"
+              f" and {removed_edges} edge{'s' if removed_edges != 1 else ''}!\n")
 
-        if not removed:
+        if removed_nodes == removed_edges == 0:
             print("All done!")
             return cfg
 
 
-CFG = program_to_cfg("~{~a~^~?~}~a")
+CFG = program_to_cfg("~{~a~#[~#,1^~]7~}")
 draw_cfg(CFG)
 
 simplified = simplify(CFG)

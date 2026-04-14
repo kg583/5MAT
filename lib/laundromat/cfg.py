@@ -5,18 +5,16 @@ from lib.fourmat.parse import *
 from lib.laundromat.node import *
 
 
-START = Node("!S")
-END   = Node("!E")
-CRASH = Node("!C")
+START = Node(Control.Start)
+END   = Node(Control.End)
+CRASH = Node(Control.Crash)
 
 
 def program_to_cfg(program: str) -> nx.DiGraph:
     cfg = nx.DiGraph()
 
     def build_clause(clause: list[Directive | str], current: Node, condition: Condition, end: Node, outer: Node):
-        it = iter(clause)
-
-        while directive := next(it, None):
+        for directive in clause:
             cfg.add_edge(current, current := current.copy(directive=directive), condition=condition)
 
             match current.kind:
@@ -60,12 +58,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     condition = Condition()
 
                 case '{':
-                    closing = current.copy(directive=directive.closing_token)
-                    try:
-                        escape = current.copy(directive=next(it))
-
-                    except StopIteration:
-                        escape = end
+                    escape = current.copy(directive=Control.Empty)
 
                     if directive.colon:
                         raise InvalidDirective(directive)
@@ -75,21 +68,21 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                             raise InvalidDirective(directive)
 
                         current.pointer = current.pointer.copy(on_tape=True)
-                        closing.pointer = closing.pointer.copy(on_tape=True)
 
-                    build_clause(directive.clauses[0], current, Less(1, 1, Special.Hash), closing, escape)
+                    entry = current.copy(directive=Control.Empty)
+                    closing = current.copy(directive=directive.closing_token)
 
-                    cfg.add_edge(closing, current, condition=Condition())
+                    cfg.add_edge(current, entry, condition=Less(1, 1, Special.Hash))
+                    cfg.add_edge(closing, entry, condition=Less(1, 1, Special.Hash))
+                    cfg.add_edge(closing, escape, condition=Equal(Special.Hash, 0))
                     cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0))
+
+                    build_clause(directive.clauses[0], entry, Condition(), closing, escape)
                     condition = Condition()
 
                 case '<':
                     closing = current.copy(directive=directive.closing_token)
-                    try:
-                        escape = current.copy(directive=next(it))
-
-                    except StopIteration:
-                        escape = end
+                    escape = current.copy(directive=Control.Empty)
 
                     # TODO: Actually handle justification
                     build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
@@ -124,8 +117,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                 case _:
                     condition = Condition()
 
-        if current != end:
-            cfg.add_edge(current, end, condition=condition)
+        cfg.add_edge(current, end, condition=condition)
 
     build_clause(parse(tokenize(program)).clauses[0], START, Condition(), END, END)
     return cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
@@ -158,7 +150,7 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
         elif node.kind == "str":
             category = "string"
 
-        elif node.kind in ["!S", "!E", "!C"]:
+        elif node.kind == "ctrl":
             category = "control"
 
         else:
@@ -173,21 +165,7 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
 
 
     conditions = nx.get_edge_attributes(cfg, "condition")
-    nx.draw_networkx_edges(cfg, pos=pos)
+    nx.draw_networkx_edges(cfg, pos=pos, node_size=1300)
     nx.draw_networkx_edge_labels(cfg, pos=pos, edge_labels=conditions)
 
     plt.show()
-
-
-CFG = program_to_cfg("""~:[█ ~%~;~]~:*~
-~{~<~#,#,101^~?~>█~@{~#,#,3^~
-    ~<~v,' ^~<~v,' ^~<~v,' ^ ~>~:*~>~:*~>~:*~
-    ~<~v,' ^~<~v,' ^~<~v,'█^█~>~:*~>~:*~>~:*~
-    ~<~v,' ^~<~v,'█^~<~v,' ^█~>~:*~>~:*~>~:*~
-    ~<~v,' ^~<~v,'█^~<~v,'█^█~>~:*~>~:*~>~:*~
-    ~<~v,'█^~<~v,' ^~<~v,' ^█~>~:*~>~:*~>~:*~
-    ~<~v,'█^~<~v,' ^~<~v,'█^█~>~:*~>~:*~>~:*~
-    ~<~v,'█^~<~v,'█^~<~v,' ^ ~>~:*~>~:*~>~:*~
-    ~<~v,'█^~<~v,'█^~<~v,'█^ ~>~:*~>~:*~>~
-~}█ ~%~0^~}""")
-draw_cfg(CFG, size=48)
