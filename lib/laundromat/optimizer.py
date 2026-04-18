@@ -53,7 +53,7 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
                         continue
 
                     # Check reachability
-                    if not attrs["condition"].check(node.pointer):
+                    if not attrs["condition"].check(node.pointer) or child.directive == Control.UB:
                         cfg.remove_edge(node, child)
                         print(f"Removed       {node} -> {child}")
 

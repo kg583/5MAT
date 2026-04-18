@@ -351,6 +351,7 @@ class Control(StrEnum):
     End = "E"
     Crash = "C"
     Empty = "_"
+    UB = "U"
 
 
 @dataclass(eq=False)
@@ -380,18 +381,6 @@ class Node:
 
         else:
             return self.directive.kind
-
-    @property
-    def is_buffer(self) -> bool:
-        return self.kind in "<>"
-
-    @property
-    def is_conditional(self) -> bool:
-        return self.kind in "[]"
-
-    @property
-    def is_loop(self) -> bool:
-        return self.kind in "{}"
 
     @property
     def consumes(self) -> Range:

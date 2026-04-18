@@ -8,6 +8,7 @@ from lib.laundromat.node import *
 START = Node(Control.Start)
 END   = Node(Control.End)
 CRASH = Node(Control.Crash)
+UB    = Node(Control.UB)
 
 
 def program_to_cfg(program: str) -> nx.DiGraph:
@@ -16,6 +17,10 @@ def program_to_cfg(program: str) -> nx.DiGraph:
     def build_clause(clause: list[Directive | str], current: Node, condition: Condition, end: Node, outer: Node):
         for directive in clause:
             cfg.add_edge(current, current := current.copy(directive=directive), condition=condition)
+            condition = Condition()
+
+            if isinstance(directive, str):
+                continue
 
             match current.kind:
                 case '[':
@@ -55,7 +60,6 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                                 cfg.add_edge(current, closing, condition=Condition())
 
                     current = closing
-                    condition = Condition()
 
                 case '{':
                     escape = current.copy(directive=Control.Empty)
@@ -78,7 +82,6 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0))
 
                     build_clause(directive.clauses[0], entry, Condition(), closing, escape)
-                    condition = Condition()
 
                 case '<':
                     closing = current.copy(directive=directive.closing_token)
@@ -88,7 +91,6 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
 
                     cfg.add_edge(closing, current := escape, condition=Condition())
-                    condition = Condition()
 
                 case '^':
                     match current.directive.params:
@@ -115,7 +117,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     return
 
                 case _:
-                    condition = Condition()
+                    pass
 
         cfg.add_edge(current, end, condition=condition)
 
@@ -138,13 +140,13 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
 
     # Node types
     for node in cfg:
-        if node.is_buffer:
+        if node.kind in "<>":
             category = "buffer"
 
-        elif node.is_conditional:
+        elif node.kind in "[]":
             category = "conditional"
 
-        elif node.is_loop:
+        elif node.kind in "{}":
             category = "loop"
 
         elif node.kind == "str":
@@ -158,14 +160,14 @@ def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
 
         node_categories[category][0].append(node)
 
-    nx.draw_networkx_labels(cfg, pos, {node: str(node) for node in cfg})
+    nx.draw_networkx_labels(cfg, pos, {node: str(node) for node in cfg}, font_size="small")
     for category, (nodes, color) in node_categories.items():
         nx.draw_networkx_nodes(cfg, nodelist=nodes, pos=pos, node_color=color,
                                node_size=1200, node_shape="o", edgecolors="gray")
 
 
     conditions = nx.get_edge_attributes(cfg, "condition")
-    nx.draw_networkx_edges(cfg, pos=pos, node_size=1300)
+    nx.draw_networkx_edges(cfg, pos=pos, node_size=1300, arrowstyle="]->")
     nx.draw_networkx_edge_labels(cfg, pos=pos, edge_labels=conditions)
 
     plt.show()
