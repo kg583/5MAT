@@ -359,7 +359,6 @@ class Node:
     directive: Directive | Control | str
 
     pointer: Pointer = Pointer()
-    may_be_nil: bool = True
 
     def __hash__(self) -> int:
         return id(self)
@@ -403,8 +402,17 @@ class Node:
             case '/':
                 return Range.only(1)
 
+            case '[' if self.directive.at_sign:
+                return Range(0, 1)
+
+            case '[' if self.directive.colon:
+                return Range.only(1)
+
+            case '[' | ']' | '<' | '>':
+                return Range.only(0)
+
             case _:
-                return Range(0, 7)
+                return Range(0, INF)
 
     @property
     def writes(self) -> Range:

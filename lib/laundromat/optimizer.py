@@ -48,6 +48,13 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
 
             else:
                 for child, attrs in children.items():
+                    # Crash infinite loops
+                    if node.kind == "{" and not {END, CRASH} & nx.descendants(cfg, child):
+                        print("Found an infinite loop!")
+
+                        cfg.remove_edges_from([*cfg.edges(child)])
+                        cfg.add_edge(child, CRASH, condition=Condition())
+
                     # Skip
                     if not attrs["condition"]:
                         continue
@@ -75,7 +82,7 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
             return cfg
 
 
-CFG = program_to_cfg("~{~a~#[~#,1^~]7~}")
+CFG = program_to_cfg("~{~1[test~]~}")
 draw_cfg(CFG)
 
 simplified = simplify(CFG)
