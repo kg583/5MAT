@@ -11,12 +11,21 @@ CRASH = Node(Control.Crash)
 UB    = Node(Control.UB)
 
 
+def visit_order(cfg: nx.DiGraph):
+    topo = cfg.copy()
+    for edge, back in nx.get_edge_attributes(topo, "back").items():
+        if back:
+            topo.remove_edge(*edge)
+
+    return nx.lexicographical_topological_sort(topo, key=str)
+
+
 def program_to_cfg(program: str) -> nx.DiGraph:
     cfg = nx.DiGraph()
 
     def build_clause(clause: list[Directive | str], current: Node, condition: Condition, end: Node, outer: Node):
         for directive in clause:
-            cfg.add_edge(current, current := current.copy(directive=directive), condition=condition)
+            cfg.add_edge(current, current := current.copy(directive=directive), condition=condition, back=False)
             condition = Condition()
 
             if isinstance(directive, str):
@@ -35,7 +44,7 @@ def program_to_cfg(program: str) -> nx.DiGraph:
 
                     elif directive.at_sign:
                         build_clause(directive.clauses[0], current, ~Nil(), closing, outer)
-                        cfg.add_edge(current, closing, condition=Nil())
+                        cfg.add_edge(current, closing, condition=Nil(), back=False)
 
                     else:
                         match directive.get_param(0):
@@ -51,35 +60,29 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                                     build_clause(directive.clauses[-1], current, default, closing, outer)
 
                                 else:
-                                    cfg.add_edge(current, closing, condition=default)
+                                    cfg.add_edge(current, closing, condition=default, back=False)
 
                             case n if 0 <= n < len(directive.clauses):
                                 build_clause(directive.clauses[n], current, Condition(), closing, outer)
 
                             case _:
-                                cfg.add_edge(current, closing, condition=Condition())
+                                cfg.add_edge(current, closing, condition=Condition(), back=False)
 
                     current = closing
 
                 case '{':
                     escape = current.copy(directive=Control.Empty)
 
-                    if directive.colon:
+                    if directive.colon or not directive.at_sign:
                         raise InvalidDirective(directive)
-
-                    if not directive.at_sign:
-                        if current.pointer.on_tape:
-                            raise InvalidDirective(directive)
-
-                        current.pointer = current.pointer.copy(on_tape=True)
 
                     entry = current.copy(directive=Control.Empty)
                     closing = current.copy(directive=directive.closing_token)
 
-                    cfg.add_edge(current, entry, condition=Less(1, 1, Special.Hash))
-                    cfg.add_edge(closing, entry, condition=Less(1, 1, Special.Hash))
-                    cfg.add_edge(closing, escape, condition=Equal(Special.Hash, 0))
-                    cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0))
+                    cfg.add_edge(current, entry, condition=Less(1, 1, Special.Hash), back=False)
+                    cfg.add_edge(closing, entry, condition=Less(1, 1, Special.Hash), back=True)
+                    cfg.add_edge(closing, escape, condition=Equal(Special.Hash, 0), back=False)
+                    cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0), back=False)
 
                     build_clause(directive.clauses[0], entry, Condition(), closing, escape)
 
@@ -90,10 +93,10 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                     # TODO: Actually handle justification
                     build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
 
-                    cfg.add_edge(closing, current := escape, condition=Condition())
+                    cfg.add_edge(closing, current := escape, condition=Condition(), back=False)
 
                 case '^':
-                    match current.directive.params:
+                    match directive.params:
                         case []:
                             termination = Equal(Special.Hash, 0)
 
@@ -109,17 +112,21 @@ def program_to_cfg(program: str) -> nx.DiGraph:
                         case _:
                             raise InvalidDirective(directive)
 
-                    cfg.add_edge(current, outer, condition=termination)
+                    cfg.add_edge(current, outer, condition=termination, back=False)
                     condition = ~termination
 
                 case '?':
-                    cfg.add_edge(current, CRASH, condition=Condition())
+                    cfg.add_edge(current, CRASH, condition=Condition(), back=False)
+                    return
+
+                case '*' if directive.get_param(0, 0) == Special.V:
+                    cfg.add_edge(current, CRASH, condition=Condition(), back=False)
                     return
 
                 case _:
                     pass
 
-        cfg.add_edge(current, end, condition=condition)
+        cfg.add_edge(current, end, condition=condition, back=False)
 
     build_clause(parse(tokenize(program)).clauses[0], START, Condition(), END, END)
     return cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()

@@ -9,65 +9,49 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
         old_nodes, old_edges = len(cfg), len(cfg.edges())
         cfg = cfg.copy()
 
-        # Update pointers
-        for path in nx.all_simple_edge_paths(cfg, source=START, target=[CRASH, END]):
-            for s, t in path:
-                match s.pointer.on_tape, t.pointer.on_tape:
-                    case (True, True) | (False, False):
-                        try:
-                            t.pointer |= cfg[s][t]["condition"].enforce(s.pointer.step(t))
+        # Reset pointers
+        for node in cfg:
+            node.pointer = node.pointer.clear()
 
-                        except InvalidDirective:
-                            cfg.add_edge(s, CRASH, condition=Condition())
+        START.pointer = Pointer().start()
 
-                        t.pointer = +t.pointer
-
-                    case False, True:
-                        t.pointer = s.pointer.enter_tape()
-
-                    case True, False:
-                        t.pointer = s.pointer.leave_tape()
-
-                print(f"Updated {str(t):10}{t.pointer}")
-
-            print()
+        # Calculate new pointers
+        for node in visit_order(cfg):
+            for child in cfg[node]:
+                child.pointer |= cfg[node][child]["condition"].enforce(node.pointer).step(child)
+                print(f"Updated {str(child):10}{child.pointer}")
 
         for node in [*cfg.nodes()]:
-            in_edges = cfg.in_edges(node)
-            children = {**cfg[node]}
+            for child, attrs in {**cfg[node]}.items():
+                condition = attrs["condition"]
 
-            # Contract redundant nodes
-            if len(children) == len(in_edges) == 1 and node.writes == node.consumes == Range.only(0):
-                # TODO: Handle this case
-                if condition := cfg[ancestor := [*in_edges][0][0]][node]["condition"]:
+                # Crash past the end of the tape
+                if child.pointer.from_end < Range(0, inf):
+                    cfg.remove_edge(node, child)
+                    cfg.add_edge(node, CRASH, condition=condition)
+                    print(f"Crashed at    {child} <- {node}")
+
+
+                # Crash infinite loops
+                if node.kind == "{" and not {END, CRASH} & nx.descendants(cfg, child):
+                    print("Found an infinite loop!")
+
+                    cfg.remove_edges_from([*cfg.edges(child)])
+                    cfg.add_edge(child, CRASH, condition=Condition())
+
+                # Skip
+                if not condition:
                     continue
 
-                cfg.add_edge(ancestor, child := [*children][0], condition=condition)
-                cfg.remove_edge(ancestor, node)
-                print(f"Contracted    {node} <- {child}")
+                # Check reachability
+                if not condition.check(node.pointer) or child.directive == Control.UB:
+                    cfg.remove_edge(node, child)
+                    print(f"Removed       {node} -> {child}")
 
-            else:
-                for child, attrs in children.items():
-                    # Crash infinite loops
-                    if node.kind == "{" and not {END, CRASH} & nx.descendants(cfg, child):
-                        print("Found an infinite loop!")
-
-                        cfg.remove_edges_from([*cfg.edges(child)])
-                        cfg.add_edge(child, CRASH, condition=Condition())
-
-                    # Skip
-                    if not attrs["condition"]:
-                        continue
-
-                    # Check reachability
-                    if not attrs["condition"].check(node.pointer) or child.directive == Control.UB:
-                        cfg.remove_edge(node, child)
-                        print(f"Removed       {node} -> {child}")
-
-                    # Simplify condition
-                    elif attrs["condition"].enforce(node.pointer) == node.pointer:
-                        cfg[node][child]["condition"] = Condition()
-                        print(f"Simplified    {node} -> {child}")
+                # Simplify condition
+                elif condition.enforce(node.pointer) == node.pointer:
+                    cfg[node][child]["condition"] = Condition()
+                    print(f"Simplified    {node} -> {child}")
 
         # Prune unreachable nodes
         cfg = cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
@@ -82,7 +66,7 @@ def simplify(cfg: nx.DiGraph) -> nx.DiGraph:
             return cfg
 
 
-CFG = program_to_cfg("~{~1[test~]~}")
+CFG = program_to_cfg("~@{~#[~a~]~}")
 draw_cfg(CFG)
 
 simplified = simplify(CFG)

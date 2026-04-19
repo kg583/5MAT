@@ -1,12 +1,8 @@
-import sys
-
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from math import *
 
 from lib.fourmat.parse import *
-
-
-INF = sys.maxsize
 
 
 class InvalidDirective(TypeError):
@@ -16,8 +12,8 @@ class InvalidDirective(TypeError):
 
 @dataclass(frozen=True)
 class Range:
-    left: int = INF
-    right: int = 0
+    left: float = inf
+    right: float = -inf
 
     def __and__(self, other: 'Range') -> 'Range':
         return Range(max(self.left, other.left), min(self.right, other.right)) or Range()
@@ -28,12 +24,24 @@ class Range:
     def __contains__(self, item) -> bool:
         return self.left <= item <= self.right
 
+    def __ge__(self, other: 'Range') -> bool:
+        return self and other and self.left >= other.right
+
+    def __gt__(self, other: 'Range') -> bool:
+        return self and other and self.left > other.right
+
     def __iter__(self):
         yield self.left
         yield self.right
 
-    def __lshift__(self, other: int) -> 'Range':
+    def __le__(self, other: 'Range') -> bool:
+        return self and other and self.right <= other.left
+
+    def __lshift__(self, other: float) -> 'Range':
         return Range(self.left - other, self.right - other)
+
+    def __lt__(self, other: 'Range') -> bool:
+        return self and other and self.right < other.left
 
     def __or__(self, other: 'Range') -> 'Range':
         return Range(min(self.left, other.left), max(self.right, other.right))
@@ -41,7 +49,7 @@ class Range:
     def __pos__(self) -> 'Range':
         return Range(max(self.left, 0), max(self.right, 0))
 
-    def __rshift__(self, other: int) -> 'Range':
+    def __rshift__(self, other: float) -> 'Range':
         return Range(self.left + other, self.right + other)
 
     def __str__(self) -> str:
@@ -71,9 +79,7 @@ class Pointer:
     from_start: Range = Range()
     from_end: Range = Range()
 
-    on_tape: bool = False
-
-    def __add__(self, other: Range | int) -> 'Pointer':
+    def __add__(self, other: Range | float) -> 'Pointer':
         if isinstance(other, Range):
             return self + other.left | self + other.right
 
@@ -96,9 +102,9 @@ class Pointer:
         return self.copy(from_start=+self.from_start, from_end=+self.from_end)
 
     def __str__(self) -> str:
-        return f"{'v' if self.on_tape else '^'}[{self.from_start} : {self.from_end}]"
+        return f"[{self.from_start} : {self.from_end}]"
 
-    def __sub__(self, other: Range | int) -> 'Pointer':
+    def __sub__(self, other: Range | float) -> 'Pointer':
         if isinstance(other, Range):
             return self - other.left | self - other.right
 
@@ -109,23 +115,13 @@ class Pointer:
         return self.copy(from_end=self.from_end ^ other)
 
     def clear(self) -> 'Pointer':
-        return self.copy(from_start=None, from_end=None)
+        return self.copy(from_start=Range(), from_end=Range())
 
     def start(self) -> 'Pointer':
-        if self.on_tape:
-            return self.copy(from_start=Range.only(0), from_end=Range(0, INF))
-
-        else:
-            return self.copy(from_start=Range.only(0), from_end=Range.only(1))
+        return self.copy(from_start=Range.only(0), from_end=Range(0, inf))
 
     def end(self) -> 'Pointer':
         return ~self.start()
-
-    def enter_tape(self) -> 'Pointer':
-        return self.copy(on_tape=True).start()
-
-    def leave_tape(self) -> 'Pointer':
-        return self.copy(on_tape=False).end()
 
     def copy(self, **changes) -> 'Pointer':
         return replace(self, **changes)
@@ -137,9 +133,6 @@ class Pointer:
 
             case '*' if node.directive.at_sign:
                 match node.directive.get_param(0, 0):
-                    case Special.V:
-                        raise InvalidDirective(node.directive)
-
                     case Special.Hash:
                         return ~self
 
@@ -148,9 +141,6 @@ class Pointer:
 
             case '*' if node.directive.colon:
                 match node.directive.get_param(0, 1):
-                    case Special.V:
-                        raise InvalidDirective(node.directive)
-
                     case Special.Hash:
                         return +(self - self.from_end)
 
@@ -159,9 +149,6 @@ class Pointer:
 
             case '*':
                 match node.directive.get_param(0, 1):
-                    case Special.V:
-                        raise InvalidDirective(node.directive)
-
                     case Special.Hash:
                         return self.end()
 
@@ -175,13 +162,13 @@ class Pointer:
             case '[' if node.directive.colon:
                 return self + 1
 
-            case '[':
+            case '[' | '<':
                 return self
 
             case '{':
-                return self
+                return self.copy(from_start=Range(0, inf), from_end=Range(0, inf))
 
-            case ']' | '}':
+            case ']' | '>' | '}':
                 return self
 
             # TODO: Spell out more cases
@@ -223,11 +210,7 @@ class Nil(Condition):
         return "T" if self.negated else "NIL"
 
     def check(self, pointer: Pointer) -> bool:
-        if self.negated:
-            return True
-
-        else:
-            return not pointer.on_tape
+        return self.negated
 
 
 @dataclass(frozen=True)
@@ -337,7 +320,7 @@ class Less(Condition):
                 return pointer ^ Range(0, x) if self.negated else pointer & Range(0, x)
 
             case [x, Special.Hash, Special.Hash] | [_, x, Special.Hash]:
-                return pointer ^ Range(x, INF) if self.negated else pointer & Range(x, INF)
+                return pointer ^ Range(x, inf) if self.negated else pointer & Range(x, inf)
 
             case [a, Special.Hash, c]:
                 return pointer ^ Range(a, c) if self.negated else pointer & Range(a, c)
@@ -412,7 +395,7 @@ class Node:
                 return Range.only(0)
 
             case _:
-                return Range(0, INF)
+                return Range(0, inf)
 
     @property
     def writes(self) -> Range:
@@ -421,19 +404,19 @@ class Node:
                 return Range.only(len(str(self)))
 
             case 'a' | 'd' | 'e' | 'f' | 'g' | 'o' | 'r' | 's' | 'w' | 'x':
-                return Range(0, INF)
+                return Range(0, inf)
 
             case 'c':
-                return Range(0, INF) if self.directive.at_sign or self.directive.colon else Range.only(1)
+                return Range(0, inf) if self.directive.at_sign or self.directive.colon else Range.only(1)
 
             case '%' | '|' | '~':
                 return Range.only(self.directive.get_param(0, 1))
 
             case 't' | '&':
-                return Range(0, INF)
+                return Range(0, inf)
 
             case '/':
-                return Range(0, INF)
+                return Range(0, inf)
 
             case _:
                 return Range.only(0)
