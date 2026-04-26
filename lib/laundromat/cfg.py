@@ -48,16 +48,17 @@ class CFG(nx.DiGraph):
                                     raise InvalidNode(directive)
 
                                 case Special.Hash:
-                                    for index, clause in enumerate(
-                                            directive.clauses[:-1] if directive.default_token else directive.clauses):
-                                        build(clause, current, Equal(Special.Hash, index))
-
-                                    default = Less(index + 1, index + 1, Special.Hash)
                                     if directive.default_token:
-                                        build(directive.clauses[-1], current, default)
+                                        for index, clause in enumerate(directive.clauses[:-1]):
+                                            build(clause, current, Equal(Special.Hash, index))
+
+                                        build(directive.clauses[-1], current, Less(index + 1, index + 1, Special.Hash))
 
                                     else:
-                                        self.add_edge(current, current.closing, condition=default)
+                                        for index, clause in enumerate(directive.clauses):
+                                            build(clause, current, Equal(Special.Hash, index))
+
+                                        self.add_edge(current, current.closing, condition=Less(index + 1, index + 1, Special.Hash))
 
                                 case n if 0 <= n < len(directive.clauses):
                                     build(directive.clauses[n], current, Condition())
@@ -93,7 +94,7 @@ class CFG(nx.DiGraph):
                             buffer.extend(clauses.pop() + [directive.default_token])
 
                         for section in clauses[:-1]:
-                            buffer.extend(section + [Directive("~;", [])])
+                            buffer.extend(section + [Directive(";", [])])
 
                         # TODO: Actually handle justification
                         build(buffer + clauses[-1], current, Condition())
@@ -124,8 +125,8 @@ class CFG(nx.DiGraph):
                         self.add_edge(current, CFG.CRASH)
                         return
 
-                    case '*' if directive.get_param(0, 0) == Special.V:
-                        self.add_edge(current, CFG.CRASH)
+                    case '%' | '&' | '|' | '~' | '*' if Special.V in directive.params:
+                        self.crash_on(current)
                         return
 
                     case _:
@@ -185,7 +186,7 @@ class CFG(nx.DiGraph):
                         case nil, non_nil:
                             return program + f"~#[{nil}~:;{non_nil}"
 
-                case "[":
+                case "[" if current.directive.get_param(0) == Special.Hash:
                     cases = {}
                     for child in self[current]:
                         # Terrible no good very bad
@@ -215,12 +216,13 @@ class CFG(nx.DiGraph):
 
         return program
 
-    def add_crash(self, u: Node):
-        self.add_edge(u, v := Node(Directive("?", [])))
-        self.add_edge(v, CFG.CRASH)
-
     def add_edge(self, u: Node, v: Node, **attrs):
         super().add_edge(u, v, condition=attrs.get("condition", Condition()), back=attrs.get("back", False))
+
+    def crash_on(self, node: Node):
+        self.remove_edges_from([*self.edges(node)])
+        self.add_edge(node, crash := Node(Directive("?", [])))
+        self.add_edge(crash, CFG.CRASH)
 
     def descendants(self, node: Node) -> set[Node]:
         return nx.descendants(self, node) | {node}
@@ -281,6 +283,9 @@ class CFG(nx.DiGraph):
         subgraph = super().subgraph(nodes).to_directed()
         subgraph.__class__ = CFG
         return subgraph
+
+    def terminates_from(self, node: Node) -> bool:
+        return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 
     def update_pointers(self):
         # TODO: Use the logger

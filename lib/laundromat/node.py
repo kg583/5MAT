@@ -155,22 +155,9 @@ class Pointer:
                     case n:
                         return +(self + n)
 
-            case '[' if node.directive.at_sign:
-                return self + 1
-
-            case '[' if node.directive.colon:
-                return self + 1
-
-            case '[' | '<':
-                return self
-
             case '{':
                 return self.copy(from_start=Range(0, inf), from_end=Range(0, inf))
 
-            case ']' | '>' | '}':
-                return self
-
-            # TODO: Spell out more cases
             case _:
                 return self + node.consumes
 
@@ -193,6 +180,10 @@ class Condition:
 
     def enforce(self, pointer: Pointer) -> Pointer:
         return pointer
+
+    @property
+    def queries_tape(self) -> bool:
+        return False
 
 
 @dataclass(frozen=True)
@@ -238,7 +229,7 @@ class Equal(Condition):
                 return b is not None if self.negated else b is None
 
             case params if Special.V in params:
-                return pointer
+                return True
 
             case [Special.Hash, Special.Hash]:
                 return not self.negated
@@ -256,6 +247,10 @@ class Equal(Condition):
 
             case _:
                 return pointer
+
+    @property
+    def queries_tape(self) -> bool:
+        return Special.V in [self.a, self.b]
 
 
 @dataclass(frozen=True)
@@ -283,7 +278,7 @@ class Less(Condition):
                 return all(x is None for x in params) != self.negated
 
             case params if Special.V in params:
-                return pointer
+                return True
 
             case [Special.Hash, Special.Hash, Special.Hash]:
                 return not self.negated
@@ -329,6 +324,10 @@ class Less(Condition):
 
             case _:
                 return pointer
+
+    @property
+    def queries_tape(self) -> bool:
+        return Special.V in [self.a, self.b, self.c]
 
 
 class Control(StrEnum):
@@ -387,11 +386,8 @@ class Node:
             case '/':
                 return Range.only(1)
 
-            case '[' if self.directive.at_sign:
-                return Range(0, 1)
-
-            case '[' if self.directive.colon:
-                return Range.only(1)
+            case '[' if self.directive.at_sign or self.directive.colon:
+                return Range(1)
 
             case '[' | ']' | '<' | '>':
                 return Range.only(0)

@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-import networkx as nx
-
 from lib.laundromat.cfg import *
 
 
@@ -16,20 +13,13 @@ def simplify(cfg: CFG) -> CFG:
 
                 # Crash past the end of the tape
                 if node.pointer.from_end < Range(0, inf):
-                    cfg.remove_edge(node, child)
-                    cfg.add_crash(node)
+                    cfg.crash_on(node)
                     print(f"Crashed at    {node}")
 
                 # Crash infinite loops
-                if node.kind == "{" and not {CFG.END, CFG.CRASH} & nx.descendants(cfg, child):
+                if node.kind == "{" and not cfg.terminates_from(child):
+                    cfg.crash_on(child)
                     print("Found an infinite loop!")
-
-                    cfg.remove_edges_from([*cfg.edges(child)])
-                    cfg.add_crash(child)
-
-                # Skip
-                if not condition:
-                    continue
 
                 # Check reachability
                 if not condition.check(node.pointer) or child.directive == Control.UB:
@@ -37,7 +27,7 @@ def simplify(cfg: CFG) -> CFG:
                     print(f"Removed       {node} -> {child}")
 
                 # Simplify condition
-                elif condition.enforce(node.pointer) == node.pointer:
+                elif condition.enforce(node.pointer) == node.pointer and not condition.queries_tape:
                     cfg[node][child]["condition"] = Condition()
                     print(f"Simplified    {node} -> {child}")
 
@@ -54,7 +44,7 @@ def simplify(cfg: CFG) -> CFG:
             return cfg
 
 
-graph = CFG("""~@{~#[1~;2~;3~]~}""")
+graph = CFG("""~1[comment~]""")
 graph.draw(size=12)
 
 simplified = simplify(graph)
