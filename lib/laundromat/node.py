@@ -5,7 +5,7 @@ from math import *
 from lib.fourmat.parse import *
 
 
-class InvalidDirective(TypeError):
+class InvalidNode(TypeError):
     def __init__(self, directive):
         super().__init__(f"invalid directive: {directive}")
 
@@ -155,9 +155,8 @@ class Pointer:
                     case n:
                         return +(self + n)
 
-            # TODO: Correctly handle null tape
             case '[' if node.directive.at_sign:
-                return self | self + 1
+                return self + 1
 
             case '[' if node.directive.colon:
                 return self + 1
@@ -212,6 +211,9 @@ class Nil(Condition):
     def check(self, pointer: Pointer) -> bool:
         return self.negated
 
+    def enforce(self, pointer: Pointer) -> Pointer:
+        return pointer & Range() if self.negated else pointer
+
 
 @dataclass(frozen=True)
 class Equal(Condition):
@@ -236,7 +238,7 @@ class Equal(Condition):
                 return b is not None if self.negated else b is None
 
             case params if Special.V in params:
-                raise NotImplementedError
+                return pointer
 
             case [Special.Hash, Special.Hash]:
                 return not self.negated
@@ -281,7 +283,7 @@ class Less(Condition):
                 return all(x is None for x in params) != self.negated
 
             case params if Special.V in params:
-                raise NotImplementedError
+                return pointer
 
             case [Special.Hash, Special.Hash, Special.Hash]:
                 return not self.negated
@@ -343,15 +345,15 @@ class Node:
 
     pointer: Pointer = Pointer()
 
+    entry: 'Node' = None
+    escape: 'Node' = None
+    closing: 'Node' = None
+
     def __hash__(self) -> int:
         return id(self)
 
     def __str__(self) -> str:
-        if self.kind == "str" and len(self.directive) > 3:
-            return "..."
-
-        else:
-            return f"{self.directive}"
+        return str(self.directive)
 
     @property
     def kind(self) -> str:

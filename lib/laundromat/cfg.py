@@ -5,176 +5,293 @@ from lib.fourmat.parse import *
 from lib.laundromat.node import *
 
 
-START = Node(Control.Start)
-END   = Node(Control.End)
-CRASH = Node(Control.Crash)
-UB    = Node(Control.UB)
+class CFG(nx.DiGraph):
+    START = Node(Control.Start)
+    END = Node(Control.End)
+    CRASH = Node(Control.Crash)
+    UB = Node(Control.UB)
 
+    START.closing = END
+    START.escape = END
+    START.pointer = Less(1, 1, Special.Hash).enforce(Pointer().start())
 
-def visit_order(cfg: nx.DiGraph):
-    topo = cfg.copy()
-    for edge, back in nx.get_edge_attributes(topo, "back").items():
-        if back:
-            topo.remove_edge(*edge)
+    def __init__(self, program: str = None):
+        super().__init__()
 
-    return nx.lexicographical_topological_sort(topo, key=str)
+        def build(clause: list[Directive | str], current: Node, condition: Condition):
+            for directive in clause:
+                self.add_edge(current, current := current.copy(directive=directive), condition=condition)
 
+                condition = Condition()
 
-def program_to_cfg(program: str) -> nx.DiGraph:
-    cfg = nx.DiGraph()
+                if isinstance(directive, str):
+                    continue
 
-    def build_clause(clause: list[Directive | str], current: Node, condition: Condition, end: Node, outer: Node):
-        for directive in clause:
-            cfg.add_edge(current, current := current.copy(directive=directive), condition=condition, back=False)
-            condition = Condition()
+                match current.kind:
+                    case '[':
+                        current.closing = current.copy(directive=directive.closing_token)
 
-            if isinstance(directive, str):
-                continue
+                        if directive.colon:
+                            if directive.at_sign:
+                                raise InvalidNode(directive)
 
-            match current.kind:
-                case '[':
-                    closing = current.copy(directive=directive.closing_token)
+                            build(directive.clauses[0], current, Nil())
+                            build(directive.clauses[1], current, ~Nil())
 
-                    if directive.colon:
-                        if directive.at_sign:
-                            raise InvalidDirective(directive)
+                        elif directive.at_sign:
+                            build(directive.clauses[0], current, ~Nil())
+                            self.add_edge(current, current.closing, condition=Nil())
 
-                        build_clause(directive.clauses[0], current, Nil(), closing, outer)
-                        build_clause(directive.clauses[1], current, ~Nil(), closing, outer)
+                        else:
+                            match directive.get_param(0):
+                                case Special.V | None:
+                                    raise InvalidNode(directive)
 
-                    elif directive.at_sign:
-                        build_clause(directive.clauses[0], current, ~Nil(), closing, outer)
-                        cfg.add_edge(current, closing, condition=Nil(), back=False)
+                                case Special.Hash:
+                                    for index, clause in enumerate(
+                                            directive.clauses[:-1] if directive.default_token else directive.clauses):
+                                        build(clause, current, Equal(Special.Hash, index))
 
-                    else:
-                        match directive.get_param(0):
-                            case Special.V | None:
-                                raise InvalidDirective(directive)
+                                    default = Less(index + 1, index + 1, Special.Hash)
+                                    if directive.default_token:
+                                        build(directive.clauses[-1], current, default)
 
-                            case Special.Hash:
-                                for index, clause in enumerate(directive.clauses[:-1] if directive.default_token else directive.clauses):
-                                    build_clause(clause, current, Equal(Special.Hash, index), closing, outer)
+                                    else:
+                                        self.add_edge(current, current.closing, condition=default)
 
-                                default = Less(index + 1, index + 1, Special.Hash)
-                                if directive.default_token:
-                                    build_clause(directive.clauses[-1], current, default, closing, outer)
+                                case n if 0 <= n < len(directive.clauses):
+                                    build(directive.clauses[n], current, Condition())
 
-                                else:
-                                    cfg.add_edge(current, closing, condition=default, back=False)
+                                case _:
+                                    self.add_edge(current, current.closing)
 
-                            case n if 0 <= n < len(directive.clauses):
-                                build_clause(directive.clauses[n], current, Condition(), closing, outer)
+                        current = current.closing
+
+                    case '{':
+                        if directive.colon or not directive.at_sign:
+                            raise InvalidNode(directive)
+
+                        current.escape, current.closing = (current.copy(directive=Control.Empty),
+                                                           current.copy(directive=directive.closing_token))
+                        current.entry = current.copy(directive=Control.Empty)
+
+                        self.add_edge(current, current.entry, condition=Less(1, 1, Special.Hash))
+                        self.add_edge(current.closing, current.entry, condition=Less(1, 1, Special.Hash), back=True)
+                        build(directive.clauses[0], current.entry, Condition())
+
+                        self.add_edge(current.closing, current.escape, condition=Equal(Special.Hash, 0))
+                        self.add_edge(current, current := current.escape, condition=Equal(Special.Hash, 0))
+
+                    case '<':
+                        current.escape, current.closing = (current.copy(directive=Control.Empty),
+                                                           current.copy(directive=directive.closing_token))
+
+                        buffer = []
+                        clauses = directive.clauses.copy()
+
+                        if directive.default_token:
+                            buffer.extend(clauses.pop() + [directive.default_token])
+
+                        for section in clauses[:-1]:
+                            buffer.extend(section + [Directive("~;", [])])
+
+                        # TODO: Actually handle justification
+                        build(buffer + clauses[-1], current, Condition())
+
+                        self.add_edge(current.closing, current := current.escape)
+
+                    case '^':
+                        match directive.params:
+                            case []:
+                                termination = Equal(Special.Hash, 0)
+
+                            case [a]:
+                                termination = Equal(a, 0)
+
+                            case [a, b]:
+                                termination = Equal(a, b)
+
+                            case [a, b, c]:
+                                termination = Less(a, b, c)
 
                             case _:
-                                cfg.add_edge(current, closing, condition=Condition(), back=False)
+                                raise InvalidNode(directive)
 
-                    current = closing
+                        self.add_edge(current, current.escape, condition=termination)
+                        condition = ~termination
 
-                case '{':
-                    escape = current.copy(directive=Control.Empty)
+                    case '?':
+                        self.add_edge(current, CFG.CRASH)
+                        return
 
-                    if directive.colon or not directive.at_sign:
-                        raise InvalidDirective(directive)
+                    case '*' if directive.get_param(0, 0) == Special.V:
+                        self.add_edge(current, CFG.CRASH)
+                        return
 
-                    entry = current.copy(directive=Control.Empty)
-                    closing = current.copy(directive=directive.closing_token)
+                    case _:
+                        pass
 
-                    cfg.add_edge(current, entry, condition=Less(1, 1, Special.Hash), back=False)
-                    cfg.add_edge(closing, entry, condition=Less(1, 1, Special.Hash), back=True)
-                    cfg.add_edge(closing, escape, condition=Equal(Special.Hash, 0), back=False)
-                    cfg.add_edge(current, current := escape, condition=Equal(Special.Hash, 0), back=False)
+            self.add_edge(current, current.closing, condition=condition)
 
-                    build_clause(directive.clauses[0], entry, Condition(), closing, escape)
+        if program:
+            build(parse(tokenize(program)).clauses[0], CFG.START, Condition())
 
-                case '<':
-                    closing = current.copy(directive=directive.closing_token)
-                    escape = current.copy(directive=Control.Empty)
+    def __iter__(self):
+        topo = self.copy()
+        for edge, back in nx.get_edge_attributes(topo, "back").items():
+            if back:
+                topo.remove_edge(*edge)
 
-                    # TODO: Actually handle justification
-                    build_clause(sum(directive.clauses, []), current, Condition(), closing, escape)
+        return nx.topological_sort(topo)
 
-                    cfg.add_edge(closing, current := escape, condition=Condition(), back=False)
+    def __str__(self) -> str:
+        nodes = list(self)
+        conditions = nx.get_edge_attributes(self, "condition")
+        program = ""
 
-                case '^':
-                    match directive.params:
-                        case []:
-                            termination = Equal(Special.Hash, 0)
+        while nodes:
+            current = nodes.pop(0)
 
-                        case [a]:
-                            termination = Equal(a, 0)
+            match current.kind:
+                case "ctrl":
+                    continue
 
-                        case [a, b]:
-                            termination = Equal(a, b)
+                # Loop exit always occurs on first iteration
+                case "{" if current.closing not in nx.descendants(self, current):
+                    nil = non_nil = ""
+                    for child in self[current]:
+                        path = str(self.progeny(child))
 
-                        case [a, b, c]:
-                            termination = Less(a, b, c)
+                        match conditions[(current, child)]:
+                            case Equal(Special.Hash, 0) | Equal(0, Special.Hash):
+                                nil = path
 
-                        case _:
-                            raise InvalidDirective(directive)
+                            case Less(1, 1, Special.Hash):
+                                non_nil = path
 
-                    cfg.add_edge(current, outer, condition=termination, back=False)
-                    condition = ~termination
+                            case _:
+                                raise InvalidNode(current.directive)
 
-                case '?':
-                    cfg.add_edge(current, CRASH, condition=Condition(), back=False)
-                    return
+                    match nil, non_nil:
+                        case "", "":
+                            return program
 
-                case '*' if directive.get_param(0, 0) == Special.V:
-                    cfg.add_edge(current, CRASH, condition=Condition(), back=False)
-                    return
+                        case nil, "":
+                            return program + f"~#[{nil}~]"
+
+                        case "", non_nil:
+                            return program + f"~^{non_nil}"
+
+                        case nil, non_nil:
+                            return program + f"~#[{nil}~:;{non_nil}"
+
+                case "[":
+                    cases = {}
+                    for child in self[current]:
+                        # Terrible no good very bad
+                        descendants = set(sum(nx.all_simple_paths(self, child, current.closing), [])) - {current.closing}
+                        path = str(self.subgraph(descendants))
+
+                        for descendant in descendants:
+                            if descendant in nodes:
+                                nodes.remove(descendant)
+
+                        match conditions[(current, child)]:
+                            case Equal(Special.Hash, a) | Equal(a, Special.Hash):
+                                cases[a] = path
+
+                            case Less(a, b, Special.Hash):
+                                cases[-1] = path
+
+                            case _:
+                                raise InvalidNode(current.directive)
+
+                    program += f"~#[{'~;'.join(cases.get(n, '') for n in range(max(cases) + 1))}"
+                    if cases.get(-1):
+                        program += f"~:;{cases[-1]}"
 
                 case _:
-                    pass
+                    program += str(current.directive)
 
-        cfg.add_edge(current, end, condition=condition, back=False)
+        return program
 
-    build_clause(parse(tokenize(program)).clauses[0], START, Condition(), END, END)
-    return cfg.subgraph(nx.descendants(cfg, START) | {START}).to_directed()
+    def add_crash(self, u: Node):
+        self.add_edge(u, v := Node(Directive("?", [])))
+        self.add_edge(v, CFG.CRASH)
 
+    def add_edge(self, u: Node, v: Node, **attrs):
+        super().add_edge(u, v, condition=attrs.get("condition", Condition()), back=attrs.get("back", False))
 
-def draw_cfg(cfg: nx.DiGraph, *, size: int = 12):
-    plt.figure(1, figsize=(size, size))
-    pos = nx.kamada_kawai_layout(cfg)
+    def descendants(self, node: Node) -> set[Node]:
+        return nx.descendants(self, node) | {node}
 
-    node_categories = {
-        "buffer": ([], "salmon"),
-        "conditional": ([], "orange"),
-        "loop": ([], "khaki"),
-        "directive": ([], "skyblue"),
-        "control": ([], "violet"),
-        "string": ([], "silver")
-    }
+    def draw(self, *, size: int = 12):
+        plt.figure(1, figsize=(size, size))
+        pos = nx.kamada_kawai_layout(self)
 
-    # Node types
-    for node in cfg:
-        if node.kind in "<>":
-            category = "buffer"
+        node_categories = {
+            "buffer": ([], "salmon"),
+            "conditional": ([], "orange"),
+            "loop": ([], "khaki"),
+            "directive": ([], "skyblue"),
+            "control": ([], "violet"),
+            "string": ([], "silver")
+        }
 
-        elif node.kind in "[]":
-            category = "conditional"
+        # Node types
+        for node in self:
+            if node.kind in "<>":
+                category = "buffer"
 
-        elif node.kind in "{}":
-            category = "loop"
+            elif node.kind in "[]":
+                category = "conditional"
 
-        elif node.kind == "str":
-            category = "string"
+            elif node.kind in "{}":
+                category = "loop"
 
-        elif node.kind == "ctrl":
-            category = "control"
+            elif node.kind == "str":
+                category = "string"
 
-        else:
-            category = "directive"
+            elif node.kind == "ctrl":
+                category = "control"
 
-        node_categories[category][0].append(node)
+            else:
+                category = "directive"
 
-    nx.draw_networkx_labels(cfg, pos, {node: str(node) for node in cfg}, font_size="small")
-    for category, (nodes, color) in node_categories.items():
-        nx.draw_networkx_nodes(cfg, nodelist=nodes, pos=pos, node_color=color,
-                               node_size=1200, node_shape="o", edgecolors="gray")
+            node_categories[category][0].append(node)
 
+        nx.draw_networkx_labels(self, pos, {node: str(node) for node in self}, font_size="small")
+        for category, (nodes, color) in node_categories.items():
+            nx.draw_networkx_nodes(self, nodelist=nodes, pos=pos, node_color=color,
+                                   node_size=1200, node_shape="o", edgecolors="gray")
 
-    conditions = nx.get_edge_attributes(cfg, "condition")
-    nx.draw_networkx_edges(cfg, pos=pos, node_size=1300, arrowstyle="]->")
-    nx.draw_networkx_edge_labels(cfg, pos=pos, edge_labels=conditions)
+        conditions = nx.get_edge_attributes(self, "condition")
+        nx.draw_networkx_edges(self, pos=pos, node_size=1300, arrowstyle="]->")
+        nx.draw_networkx_edge_labels(self, pos=pos, edge_labels=conditions)
 
-    plt.show()
+        plt.show()
+
+    def progeny(self, node: Node) -> 'CFG':
+        return self.subgraph(self.descendants(node))
+
+    def reachable(self) -> 'CFG':
+        return self.progeny(CFG.START)
+
+    def subgraph(self, nodes) -> 'CFG':
+        subgraph = super().subgraph(nodes).to_directed()
+        subgraph.__class__ = CFG
+        return subgraph
+
+    def update_pointers(self):
+        # TODO: Use the logger
+        for node in self:
+            if node.kind != "ctrl":
+                node.pointer = node.pointer.clear()
+
+        for node in self:
+            for child in self[node]:
+                if child.kind == "ctrl":
+                    continue
+
+                child.pointer |= self[node][child]["condition"].enforce(node.pointer).step(child)
+                print(f"Updated {str(child):10}{child.pointer}")
