@@ -39,4 +39,4 @@ def read_line(stream=sys.stdin, eof_error_p=True, eof_value=None, _recursive_p=F
     return line.rstrip("\n")
 
 
-__all__ = {"lisp_functions"}
+__all__ = ["lisp_functions"]

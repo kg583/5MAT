@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from warnings import warn
 
-from lib.sixmat.util import *
+from lib.fivemat.util import *
 
 
 TOKENS = re.compile(
@@ -447,3 +447,6 @@ def assemble(program: str, instructions: Instructions = None, **flags) -> str:
     assembled = re.sub(r'"\d+:\d+"', lambda match: context.get_escaped_string(match[0]), assembled)
 
     return assembled
+
+
+__all__ = ["assemble"]

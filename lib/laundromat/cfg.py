@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from lib.fourmat.parse import *
-from lib.sixmat.util import *
+from lib.fivemat.util import *
 from lib.laundromat.node import *
 
 
@@ -140,7 +139,7 @@ class CFG(nx.DiGraph):
                 self.add_edge(node, node.closing, condition=condition)
 
         super().__init__()
-        build(parse(tokenize(decode_escapes(program))).clauses[0], CFG.START)
+        build(parse(program).clauses[0], CFG.START)
 
     def __iter__(self):
         topo = self.copy()
@@ -161,7 +160,6 @@ class CFG(nx.DiGraph):
                 case "ctrl":
                     continue
 
-                # Hash conditional
                 case "[" if node.directive.get_param(0) == Special.Hash:
                     cases = {}
                     for child in self[node]:

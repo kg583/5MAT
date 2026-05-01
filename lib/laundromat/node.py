@@ -2,7 +2,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from math import *
 
-from lib.fourmat.parse import *
+from lib.fourmat.directives import *
 
 
 class InvalidNode(TypeError):

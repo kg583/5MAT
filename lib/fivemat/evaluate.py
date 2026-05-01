@@ -1,27 +1,14 @@
-import codecs
 import logging
-import re
 import sys
 
 from lib.fourmat.evaluate import fourmat
-from lib.fourmat.parse import parse, tokenize
+from lib.fivemat.util import *
 
 logger = logging.getLogger(__name__)
 
 
-def decode_escapes(string: str) -> str:
-    def decode_match(match):
-        try:
-            return codecs.decode(match[0], 'unicode-escape')
-
-        except UnicodeDecodeError:
-            return match[0]
-
-    return re.sub(r"\\[abfnrtv]|\\x..", decode_match, string).replace("↡", "\f")
-
-
 def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin, output_stream=sys.stdout):
-    parsed = parse(tokenize(decode_escapes(program)))
+    parsed = parse(decode_escapes(program))
     tape = []
 
     try:
@@ -36,4 +23,4 @@ def fivemat(program: str, *, max_lifetimes: int = None, input_stream=sys.stdin, 
         pass
 
 
-__all__ = ["decode_escapes", "fivemat"]
+__all__ = ["fivemat"]

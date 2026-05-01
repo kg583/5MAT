@@ -2,7 +2,7 @@ import re
 
 from warnings import warn
 
-from lib.sixmat.util import *
+from lib.fivemat.util import *
 
 
 class Opt:
@@ -224,16 +224,6 @@ DEFAULT_PARAMETERS = {
         lambda match: f"~{match['mod']}t"
 }
 
-FORMATTING = {
-    # Comments
-    Opt(r"~(-?\d+)\[.*?~]", "comment", flags=re.DOTALL):
-        lambda match: match[0] if int(match[1]) == 0 else "",
-
-    # Newlines/indentation
-    Opt(r"~\n\s*|~:\n|~@(\n)\s*", "indentation"):
-        lambda match: match[1]
-}
-
 BASIC_OPTS = {
     **MOVE_OPTS,
     **BREAK_OPTS,
@@ -250,12 +240,12 @@ GOLF_OPTS = {
     **BASIC_OPTS,
     **SPECIAL_DIRECTIVES,
     **DEFAULT_PARAMETERS,
-    **FORMATTING
 }
 
 
 def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], **flags) -> tuple[str, int]:
     # Standardize arguments and modifiers
+    program = minify(program)
     program = re.sub(r"~(?P<args>([+-]?\d+|'.|[v#])?(,([+-]?\d+|'.|[v#])?)*),?(?P<mod>(:?@?|@?:?))(?P<dir>[^:@])",
                      lambda match: f"~{cleanup_args(match['args'])}{cleanup_directive(match['mod'], match['dir'])}",
                      program, flags=re.DOTALL | re.IGNORECASE)
@@ -290,3 +280,6 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
     return program, saved
+
+
+__all__ = ["Opt", "optimize"]

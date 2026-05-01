@@ -2,7 +2,7 @@ import re
 from lib.fourmat.directives import *
 
 
-def tokenize(source) -> list[str | Directive]:
+def tokenize(source: str) -> list[str | Directive]:
     # handle ~newline
     stripped_source = re.sub(r"~\n\s*|~:\n|~@(\n)\s*", r"\1", source)
 

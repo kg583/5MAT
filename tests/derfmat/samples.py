@@ -4,10 +4,9 @@ import unittest
 from io import StringIO
 from pathlib import Path
 
-from lib.fivemat.evaluate import *
+from lib.fivemat import *
 from lib.laundromat.cfg import *
 from lib.sixmat.assembler import *
-from lib.sixmat.optimizer import *
 
 
 class SampleTests(unittest.TestCase):
@@ -27,8 +26,8 @@ class SampleTests(unittest.TestCase):
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
 
             if cfg:
-                loop = optimize(re.search(r"~1?\{(.*)~}", program, flags=re.DOTALL)[1], FORMATTING, [])[0]
-                self.assertEqual(encode_escapes(decode_escapes(loop)), str(CFG(loop)))
+                loop = minify(re.search(r"~1?\{(.*)~}", program, flags=re.DOTALL)[1])
+                self.assertEqual(loop, str(CFG(loop)))
 
     def test_12_days_of_christmas(self):
         self.sample("12-days-of-christmas", "On the First day of Christmas\nMy true love sent to me",
