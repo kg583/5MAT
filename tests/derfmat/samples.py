@@ -1,15 +1,18 @@
+import re
 import unittest
 
 from io import StringIO
 from pathlib import Path
 
 from lib.fivemat.evaluate import *
+from lib.laundromat.cfg import *
 from lib.sixmat.assembler import *
+from lib.sixmat.optimizer import *
 
 
 class SampleTests(unittest.TestCase):
     def sample(self, sample: str, expected: str, input: str = "", *,
-               max_lifetimes: int = None, length: int = None, sixmat: bool = True):
+               max_lifetimes: int = None, length: int = None, sixmat: bool = True, cfg: bool = True):
         top = Path(__file__).parents[2]
         programs = [top.joinpath(f"docs/samples/5MAT/{sample}.5mat").read_text(encoding="utf8")]
 
@@ -22,6 +25,10 @@ class SampleTests(unittest.TestCase):
 
             buffer.seek(0)
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
+
+            if cfg:
+                loop = optimize(re.search(r"~1?\{(.*)~}", program, flags=re.DOTALL)[1], FORMATTING, [])[0]
+                self.assertEqual(encode_escapes(decode_escapes(loop)), str(CFG(loop)))
 
     def test_12_days_of_christmas(self):
         self.sample("12-days-of-christmas", "On the First day of Christmas\nMy true love sent to me",
@@ -37,9 +44,9 @@ class SampleTests(unittest.TestCase):
 
     def test_echo(self):
         self.sample("echo", "Echo!", "Echo!",
-                    sixmat=False)
+                    sixmat=False, cfg=False)
         self.sample("echo", "New\nline", "New\nline",
-                    sixmat=False)
+                    sixmat=False, cfg=False)
 
     def test_fibonacci(self):
         self.sample("fibonacci", "1\n1\n2\n3\n5\n8\n13\n21\n34\n55\n89\n144\n233",
@@ -50,7 +57,8 @@ class SampleTests(unittest.TestCase):
                     max_lifetimes=16)
 
     def test_hello_world(self):
-        self.sample("hello-world", "Hello, World!")
+        self.sample("hello-world", "Hello, World!",
+                    cfg=False)
 
     def test_is_palindrome(self):
         self.sample("is-palindrome", "True", "RacecaR")
@@ -61,7 +69,6 @@ class SampleTests(unittest.TestCase):
         self.sample("sort", "  5AGMTaeirst", "5MAT is Great")
 
     def test_truth_machine(self):
-        self.sample("truth-machine", "0", "0",
-                    sixmat=False)
+        self.sample("truth-machine", "0", "0")
         self.sample("truth-machine", "11111", "1",
-                    max_lifetimes=5, sixmat=False)
+                    max_lifetimes=5)

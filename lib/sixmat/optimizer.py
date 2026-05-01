@@ -290,6 +290,3 @@ def optimize(program: str, optimizations: dict[Opt, ...], disables: list[str], *
     program = re.sub(r"~TILDE<(.*?)~>", lambda match: match[1], program)
 
     return program, saved
-
-
-__all__ = ["Opt", "optimize"]

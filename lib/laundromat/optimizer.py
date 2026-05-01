@@ -3,11 +3,15 @@ from lib.laundromat.cfg import *
 
 def simplify(cfg: CFG) -> CFG:
     while True:
+        # TODO: Use the logger
         old_nodes, old_edges = len(cfg), len(cfg.edges())
         cfg = cfg.copy()
 
         cfg.update_pointers()
         for node in cfg:
+            if node not in cfg:
+                break
+
             for child, attrs in {**cfg[node]}.items():
                 condition = attrs["condition"]
 
@@ -21,6 +25,10 @@ def simplify(cfg: CFG) -> CFG:
                     cfg.crash_on(child)
                     print("Found an infinite loop!")
 
+                # Skip known trivial edges
+                if not condition:
+                    continue
+
                 # Check reachability
                 if not condition.check(node.pointer) or child.directive == Control.UB:
                     cfg.remove_edge(node, child)
@@ -28,7 +36,7 @@ def simplify(cfg: CFG) -> CFG:
 
                 # Simplify condition
                 elif condition.enforce(node.pointer) == node.pointer and not condition.queries_tape:
-                    cfg[node][child]["condition"] = Condition()
+                    cfg[node][child]["condition"] = Always()
                     print(f"Simplified    {node} -> {child}")
 
         # Prune unreachable nodes
@@ -44,11 +52,11 @@ def simplify(cfg: CFG) -> CFG:
             return cfg
 
 
-graph = CFG("""~1[comment~]""")
-graph.draw(size=12)
+graph = CFG("""~<~v,'1^~v*~>1""")
+graph.draw(size=6, layout=nx.shell_layout)
 
 simplified = simplify(graph)
-simplified.draw(size=12)
+simplified.draw(size=6, layout=nx.shell_layout)
 
 print(str(graph))
 print(str(simplified))

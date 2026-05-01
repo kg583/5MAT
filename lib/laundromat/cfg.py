@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from lib.fourmat.parse import *
+from lib.sixmat.util import *
 from lib.laundromat.node import *
 
 
@@ -15,32 +16,34 @@ class CFG(nx.DiGraph):
     START.escape = END
     START.pointer = Less(1, 1, Special.Hash).enforce(Pointer().start())
 
-    def __init__(self, program: str = None):
-        super().__init__()
+    def __init__(self, program=None):
+        if not isinstance(program, str):
+            super().__init__(program)
+            return
 
-        def build(clause: list[Directive | str], current: Node, condition: Condition):
+        def build(clause: list[Directive | str], node: Node, *, condition: Condition = Always()):
             for directive in clause:
-                self.add_edge(current, current := current.copy(directive=directive), condition=condition)
-
-                condition = Condition()
+                self.add_edge(node, child := node.copy(directive=directive), condition=condition)
+                condition = Always()
 
                 if isinstance(directive, str):
+                    node = child
                     continue
 
-                match current.kind:
+                match child.kind:
                     case '[':
-                        current.closing = current.copy(directive=directive.closing_token)
+                        child.closing = child.copy(directive=directive.closing_token)
 
                         if directive.colon:
                             if directive.at_sign:
                                 raise InvalidNode(directive)
 
-                            build(directive.clauses[0], current, Nil())
-                            build(directive.clauses[1], current, ~Nil())
+                            build(directive.clauses[0], child, condition=Nil())
+                            build(directive.clauses[1], child, condition=~Nil())
 
                         elif directive.at_sign:
-                            build(directive.clauses[0], current, ~Nil())
-                            self.add_edge(current, current.closing, condition=Nil())
+                            build(directive.clauses[0], child, condition=~Nil())
+                            self.add_edge(child, child.closing, condition=Nil())
 
                         else:
                             match directive.get_param(0):
@@ -50,42 +53,42 @@ class CFG(nx.DiGraph):
                                 case Special.Hash:
                                     if directive.default_token:
                                         for index, clause in enumerate(directive.clauses[:-1]):
-                                            build(clause, current, Equal(Special.Hash, index))
+                                            build(clause, child, condition=Equal(Special.Hash, index))
 
-                                        build(directive.clauses[-1], current, Less(index + 1, index + 1, Special.Hash))
+                                        build(directive.clauses[-1], child, condition=Less(index + 1, index + 1, Special.Hash))
 
                                     else:
                                         for index, clause in enumerate(directive.clauses):
-                                            build(clause, current, Equal(Special.Hash, index))
+                                            build(clause, child, condition=Equal(Special.Hash, index))
 
-                                        self.add_edge(current, current.closing, condition=Less(index + 1, index + 1, Special.Hash))
+                                        self.add_edge(child, child.closing, condition=Less(index + 1, index + 1, Special.Hash))
 
                                 case n if 0 <= n < len(directive.clauses):
-                                    build(directive.clauses[n], current, Condition())
+                                    build(directive.clauses[n], child)
 
                                 case _:
-                                    self.add_edge(current, current.closing)
+                                    self.add_edge(child, child.closing)
 
-                        current = current.closing
+                        node = child.closing
 
                     case '{':
                         if directive.colon or not directive.at_sign:
                             raise InvalidNode(directive)
 
-                        current.escape, current.closing = (current.copy(directive=Control.Empty),
-                                                           current.copy(directive=directive.closing_token))
-                        current.entry = current.copy(directive=Control.Empty)
+                        child.escape, child.closing = (child.copy(directive=Control.Empty),
+                                                       child.copy(directive=directive.closing_token))
+                        child.entry = child.copy(directive=Control.Empty)
 
-                        self.add_edge(current, current.entry, condition=Less(1, 1, Special.Hash))
-                        self.add_edge(current.closing, current.entry, condition=Less(1, 1, Special.Hash), back=True)
-                        build(directive.clauses[0], current.entry, Condition())
+                        self.add_edge(child, child.entry, condition=Less(1, 1, Special.Hash))
+                        self.add_edge(child.closing, child.entry, condition=Less(1, 1, Special.Hash), back=True)
+                        build(directive.clauses[0], child.entry)
 
-                        self.add_edge(current.closing, current.escape, condition=Equal(Special.Hash, 0))
-                        self.add_edge(current, current := current.escape, condition=Equal(Special.Hash, 0))
+                        self.add_edge(child.closing, child.escape, condition=Equal(Special.Hash, 0))
+                        self.add_edge(child, node := child.escape, condition=Equal(Special.Hash, 0))
 
                     case '<':
-                        current.escape, current.closing = (current.copy(directive=Control.Empty),
-                                                           current.copy(directive=directive.closing_token))
+                        child.escape, child.closing = (child.copy(directive=Control.Empty),
+                                                       child.copy(directive=directive.closing_token))
 
                         buffer = []
                         clauses = directive.clauses.copy()
@@ -97,9 +100,14 @@ class CFG(nx.DiGraph):
                             buffer.extend(section + [Directive(";", [])])
 
                         # TODO: Actually handle justification
-                        build(buffer + clauses[-1], current, Condition())
+                        build(buffer + clauses[-1], child)
 
-                        self.add_edge(current.closing, current := current.escape)
+                        self.add_edge(child.closing, node := child.escape)
+
+                    case "(":
+                        child.closing = child.copy(directive=directive.closing_token)
+                        build(directive.clauses, child)
+                        node = child.closing
 
                     case '^':
                         match directive.params:
@@ -118,24 +126,21 @@ class CFG(nx.DiGraph):
                             case _:
                                 raise InvalidNode(directive)
 
-                        self.add_edge(current, current.escape, condition=termination)
+                        self.add_edge(node := child, child.escape, condition=termination)
                         condition = ~termination
 
-                    case '?':
-                        self.add_edge(current, CFG.CRASH)
-                        return
-
-                    case '%' | '&' | '|' | '~' | '*' if Special.V in directive.params:
-                        self.crash_on(current)
-                        return
+                    case _ if child.crashes:
+                        self.crash_on(child)
+                        break
 
                     case _:
-                        pass
+                        node = child
 
-            self.add_edge(current, current.closing, condition=condition)
+            else:
+                self.add_edge(node, node.closing, condition=condition)
 
-        if program:
-            build(parse(tokenize(program)).clauses[0], CFG.START, Condition())
+        super().__init__()
+        build(parse(tokenize(decode_escapes(program))).clauses[0], CFG.START)
 
     def __iter__(self):
         topo = self.copy()
@@ -151,53 +156,23 @@ class CFG(nx.DiGraph):
         program = ""
 
         while nodes:
-            current = nodes.pop(0)
-
-            match current.kind:
+            node = nodes.pop(0)
+            match node.kind:
                 case "ctrl":
                     continue
 
-                # Loop exit always occurs on first iteration
-                case "{" if current.closing not in nx.descendants(self, current):
-                    nil = non_nil = ""
-                    for child in self[current]:
-                        path = str(self.progeny(child))
-
-                        match conditions[(current, child)]:
-                            case Equal(Special.Hash, 0) | Equal(0, Special.Hash):
-                                nil = path
-
-                            case Less(1, 1, Special.Hash):
-                                non_nil = path
-
-                            case _:
-                                raise InvalidNode(current.directive)
-
-                    match nil, non_nil:
-                        case "", "":
-                            return program
-
-                        case nil, "":
-                            return program + f"~#[{nil}~]"
-
-                        case "", non_nil:
-                            return program + f"~^{non_nil}"
-
-                        case nil, non_nil:
-                            return program + f"~#[{nil}~:;{non_nil}"
-
-                case "[" if current.directive.get_param(0) == Special.Hash:
+                # Hash conditional
+                case "[" if node.directive.get_param(0) == Special.Hash:
                     cases = {}
-                    for child in self[current]:
-                        # Terrible no good very bad
-                        descendants = set(sum(nx.all_simple_paths(self, child, current.closing), [])) - {current.closing}
+                    for child in self[node]:
+                        descendants = self.nodes_between(child, node.closing) - {node.closing}
                         path = str(self.subgraph(descendants))
 
                         for descendant in descendants:
                             if descendant in nodes:
                                 nodes.remove(descendant)
 
-                        match conditions[(current, child)]:
+                        match conditions[(node, child)]:
                             case Equal(Special.Hash, a) | Equal(a, Special.Hash):
                                 cases[a] = path
 
@@ -205,31 +180,44 @@ class CFG(nx.DiGraph):
                                 cases[-1] = path
 
                             case _:
-                                raise InvalidNode(current.directive)
+                                raise InvalidNode(node.directive)
 
                     program += f"~#[{'~;'.join(cases.get(n, '') for n in range(max(cases) + 1))}"
                     if cases.get(-1):
                         program += f"~:;{cases[-1]}"
 
                 case _:
-                    program += str(current.directive)
+                    program += str(node.directive)
 
-        return program
+        return encode_escapes(program)
 
     def add_edge(self, u: Node, v: Node, **attrs):
-        super().add_edge(u, v, condition=attrs.get("condition", Condition()), back=attrs.get("back", False))
+        super().add_edge(u, v,
+                         condition=attrs.get("condition", Always()),
+                         back=attrs.get("back", False))
+
+    def conditions(self) -> dict[tuple[Node, Node], Condition]:
+        return nx.get_edge_attributes(self, "condition")
+
+    def contract_subgraph(self, u: Node, v: Node):
+        empty = nx.DiGraph()
+        empty.add_node(Node(Control.Empty))
+
+        self.replace_subgraph(u, v, empty)
 
     def crash_on(self, node: Node):
         self.remove_edges_from([*self.edges(node)])
-        self.add_edge(node, crash := Node(Directive("?", [])))
-        self.add_edge(crash, CFG.CRASH)
+        self.add_edge(node, CFG.CRASH)
+        self.add_edge(node, node.closing, condition=~Always())
+
+        nx.relabel_nodes(self, {node: node.copy(directive=Directive("?", []))}, copy=False)
 
     def descendants(self, node: Node) -> set[Node]:
         return nx.descendants(self, node) | {node}
 
-    def draw(self, *, size: int = 12):
+    def draw(self, *, size: int = 12, layout=nx.kamada_kawai_layout):
         plt.figure(1, figsize=(size, size))
-        pos = nx.kamada_kawai_layout(self)
+        pos = layout(self)
 
         node_categories = {
             "buffer": ([], "salmon"),
@@ -268,10 +256,28 @@ class CFG(nx.DiGraph):
                                    node_size=1200, node_shape="o", edgecolors="gray")
 
         conditions = nx.get_edge_attributes(self, "condition")
-        nx.draw_networkx_edges(self, pos=pos, node_size=1300, arrowstyle="]->")
+        true = [edge for edge, condition in conditions.items() if condition != ~Always()]
+        false = [edge for edge, condition in conditions.items() if condition == ~Always()]
+
+        nx.draw_networkx_edges(self, edgelist=true, style="solid", pos=pos, node_size=1300, arrowstyle="]->")
+        nx.draw_networkx_edges(self, edgelist=false, style="dotted", pos=pos, node_size=1300, arrowstyle="]->")
+
         nx.draw_networkx_edge_labels(self, pos=pos, edge_labels=conditions)
 
         plt.show()
+
+    def nodes_between(self, u: Node, v: Node) -> set[Node]:
+        # This *seems* terrible no good very bad but maybe isn't?
+        return {node for path in nx.all_simple_paths(self, u, v) for node in path}
+
+    def replace_subgraph(self, u: Node, v: Node, subgraph: nx.DiGraph):
+        pre, succ = self.predecessors(u), self.successors(v)
+
+        self.remove_edges_from([(t, u) for t in pre])
+        self.remove_edges_from([(v, w) for w in succ])
+
+        self.add_edges_from([(t, min(subgraph, key=subgraph.in_degree)) for t in pre])
+        self.add_edges_from([(min(subgraph, key=subgraph.out_degree), w) for w in succ])
 
     def progeny(self, node: Node) -> 'CFG':
         return self.subgraph(self.descendants(node))
@@ -280,9 +286,21 @@ class CFG(nx.DiGraph):
         return self.progeny(CFG.START)
 
     def subgraph(self, nodes) -> 'CFG':
-        subgraph = super().subgraph(nodes).to_directed()
-        subgraph.__class__ = CFG
-        return subgraph
+        return CFG(super().subgraph(nodes).to_directed())
+
+    def subgraph_between(self, u: Node, v: Node) -> 'CFG':
+        return self.subgraph(self.nodes_between(u, v))
+
+    def swap_nodes(self, u: Node, v: Node):
+        pre, succ = self.predecessors(u), self.successors(v)
+
+        self.remove_edges_from([(t, u) for t in pre])
+        self.remove_edges_from([(v, w) for w in succ])
+        self.remove_edge(u, v)
+
+        self.add_edges_from([(t, v) for t in pre])
+        self.add_edges_from([(u, w) for w in succ])
+        self.add_edge(v, u)
 
     def terminates_from(self, node: Node) -> bool:
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
@@ -300,3 +318,15 @@ class CFG(nx.DiGraph):
 
                 child.pointer |= self[node][child]["condition"].enforce(node.pointer).step(child)
                 print(f"Updated {str(child):10}{child.pointer}")
+
+    def walk(self, node: Node, length: int) -> list[Node]:
+        walk = []
+        for _ in range(length):
+            walk.append(node)
+            try:
+                node, = self[node]
+
+            except ValueError:
+                break
+
+        return walk

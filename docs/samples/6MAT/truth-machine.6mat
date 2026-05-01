@@ -1,0 +1,9 @@
+INIT {
+    BACK
+    READC
+}
+
+DO {
+    CRNE! $V, '1'
+    PRINC '1'
+}

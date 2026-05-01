@@ -176,14 +176,28 @@ class Condition:
         return ""
 
     def check(self, pointer: Pointer) -> bool:
-        return True
+        raise NotImplementedError
 
     def enforce(self, pointer: Pointer) -> Pointer:
-        return pointer
+        raise NotImplementedError
 
     @property
     def queries_tape(self) -> bool:
         return False
+
+
+@dataclass(frozen=True)
+class Always(Condition):
+    negated: bool = False
+
+    def __invert__(self):
+        return replace(self, negated=not self.negated)
+
+    def check(self, pointer: Pointer) -> bool:
+        return not self.negated
+
+    def enforce(self, pointer: Pointer) -> Pointer:
+        return Pointer() if self.negated else pointer
 
 
 @dataclass(frozen=True)
@@ -371,7 +385,7 @@ class Node:
             case 'str' | 'ctrl':
                 return Range.only(0)
 
-            case 'a' | 'd' | 'e' | 'f' | 'g' | 'o' | 'r' | 's' | 'w' | 'x' | '$':
+            case 'a' | 'b' | 'd' | 'e' | 'f' | 'g' | 'o' | 'r' | 's' | 'w' | 'x' | '$':
                 return Range.only(1 + self.directive.params.count(Special.V))
 
             case 'c':
@@ -381,15 +395,15 @@ class Node:
                 return Range.only(self.directive.params.count(Special.V))
 
             case '?':
-                return Range.only(1)
+                return Range(1, inf) if self.directive.at_sign else Range.only(2)
 
             case '/':
                 return Range.only(1)
 
             case '[' if self.directive.at_sign or self.directive.colon:
-                return Range(1)
+                return Range.only(1)
 
-            case '[' | ']' | '<' | '>':
+            case '[' | ']' | '{' | '}' | '<' | '>' | ';':
                 return Range.only(0)
 
             case _:
@@ -401,7 +415,7 @@ class Node:
             case 'str':
                 return Range.only(len(str(self)))
 
-            case 'a' | 'd' | 'e' | 'f' | 'g' | 'o' | 'r' | 's' | 'w' | 'x':
+            case 'a' | 'b' | 'd' | 'e' | 'f' | 'g' | 'o' | 'r' | 's' | 't' | 'w' | 'x' | '$':
                 return Range(0, inf)
 
             case 'c':
@@ -410,14 +424,43 @@ class Node:
             case '%' | '|' | '~':
                 return Range.only(self.directive.get_param(0, 1))
 
-            case 't' | '&':
-                return Range(0, inf)
+            case '&':
+                return Range(0, self.directive.get_param(0, 1))
 
             case '/':
                 return Range(0, inf)
 
             case _:
                 return Range.only(0)
+
+    @property
+    def crashes(self) -> bool:
+        vs = {index for index, param in enumerate(self.directive.params) if param == Special.V}
+
+        match self.kind:
+            case 'ctrl':
+                return False
+
+            case '?':
+                return True
+
+            case 't' | '%' | '&' | '|' | '~' | '*' | '[' | '{' | ';' if vs:
+                return True
+
+            case 'a' | 'f' | '$' | '<' if vs & {0, 1, 2}:
+                return True
+
+            case 'e' | 'g' if vs & {0, 1, 2, 3}:
+                return True
+
+            case 'b' | 'd' | 'o' | 'x' if vs & {0, 3}:
+                return True
+
+            case 'r' if vs & {0, 1, 4}:
+                return True
+
+            case _:
+                return False
 
     def copy(self, **changes) -> 'Node':
         return replace(self, **changes)
