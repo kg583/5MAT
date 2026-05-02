@@ -435,7 +435,17 @@ class Node:
 
     @property
     def crashes(self) -> bool:
-        vs = {index for index, param in enumerate(self.directive.params) if param == Special.V}
+        def typecheck(ints: set[int]):
+            for index, param in enumerate(self.directive.params):
+                if index in ints:
+                    if param == Special.V or isinstance(param, str):
+                        return True
+
+                else:
+                    if param == Special.Hash or isinstance(param, int):
+                        return True
+
+            return False
 
         match self.kind:
             case 'ctrl':
@@ -444,19 +454,22 @@ class Node:
             case '?':
                 return True
 
-            case 't' | '%' | '&' | '|' | '~' | '*' | '[' | '{' | ';' if vs:
+            case '%' | '&' | '|' | '~' | '*' | '[' | '{' if typecheck({0}):
                 return True
 
-            case 'a' | 'f' | '$' | '<' if vs & {0, 1, 2}:
+            case 't' |  ';' if typecheck({0, 1}):
                 return True
 
-            case 'e' | 'g' if vs & {0, 1, 2, 3}:
+            case 'a' | 'f' | '$' | '<' if typecheck({0, 1, 2}):
                 return True
 
-            case 'b' | 'd' | 'o' | 'x' if vs & {0, 3}:
+            case 'e' | 'g' if typecheck({0, 1, 2, 3}):
                 return True
 
-            case 'r' if vs & {0, 1, 4}:
+            case 'b' | 'd' | 'o' | 'x' if typecheck({0, 3}):
+                return True
+
+            case 'r' if typecheck({0, 1, 4}):
                 return True
 
             case _:
