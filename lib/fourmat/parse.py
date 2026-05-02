@@ -52,10 +52,11 @@ def tokenize(source: str) -> list[str | Directive]:
     return tokens
 
 
-def parse(tokens: list[str | Directive] | str) -> BlockDirective:
-    if isinstance(tokens, str):
-        tokens = tokenize(tokens)
+def detokenize(tokens: list[str | Directive]) -> str:
+    return "".join(map(str, tokens))
 
+
+def parse(tokens: list[str | Directive]) -> BlockDirective:
     stack = [BlockDirective("", [])]
     for token in tokens:
         if isinstance(token, Directive):
@@ -113,4 +114,45 @@ def parse(tokens: list[str | Directive] | str) -> BlockDirective:
     return stack[0]
 
 
-__all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective", "tokenize", "parse"]
+def unparse(block: BlockDirective) -> list[str | Directive]:
+    def flatten(clause: list[str | Directive]):
+        return [token for directive in clause
+                for token in (unparse(directive) if isinstance(directive, BlockDirective) else [directive])]
+
+    tokens = [Directive(block.kind, block.params, block.at_sign, block.colon)]
+    if clauses := block.clauses.copy():
+        match block.kind:
+            case "":
+                return flatten(clauses[0])
+
+            case "[":
+                tokens.extend(flatten(clauses.pop(0)))
+
+                for clause in clauses[:-1]:
+                    tokens.append(Directive(";", []))
+                    tokens.extend(flatten(clause))
+
+                if clauses:
+                    tokens.append(block.default_token or Directive(";", []))
+                    tokens.extend(flatten(clauses[-1]))
+
+            case "<":
+                tokens.extend(flatten(clauses.pop(0)))
+
+                if clauses:
+                    tokens.append(block.default_token or Directive(";", []))
+                    tokens.extend(flatten(clauses.pop(0)))
+
+                    for clause in clauses:
+                        tokens.append(Directive(";", []))
+                        tokens.extend(flatten(clause))
+
+            case _:
+                tokens.extend(flatten(clauses[0]))
+
+    tokens.append(block.closing_token)
+    return tokens
+
+
+__all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective",
+           "tokenize", "detokenize", "parse", "unparse"]

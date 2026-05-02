@@ -96,7 +96,7 @@ class CFG(nx.DiGraph):
                         clauses = directive.clauses.copy()
 
                         if directive.default_token:
-                            buffer.extend(clauses.pop() + [directive.default_token])
+                            buffer.extend(clauses.pop(0) + [directive.default_token])
 
                         for section in clauses[:-1]:
                             buffer.extend(section + [Directive(";", [])])

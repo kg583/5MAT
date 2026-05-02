@@ -47,16 +47,17 @@ def encode_escapes(string: str) -> str:
     return string
 
 
-def minify(program: str) -> str:
-    program = decode_escapes(program)
-    program = re.sub(r"~(-?\d+)\[.*?~]", lambda match: match[0] if int(match[1]) == 0 else "", program)
-    program = re.sub(r"~\n\s*|~:\n|~@(\n)\s*", r"\1", program)
-
-    return encode_escapes(program)
-
-
 def parse(program: str) -> lib.fourmat.BlockDirective:
-    return lib.fourmat.parse(decode_escapes(program))
+    return lib.fourmat.parse(lib.fourmat.tokenize(decode_escapes(program)))
+
+
+def unparse(block: lib.fourmat.BlockDirective) -> str:
+    return encode_escapes(lib.fourmat.detokenize(lib.fourmat.unparse(block)))
+
+
+def minify(program: str) -> str:
+    return re.sub(r"~([+-]?\d+)\[.*?~]", lambda match: match[0] if int(match[1]) == 0 else "",
+                  unparse(parse(program)), flags=re.DOTALL)
 
 
 __all__ = ["decode_escapes", "encode_escapes", "minify", "parse"]

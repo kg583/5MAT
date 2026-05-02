@@ -26,7 +26,7 @@ class SampleTests(unittest.TestCase):
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
 
             if cfg:
-                loop = minify(re.search(r"~1?\{(.*)~}", program, flags=re.DOTALL)[1])
+                loop = re.search(r"~1?\{(.*)~}", minify(program), flags=re.DOTALL)[1]
                 self.assertEqual(loop, str(CFG(loop)))
 
     def test_12_days_of_christmas(self):
