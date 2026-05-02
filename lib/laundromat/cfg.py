@@ -1,8 +1,11 @@
+import logging
 import matplotlib.pyplot as plt
 import networkx as nx
 
 from lib.fivemat.util import *
 from lib.laundromat.node import *
+
+logger = logging.getLogger(__name__)
 
 
 class CFG(nx.DiGraph):
@@ -151,7 +154,6 @@ class CFG(nx.DiGraph):
 
     def __str__(self) -> str:
         nodes = list(self)
-        conditions = nx.get_edge_attributes(self, "condition")
         program = ""
 
         while nodes:
@@ -170,7 +172,7 @@ class CFG(nx.DiGraph):
                             if descendant in nodes:
                                 nodes.remove(descendant)
 
-                        match conditions[(node, child)]:
+                        match self.conditions()[(node, child)]:
                             case Equal(Special.Hash, a) | Equal(a, Special.Hash):
                                 cases[a] = path
 
@@ -253,20 +255,28 @@ class CFG(nx.DiGraph):
             nx.draw_networkx_nodes(self, nodelist=nodes, pos=pos, node_color=color,
                                    node_size=1200, node_shape="o", edgecolors="gray")
 
-        conditions = nx.get_edge_attributes(self, "condition")
-        true = [edge for edge, condition in conditions.items() if condition != ~Always()]
-        false = [edge for edge, condition in conditions.items() if condition == ~Always()]
+        true = [edge for edge, condition in self.conditions().items() if condition != ~Always()]
+        false = [edge for edge, condition in self.conditions().items() if condition == ~Always()]
 
         nx.draw_networkx_edges(self, edgelist=true, style="solid", pos=pos, node_size=1300, arrowstyle="]->")
         nx.draw_networkx_edges(self, edgelist=false, style="dotted", pos=pos, node_size=1300, arrowstyle="]->")
 
-        nx.draw_networkx_edge_labels(self, pos=pos, edge_labels=conditions)
+        nx.draw_networkx_edge_labels(self, pos=pos, edge_labels=self.conditions())
 
         plt.show()
 
     def nodes_between(self, u: Node, v: Node) -> set[Node]:
         # This *seems* terrible no good very bad but maybe isn't?
-        return {node for path in nx.all_simple_paths(self, u, v) for node in path}
+        return {node for path in self.paths_between(u, v) for node in path}
+
+    def paths_between(self, u: Node, v: Node):
+        return nx.all_simple_paths(self, u, v)
+
+    def progeny(self, node: Node) -> 'CFG':
+        return self.subgraph(self.descendants(node))
+
+    def reachable(self) -> 'CFG':
+        return self.progeny(CFG.START)
 
     def replace_subgraph(self, u: Node, v: Node, subgraph: nx.DiGraph):
         pre, succ = self.predecessors(u), self.successors(v)
@@ -276,12 +286,6 @@ class CFG(nx.DiGraph):
 
         self.add_edges_from([(t, min(subgraph, key=subgraph.in_degree)) for t in pre])
         self.add_edges_from([(min(subgraph, key=subgraph.out_degree), w) for w in succ])
-
-    def progeny(self, node: Node) -> 'CFG':
-        return self.subgraph(self.descendants(node))
-
-    def reachable(self) -> 'CFG':
-        return self.progeny(CFG.START)
 
     def subgraph(self, nodes) -> 'CFG':
         return CFG(super().subgraph(nodes).to_directed())
@@ -304,7 +308,6 @@ class CFG(nx.DiGraph):
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 
     def update_pointers(self):
-        # TODO: Use the logger
         for node in self:
             if node.kind != "ctrl":
                 node.pointer = node.pointer.clear()
@@ -315,7 +318,7 @@ class CFG(nx.DiGraph):
                     continue
 
                 child.pointer |= self[node][child]["condition"].enforce(node.pointer).step(child)
-                print(f"Updated {str(child):10}{child.pointer}")
+                logger.debug(f"Updated {str(child):10}{child.pointer}")
 
     def walk(self, node: Node, length: int) -> list[Node]:
         walk = []
