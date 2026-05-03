@@ -304,12 +304,16 @@ LOWER   [...]                       ~(...~)
 #JUST   +N                  [...]   ~;...
 #JUST   0   OVER    %P  %O  {...}   ~1@{...~:}~%P,%O:;
 #JUST   0   OVER    %P      {...}   ~1@{...~:}~%P:;
+#JUST   0   OVER            {...}   ~1@{...~:}~:;
 #JUST   0   OVER    %P  %O  [...]   ...~%P,%O:;
 #JUST   0   OVER    %P      [...]   ...~%P:;
-#JUST   +N  OVER    +P  +O  {...}   `ERR`
-#JUST   +N  OVER    +P      {...}   `ERR`
-#JUST   +N  OVER    +P  +O  [...]   `ERR`
-#JUST   +N  OVER    +P      [...]   `ERR`
+#JUST   0   OVER            [...]   ...~:;
+#JUST   +N  OVER    %P  %O  {...}   `ERR`
+#JUST   +N  OVER    %P      {...}   `ERR`
+#JUST   +N  OVER            {...}   `ERR`
+#JUST   +N  OVER    %P  %O  [...]   `ERR`
+#JUST   +N  OVER    %P      [...]   `ERR`
+#JUST   +N  OVER            [...]   `ERR`
 
 PRINA   ?V                          ~a~:*
 PRINA   $V                          ~a
@@ -416,6 +420,6 @@ TILDE   +N                          ~+N~
 TILDE                               ~~
 
 TITLE   1   [...]                   ~@(...~)
-TITLE   [...]                       ~:(...~)
+TITLE       [...]                   ~:(...~)
 
 UPPER   [...]                       ~:@(...~)
