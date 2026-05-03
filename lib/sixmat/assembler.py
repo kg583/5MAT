@@ -11,6 +11,7 @@ from lib.fivemat.util import *
 TOKENS = re.compile(
     r"(?P<newline>[\r\n]\s*)|"
     r"(?P<comment>;[^\r\n]*)|"
+    r"(?P<continue>\\)|"
     r"(?P<lbrace>\{)|"
     r"(?P<rbrace>})|"
     r"(?P<lbracket>\[)|"
@@ -161,7 +162,7 @@ def load_grammar(filename: str | Path) -> Instructions:
             if line.isspace():
                 continue
 
-            if line.startswith("# "):
+            if line.startswith(";"):
                 continue
 
             instr, *arg_spec, template = re.split(r" {2,}", line.strip())
@@ -345,6 +346,9 @@ def match_tokens(tokens: list[Token], context: Context) -> tuple[str, list[Token
                 case "comment":
                     if context.flags.get("preserve_comments"):
                         assembled += f"~1[{token.value.lstrip(';').replace('~', '~~')} ~]"
+
+                case "continue":
+                    continue
 
                 case "raw":
                     assembled += token.value[1:-1]

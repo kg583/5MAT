@@ -27,8 +27,7 @@ DO {
     {
         PRINA "This ↓ "
         {
-            PRINC $V
-            BACK
+            PRINC $V \ BACK
         }
 
         PRINA "Is this ↓ "
@@ -52,9 +51,7 @@ DO {
     }
 
     IFFF! $V {
-        PRFF
-        CRFF! ?V
-        BRFF
+        PRFF \ CRFF! ?V \ BRFF
     }
 
     COPYR! 'A', 5

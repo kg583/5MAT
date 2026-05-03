@@ -13,23 +13,17 @@ DO {
     IFNE! $V, '\f' {
         BACK
         IFNE! $V, $V {
-            PRFF
-            PRINA "False"
-            SKIP $R
+            PRFF \ PRINA "False" \ SKIP $R
         }
 
         CASER! [
             0 []
             1 []
             2 [
-                PRFF
-                PRINA "True"
-                SKIP $R
+                PRFF \ PRINA "True" \ SKIP $R
             ]
             3 [
-                PRFF
-                PRINA "True"
-                SKIP $R
+                PRFF \ PRINA "True" \ SKIP $R
             ]
             DEFAULT [ COPY $R ]
         ]

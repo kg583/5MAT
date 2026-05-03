@@ -1,18 +1,18 @@
-# 6MAT assembler grammar file
-# Instruction : arguments : code; each column is separated by at least two spaces
-# Instruction signatures are matched top to bottom, so more specific signatures must appear first
+; 6MAT assembler grammar file
+; Instruction : arguments : code; each column is separated by at least two spaces
+; Instruction signatures are matched top to bottom, so more specific signatures must appear first
 
-# Literals are substituted using the name of the corresponding argument
-# Numbers support setting the sign and adding/subtracting one
-# Characters support getting either adjacent character in ASCII
-# Strings support car/cdr to build code recursively
-# Blocks can only substitute their own assembled code
+; Literals are substituted using the name of the corresponding argument
+; Numbers support setting the sign and adding/subtracting one
+; Characters support getting either adjacent character in ASCII
+; Strings support car/cdr to build code recursively
+; Blocks can only substitute their own assembled code
 
-# Templates are wrapped in backticks `` and must contain valid 6MAT after substituting arguments
-# Generic types may only substitute into templates
-# Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
-# Instructions with a '#' cannot appear in user code and are used internally
-# A lowercase 'z' is a placeholder for any of the print types (ACLNR)
+; Templates are wrapped in backticks `` and must contain valid 6MAT after substituting arguments
+; Generic types may only substitute into templates
+; Templates may be empty, indicating a no-op, or contain 'ERR', indicating an illegal call signature
+; Instructions with a '#' cannot appear in user code and are used internally
+; A lowercase 'z' is a placeholder for any of the print types (ACLNR)
 
 
 BACK        0                       ``
