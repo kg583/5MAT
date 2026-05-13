@@ -2,6 +2,7 @@ import codecs
 import re
 
 import lib.fourmat
+from lib.fourmat import BlockDirective
 
 
 def decode_escapes(string: str) -> str:
@@ -55,9 +56,21 @@ def unparse(block: lib.fourmat.BlockDirective) -> str:
     return encode_escapes(lib.fourmat.detokenize(lib.fourmat.unparse(block)))
 
 
+class Minifier(lib.fourmat.Unparser):
+    def block(self, block: BlockDirective):
+        if block.kind == "[" and isinstance(index := block.get_param(0), int):
+            if index < len(block.clauses) and (clause := block.clauses[index]):
+                self.walk(clause)
+
+        else:
+            super().block(block)
+
+
 def minify(program: str) -> str:
-    return re.sub(r"~([+-]?\d+)\[.*?~]", lambda match: match[0] if int(match[1]) == 0 else "",
-                  unparse(parse(program)), flags=re.DOTALL)
+    minifier = Minifier()
+    minifier.walk(parse(program))
+
+    return encode_escapes(lib.fourmat.detokenize(minifier))
 
 
-__all__ = ["decode_escapes", "encode_escapes", "minify", "parse"]
+__all__ = ["decode_escapes", "encode_escapes", "minify", "parse", "unparse", "Minifier"]

@@ -114,45 +114,82 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
     return stack[0]
 
 
+class Walker:
+    def walk(self, directive: str | Directive):
+        if isinstance(directive, str):
+            self.string(directive)
+
+        elif isinstance(directive, BlockDirective):
+            self.block(directive)
+
+        else:
+            self.directive(directive)
+
+    def clause(self, clause: list[str | Directive]):
+        for directive in clause:
+            self.walk(directive)
+
+    def block(self, block: BlockDirective):
+        pass
+
+    def directive(self, directive: Directive):
+        pass
+
+    def string(self, string: str):
+        pass
+
+
+class Unparser(Walker, list):
+    def block(self, block: BlockDirective):
+        self.append(Directive(block.kind, block.params, block.at_sign, block.colon))
+        if clauses := block.clauses.copy():
+            match block.kind:
+                case "":
+                    self.pop()
+                    self.clause(clauses[0])
+                    return
+
+                case "[":
+                    self.clause(clauses.pop(0))
+
+                    for clause in clauses[:-1]:
+                        self.append(Directive(";", []))
+                        self.clause(clause)
+
+                    if clauses:
+                        self.append(block.default_token or Directive(";", []))
+                        self.clause(clauses[-1])
+
+                case "<":
+                    self.clause(clauses.pop(0))
+
+                    if clauses:
+                        self.append(block.default_token or Directive(";", []))
+                        self.clause(clauses.pop(0))
+
+                        for clause in clauses:
+                            self.append(Directive(";", []))
+                            self.clause(clause)
+
+                case _:
+                    self.clause(clauses[0])
+
+        self.append(block.closing_token)
+
+    def directive(self, directive: Directive):
+        self.append(directive)
+
+    def string(self, string: str):
+        self.append(string)
+
+
 def unparse(block: BlockDirective) -> list[str | Directive]:
-    def flatten(clause: list[str | Directive]):
-        return [token for directive in clause
-                for token in (unparse(directive) if isinstance(directive, BlockDirective) else [directive])]
+    unparser = Unparser()
+    unparser.walk(block)
 
-    tokens = [Directive(block.kind, block.params, block.at_sign, block.colon)]
-    if clauses := block.clauses.copy():
-        match block.kind:
-            case "":
-                return flatten(clauses[0])
-
-            case "[":
-                tokens.extend(flatten(clauses.pop(0)))
-
-                for clause in clauses[:-1]:
-                    tokens.append(Directive(";", []))
-                    tokens.extend(flatten(clause))
-
-                if clauses:
-                    tokens.append(block.default_token or Directive(";", []))
-                    tokens.extend(flatten(clauses[-1]))
-
-            case "<":
-                tokens.extend(flatten(clauses.pop(0)))
-
-                if clauses:
-                    tokens.append(block.default_token or Directive(";", []))
-                    tokens.extend(flatten(clauses.pop(0)))
-
-                    for clause in clauses:
-                        tokens.append(Directive(";", []))
-                        tokens.extend(flatten(clause))
-
-            case _:
-                tokens.extend(flatten(clauses[0]))
-
-    tokens.append(block.closing_token)
-    return tokens
+    return list(unparser)
 
 
 __all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective",
-           "tokenize", "detokenize", "parse", "unparse"]
+           "tokenize", "detokenize", "parse", "unparse",
+           "Walker", "Unparser"]
