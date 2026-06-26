@@ -2,7 +2,7 @@
 
 6MAT is an esoteric assembly-like programming language which compiles to 5MAT, itself an esolang built off of Lisp FORMAT strings.
 
-6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh). Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
+6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh), separated by newlines or `\`. Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
 
 On a single **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear after the last **form feed** character (`\f`) are **output** to STDOUT once the current lifetime is completed; if none exist, the entire tape is output
 
@@ -15,7 +15,7 @@ This loop continues indefinitely, terminating only by a **crash**. This executio
 - `"XYZ"`: A string literal
 - `NIL`: The empty list object
 - `FOO`: An instruction
-- `; Blah`: A comment
+- `; Blah`: A comment (which consumes the rest of the line)
 
 Escape sequences `\a`, `\b`, `\t`, `\n`, `\v`, `\f`, `\r`, `\"` (inside strings), and `\xXX`. are recognized. `↡`, the Unicode symbol for a form feed, is also recognized as a replacement for `\f`.
 
@@ -56,7 +56,7 @@ Multiple `!n` arguments are never permitted in a single instruction call. If an 
 
 ### Groups and Blocks
 
-**Groups** are collections of instructions, usually indented for clarity. Some groups create **blocks**, whose execution can be terminated early using **break** instructions.
+**Groups** are collections of instructions, usually indented for clarity. Some groups create **blocks**, whose execution can be terminated early using **break** instructions. Placing multiple instructions on the same line does *not* put them into a group or block.
 
 #### `{ ... }`
 Create a block and execute it. Breaking instructions terminate execution in the *current* block. Block argument placeholders are denoted by `{ ... }`.
@@ -275,7 +275,7 @@ Crash if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
 Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to [`CRNR! 0`](#crnr-n).
 
 #### `CRyy! _I, _J`
-Crash if condition `yy` holds for `_I` and `_J`. Equivalent to [`{ BRxx _I, _J | CRASH }`](#brxx-_i-_j), where `xx` is the negation of `yy`.
+Crash if condition `yy` holds for `_I` and `_J`. Equivalent to [`{ BRxx _I, _J \ CRASH }`](#brxx-_i-_j), where `xx` is the negation of `yy`.
 
 | Condition | Break   | Supported Types |
 |-----------|---------|-----------------|
