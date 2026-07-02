@@ -114,32 +114,7 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
     return stack[0]
 
 
-class Walker:
-    def walk(self, directive: str | Directive):
-        if isinstance(directive, str):
-            self.string(directive)
-
-        elif isinstance(directive, BlockDirective):
-            self.block(directive)
-
-        else:
-            self.directive(directive)
-
-    def clause(self, clause: list[str | Directive]):
-        for directive in clause:
-            self.walk(directive)
-
-    def block(self, block: BlockDirective):
-        pass
-
-    def directive(self, directive: Directive):
-        pass
-
-    def string(self, string: str):
-        pass
-
-
-class Unparser(Walker, list):
+class Unparser(BlockDirective.Walker, list):
     def block(self, block: BlockDirective):
         self.append(Directive(block.kind, block.params, block.at_sign, block.colon))
         if clauses := block.clauses.copy():
@@ -192,4 +167,4 @@ def unparse(block: BlockDirective) -> list[str | Directive]:
 
 __all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective",
            "tokenize", "detokenize", "parse", "unparse",
-           "Walker", "Unparser"]
+           "Unparser"]

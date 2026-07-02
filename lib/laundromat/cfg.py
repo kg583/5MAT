@@ -8,6 +8,10 @@ from lib.laundromat.node import *
 logger = logging.getLogger(__name__)
 
 
+def plural(word: str, count: int) -> str:
+    return f"{count} {word}{'s' * (count != 1)}"
+
+
 class CFG(nx.DiGraph):
     START = Node(Control.Start)
     END = Node(Control.End)
@@ -17,6 +21,81 @@ class CFG(nx.DiGraph):
     START.closing = END
     START.escape = END
     START.pointer = Less(1, 1, Special.Hash).enforce(Pointer().start())
+
+    class Walker:
+        def sep(self, node: Node, index: int):
+            pass
+
+        def visit(self, node: Node):
+            pass
+
+        def walk(self, cfg: 'CFG'):
+            def step(node: Node):
+                self.visit(node)
+
+                match node.kind:
+                    case '[':
+                        clauses = {}
+
+                        if node.directive.colon or node.directive.at_sign:
+                            for child in cfg[node]:
+                                match str(cfg.conditions()[(node, child)]):
+                                    case "NIL":
+                                        clauses[0] = child
+
+                                    case "T":
+                                        clauses[1] = child
+
+                                    case _:
+                                        raise InvalidNode(node.directive)
+
+                            order = [0, 1] if node.directive.colon else [1]
+
+                        else:
+                            for child in cfg[node]:
+                                if child == node.closing:
+                                    continue
+
+                                match cfg.conditions()[(node, child)]:
+                                    case Equal(Special.Hash, a) | Equal(a, Special.Hash):
+                                        clauses[a] = child
+
+                                    case Less(a, b, Special.Hash):
+                                        clauses[-1] = child
+
+                                    case _:
+                                        raise InvalidNode(node.directive)
+
+                            order = [*range(max(clauses) + 1), -1]
+
+                        for n in order:
+                            self.sep(node, n)
+                            if n in clauses:
+                                step(clauses[n])
+
+                        step(node.closing)
+
+                    case '{':
+                        for child in cfg[node]:
+                            if child == node.entry:
+                                step(child)
+
+                        self.visit(node.closing)
+                        step(node.escape)
+
+                    case '<':
+                        child, = cfg[node]
+                        step(child)
+
+                        step(node.closing)
+
+                    case _:
+                        for child in cfg[node]:
+                            if child not in [node.closing, node.escape]:
+                                step(child)
+
+            step(CFG.START)
+            self.visit(CFG.END)
 
     def __init__(self, program=None):
         if not isinstance(program, str):
@@ -145,51 +224,38 @@ class CFG(nx.DiGraph):
         build(parse(program).clauses[0], CFG.START)
 
     def __iter__(self):
-        topo = self.copy()
-        for edge, back in nx.get_edge_attributes(topo, "back").items():
-            if back:
-                topo.remove_edge(*edge)
+        class Walker(CFG.Walker, list):
+            def visit(self, node: Node):
+                self.append(node)
 
-        return nx.topological_sort(topo)
+        walker = Walker()
+        walker.walk(self)
+        return iter(walker)
 
     def __str__(self) -> str:
-        nodes = list(self)
-        program = ""
+        class Walker(CFG.Walker, list):
+            def sep(self, node: Node, index: int):
+                match index:
+                    case 0:
+                        pass
 
-        while nodes:
-            node = nodes.pop(0)
-            match node.kind:
-                case "ctrl":
-                    continue
+                    case 1 if node.directive.at_sign:
+                        pass
 
-                case "[" if node.directive.get_param(0) == Special.Hash:
-                    cases = {}
-                    for child in self[node]:
-                        descendants = self.nodes_between(child, node.closing) - {node.closing}
-                        path = str(self.subgraph(descendants))
+                    case -1:
+                        if node.directive.default_token:
+                            self.append("~:;")
 
-                        for descendant in descendants:
-                            if descendant in nodes:
-                                nodes.remove(descendant)
+                    case _:
+                        self.append("~;")
 
-                        match self.conditions()[(node, child)]:
-                            case Equal(Special.Hash, a) | Equal(a, Special.Hash):
-                                cases[a] = path
+            def visit(self, node: Node):
+                if node.kind != "ctrl":
+                    self.append(str(node))
 
-                            case Less(a, b, Special.Hash):
-                                cases[-1] = path
-
-                            case _:
-                                raise InvalidNode(node.directive)
-
-                    program += f"~#[{'~;'.join(cases.get(n, '') for n in range(max(cases) + 1))}"
-                    if cases.get(-1):
-                        program += f"~:;{cases[-1]}"
-
-                case _:
-                    program += str(node.directive)
-
-        return encode_escapes(program)
+        walker = Walker()
+        walker.walk(self)
+        return encode_escapes("".join(walker))
 
     def add_edge(self, u: Node, v: Node, **attrs):
         super().add_edge(u, v,
@@ -272,6 +338,18 @@ class CFG(nx.DiGraph):
     def paths_between(self, u: Node, v: Node):
         return nx.all_simple_paths(self, u, v)
 
+    def path_from(self, node: Node, length: int) -> list[Node]:
+        path = []
+        for _ in range(length):
+            path.append(node)
+            try:
+                node, = self[node]
+
+            except ValueError:
+                break
+
+        return path
+
     def progeny(self, node: Node) -> 'CFG':
         return self.subgraph(self.descendants(node))
 
@@ -330,8 +408,7 @@ class CFG(nx.DiGraph):
             logger.debug("\nPruning from START node...")
 
             removed_nodes, removed_edges = old_nodes - len(cfg), old_edges - len(cfg.edges())
-            logger.debug(f"Removed {removed_nodes} node{'s' if removed_nodes != 1 else ''}"
-                         f" and {removed_edges} edge{'s' if removed_edges != 1 else ''}!\n")
+            logger.debug(f"Removed {plural('node', removed_nodes)} and {plural('edge', removed_edges)}!\n")
 
             if removed_nodes == removed_edges == 0:
                 logger.debug("All done!")
@@ -359,6 +436,10 @@ class CFG(nx.DiGraph):
     def terminates_from(self, node: Node) -> bool:
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 
+    def tree(self) -> BlockDirective:
+        # TODO: Use a CFG Walker
+        return parse(str(self))
+
     def update_pointers(self):
         for node in self:
             if node.kind != "ctrl":
@@ -371,15 +452,3 @@ class CFG(nx.DiGraph):
 
                 child.pointer |= self[node][child]["condition"].enforce(node.pointer).step(child)
                 logger.debug(f"Updated {str(child):10}{child.pointer}")
-
-    def walk(self, node: Node, length: int) -> list[Node]:
-        walk = []
-        for _ in range(length):
-            walk.append(node)
-            try:
-                node, = self[node]
-
-            except ValueError:
-                break
-
-        return walk

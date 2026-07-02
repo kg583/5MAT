@@ -77,6 +77,30 @@ class BlockDirective(Directive):
     def from_embedded(cls, embedded: Directive):
         return BlockDirective(**vars(embedded))
 
+    class Walker:
+        def walk(self, directive: str | Directive):
+            if isinstance(directive, str):
+                self.string(directive)
+
+            elif isinstance(directive, BlockDirective):
+                self.block(directive)
+
+            else:
+                self.directive(directive)
+
+        def clause(self, clause: list[str | Directive]):
+            for directive in clause:
+                self.walk(directive)
+
+        def block(self, block: 'BlockDirective'):
+            pass
+
+        def directive(self, directive: Directive):
+            pass
+
+        def string(self, string: str):
+            pass
+
 
 @dataclass(eq=True)
 class FunctionCallDirective(Directive):
