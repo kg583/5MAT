@@ -132,7 +132,7 @@ class Pointer:
                 return self
 
             case '*' if node.directive.at_sign:
-                match node.directive.get_param(0, 0):
+                match node.directive.get_param(0):
                     case Special.Hash:
                         return ~self
 
@@ -140,7 +140,7 @@ class Pointer:
                         return +(self.start() + n)
 
             case '*' if node.directive.colon:
-                match node.directive.get_param(0, 1):
+                match node.directive.get_param(0):
                     case Special.Hash:
                         return +(self - self.from_end)
 
@@ -148,7 +148,7 @@ class Pointer:
                         return +(self - n)
 
             case '*':
-                match node.directive.get_param(0, 1):
+                match node.directive.get_param(0):
                     case Special.Hash:
                         return self.end()
 
@@ -422,10 +422,10 @@ class Node:
                 return Range(0, inf) if self.directive.at_sign or self.directive.colon else Range.only(1)
 
             case '%' | '|' | '~':
-                return Range.only(self.directive.get_param(0, 1))
+                return Range.only(self.directive.get_param(0))
 
             case '&':
-                return Range(0, self.directive.get_param(0, 1))
+                return Range(0, self.directive.get_param(0))
 
             case '/':
                 return Range(0, inf)

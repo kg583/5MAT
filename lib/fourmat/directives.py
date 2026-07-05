@@ -10,16 +10,44 @@ class Special(Enum):
         return self.value
 
 
-SIGNATURE = {
-    "c": (1, ":@"),
-    "%": (1, ""), "&": (1, ""), "|": (1, ""), "~": (1, ""),
-    "r": (5, ":@"), "d": (4, ":@"), "b": (4, ":@"), "o": (4, ":@"), "x": (4, ":@"),
-    "f": (5, ":@"), "e": (7, ":@"), "g": (7, ":@"), "$": (4, ":@"),
-    "a": (4, ":@"), "s": (4, ":@"), "w": (4, ":@"),
-    "t": (2, ":@"), "<": (4, ":@"), ";": (2, ":"),
-    "*": (1, ":@"), "[": (1, ":@"), "{": (1, ":@"), "?": (0, "@"),
-    "(": (0, ":@"), "p": (0, ":@"),
-    "^": (3, ":")
+DEFAULTS = {
+    "c": [], ":c": [], "@c": [], ":@c": [],
+    "%": [1], "&": [1], "|": [1], "~": [1],
+
+    "r": [None, 0, " ", ",", 3],
+    ":r": [None, 0, " ", ",", 3],
+    "@r": [None, 0, " ", ",", 3],
+    ":@r": [None, 0, " ", ",", 3],
+
+    "d": [0, " ", ",", 3], ":d": [0, " ", ",", 3], "@d": [0, " ", ",", 3], ":@d": [0, " ", ",", 3],
+    "b": [0, " ", ",", 3], ":b": [0, " ", ",", 3], "@b": [0, " ", ",", 3], ":@b": [0, " ", ",", 3],
+    "o": [0, " ", ",", 3], ":o": [0, " ", ",", 3], "@o": [0, " ", ",", 3], ":@o": [0, " ", ",", 3],
+    "x": [0, " ", ",", 3], ":x": [0, " ", ",", 3], "@x": [0, " ", ",", 3], ":@x": [0, " ", ",", 3],
+
+    "f": [None, None, 0, None, " "], "@f": [None, None, 0, None, " "],
+    "e": [None, None, None, 1, None, " ", "E"], "@e": [None, None, None, 1, None, " ", "E"],
+    "g": [None, None, None, 1, None, " ", "E"], "@g": [None, None, None, 1, None, " ", "E"],
+    "$": [2, 1, 0, " "], ":$": [2, 1, 0, " "], "@$": [2, 1, 0, " "], ":@$": [2, 1, 0, " "],
+
+    "a": [0, 1, 0, " "], ":a": [0, 1, 0, " "], "@a": [0, 1, 0, " "], ":@a": [0, 1, 0, " "],
+    "s": [0, 1, 0, " "], ":s": [0, 1, 0, " "], "@s": [0, 1, 0, " "], ":@s": [0, 1, 0, " "],
+    "w": [], ":w": [], "@w": [], ":@w": [],
+
+    "t": [1, 1], ":t": [1, 1], "@t": [1, 1], ":@t": [1, 1],
+    "<": [0, 1, 0, " "], ":<": [0, 1, 0, " "], "@<": [0, 1, 0, " "], ":@<": [0, 1, 0, " "], ">": [],
+    ";": [], ":;": [0, 72],
+
+    "*": [1], ":*": [1], "@*": [0],
+    "[": [Special.V], ":[": [], "@[": [], "]": [],
+    "{": [None], ":{": [None], "@{": [None], ":@{": [None], "}": [], ":}": [],
+    "?": [], "@?": [],
+
+    "(": [], ":(": [], "@(": [], ":@(": [], ")": [],
+    "p": [], ":p": [], "@p": [], ":@p": [],
+
+    "^": [None, None, None], ":^": [None, None, None],
+
+    "": []
 }
 
 
@@ -27,30 +55,29 @@ SIGNATURE = {
 class Directive:
     kind: str
     params: list[int | str | None | Special]
+    defaults: list[int | str | None | Special] = None
     at_sign: bool = False
     colon: bool = False
 
     def __post_init__(self):
         self.kind = self.kind.lower()
-        arity, modifiers = SIGNATURE.get(self.kind, (None, ":@"))
+        self.defaults = DEFAULTS.get(self.type)
 
-        if self.kind == "[" and (self.colon or self.at_sign):
-            arity = 0
+        # Function calls
+        if "/" in self.kind or "!" in self.kind:
+            return
 
-        if self.kind == ";" and not self.colon:
-            arity = 0
+        if self.defaults is None:
+            raise TypeError(f"unrecognized directive ~{self.type}")
 
-        if arity is not None and len(self.params) > arity:
-            raise ValueError(f"too many parameters ({len(self.params)} > {arity}) passed to ~{self.kind}")
+        if len(self.params) > len(self.defaults):
+            raise TypeError(f"too many parameters ({len(self.params)} > {len(self.defaults)}) passed to ~{self.type}")
 
-        # TODO: Some directives don't allow : and @ together
-        if self.at_sign and "@" not in modifiers:
-            raise ValueError(f"~@{self.kind} is invalid")
+    def get_default(self, index: int):
+        return None if self.defaults is None else self.defaults[index]
 
-        if self.colon and ":" not in modifiers:
-            raise ValueError(f"~:{self.kind} is invalid")
-
-    def get_param(self, index: int, default=None):
+    def get_param(self, index: int):
+        default = self.get_default(index)
         if index < len(self.params):
             val = self.params[index]
             return default if val is None else val
@@ -60,11 +87,21 @@ class Directive:
     def copy(self, **changes):
         return replace(self, **changes)
 
+    @property
+    def arity(self) -> int | None:
+        return None if self.defaults is None else len(self.defaults)
+
+    @property
+    def modifiers(self) -> str:
+        return ":" * self.colon + "@" * self.at_sign
+
+    @property
+    def type(self) -> str:
+        return self.modifiers + self.kind
+
     def __str__(self) -> str:
-        at_sign = "@" if self.at_sign else ""
-        colon = ":" if self.colon else ""
         prefix_params = ",".join(map(lambda x: f"'{x}" if isinstance(x, str) else str(x), self.params))
-        return f"~{prefix_params}{colon}{at_sign}{self.kind}"
+        return f"~{prefix_params}{self.type}"
 
 
 @dataclass(eq=True)

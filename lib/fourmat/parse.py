@@ -97,10 +97,10 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
 
                 closed_block = stack.pop()
                 if closed_block.kind == "":
-                    raise SyntaxError(f"Unmatched ~{token.kind}")
+                    raise SyntaxError(f"Unmatched ~{token.type}")
 
                 if pairings[closed_block.kind] != token.kind:
-                    raise SyntaxError(f"Unbalanced ~{closed_block.kind} (was closed with ~{token.kind})")
+                    raise SyntaxError(f"Unbalanced ~{closed_block.type} (was closed with ~{token.type})")
 
                 closed_block.closing_token = token
                 stack[-1].clauses[-1].append(closed_block)
@@ -109,14 +109,14 @@ def parse(tokens: list[str | Directive]) -> BlockDirective:
         stack[-1].clauses[-1].append(token)
 
     if len(stack) > 1:
-        raise SyntaxError(f"Unclosed ~{stack[1].kind}")
+        raise SyntaxError(f"Unclosed ~{stack[1].type}")
 
     return stack[0]
 
 
 class Unparser(BlockDirective.Walker, list):
     def block(self, block: BlockDirective):
-        self.append(Directive(block.kind, block.params, block.at_sign, block.colon))
+        self.append(Directive(block.kind, block.params, block.defaults, block.at_sign, block.colon))
         if clauses := block.clauses.copy():
             match block.kind:
                 case "":

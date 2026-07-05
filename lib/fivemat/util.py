@@ -58,7 +58,7 @@ def unparse(block: lib.fourmat.BlockDirective) -> str:
 
 class Minifier(lib.fourmat.Unparser):
     def block(self, block: BlockDirective):
-        if block.kind == "[" and isinstance(index := block.get_param(0), int):
+        if block.type == "[" and isinstance(index := block.get_param(0), int):
             if index < len(block.clauses) and (clause := block.clauses[index]):
                 self.walk(clause)
 

@@ -304,8 +304,9 @@ class Interpreter:
         else:
             self.position += len(data)
 
-    def get_param(self, directive: Directive, index: int, *, default=None):
-        param = directive.get_param(index, default)
+    def get_param(self, directive: Directive, index: int):
+        param = directive.get_param(index)
+        default = directive.get_default(index)
 
         match param:
             case Special.V:
@@ -316,9 +317,12 @@ class Interpreter:
                 param = self.args.hash()
 
         if default is not None and not isinstance(default, Special) and not isinstance(param, type(default)):
-            raise ValueError(f"invalid type for ~{directive.kind} parameter {index}")
+            raise TypeError(f"got {type(param)} for param #{index} in ~{directive.type}, expected {type(default)}")
 
         return param
+
+    def get_params(self, directive: Directive):
+        return [self.get_param(directive, index) for index in range(directive.arity)]
 
     def eval(self, token: str | Directive):
         if isinstance(token, str):
@@ -432,10 +436,10 @@ class Interpreter:
             self.output(char)
 
     def print_repeated(self, directive: Directive, char: str):
-        self.output(char * self.get_param(directive, 0, default=1))
+        self.output(char * self.get_param(directive, 0))
 
     def eval_fresh_line(self, directive: Directive):
-        count = self.get_param(directive, 0, default=1)
+        count = self.get_param(directive, 0)
 
         if count == 0:
             return
@@ -447,11 +451,7 @@ class Interpreter:
 
     # FORMAT Radix Control
     def eval_radix(self, directive: Directive):
-        base = self.get_param(directive, 0, default=None)
-        min_col = self.get_param(directive, 1, default=0)
-        pad_char = self.get_param(directive, 2, default=" ")
-        comma_char = self.get_param(directive, 3, default=",")
-        comma_interval = self.get_param(directive, 4, default=3)
+        base, min_col, pad_char, comma_char, comma_interval = self.get_params(directive)
 
         if not isinstance(self.args.peek(), int):
             # CLISP clears the modifiers for some reason
@@ -563,11 +563,7 @@ class Interpreter:
         return float(self.args.consume())
 
     def eval_fixed_float(self, directive: Directive):
-        w = self.get_param(directive, 0)
-        d = self.get_param(directive, 1)
-        k = self.get_param(directive, 2, default=0)
-        overflow_char = self.get_param(directive, 3)
-        pad_char = self.get_param(directive, 4, default=" ")
+        w, d, k, overflow_char, pad_char = self.get_params(directive)
 
         if (arg := self.float_default(w)) is None:
             return
@@ -579,13 +575,7 @@ class Interpreter:
                                       "", w, d, overflow, pad_char))
 
     def eval_exponential_float(self, directive: Directive):
-        w = self.get_param(directive, 0)
-        d = self.get_param(directive, 1)
-        e = self.get_param(directive, 2)
-        k = self.get_param(directive, 3, default=1)
-        overflow_char = self.get_param(directive, 4)
-        pad_char = self.get_param(directive, 5, default=" ")
-        exponent_char = self.get_param(directive, 6, default="E")
+        w, d, e, k, overflow_char, pad_char, exponent_char = self.get_params(directive)
 
         if (arg := self.float_default(w)) is None:
             return
@@ -616,13 +606,7 @@ class Interpreter:
         self.output(output)
 
     def eval_general_float(self, directive: Directive):
-        w = self.get_param(directive, 0)
-        d = self.get_param(directive, 1)
-        e = self.get_param(directive, 2)
-        k = self.get_param(directive, 3)
-        overflow_char = self.get_param(directive, 4)
-        pad_char = self.get_param(directive, 5, default=" ")
-        exponent_char = self.get_param(directive, 6, default="E")
+        w, d, e, k, overflow_char, pad_char, exponent_char = self.get_params(directive)
 
         if (arg := self.float_default(w)) is None:
             return
@@ -644,10 +628,7 @@ class Interpreter:
                                                        params=[w, d, e, k, overflow_char, pad_char, exponent_char]))
 
     def eval_monetary_float(self, directive: Directive):
-        d = self.get_param(directive, 0, default=2)
-        n = self.get_param(directive, 1, default=1)
-        w = self.get_param(directive, 2, default=0)
-        pad_char = self.get_param(directive, 3, default=" ")
+        d, n, w, pad_char = self.get_params(directive)
 
         if (arg := self.float_default(w)) is None:
             return
@@ -670,10 +651,7 @@ class Interpreter:
 
     # FORMAT Printer Operations
     def eval_aesthetic(self, directive: Directive, escapes: bool = False):
-        min_col = self.get_param(directive, 0, default=0)
-        col_inc = self.get_param(directive, 1, default=1)
-        min_pad = self.get_param(directive, 2, default=0)
-        pad_char = self.get_param(directive, 3, default=" ")
+        min_col, col_inc, min_pad, pad_char = self.get_params(directive)
 
         min_padding = min_pad * pad_char
 
@@ -723,8 +701,7 @@ class Interpreter:
 
     # FORMAT Layout Control
     def eval_tabulate(self, directive: Directive):
-        col = self.get_param(directive, 0, default=1)
-        inc = self.get_param(directive, 1, default=1)
+        col, inc = self.get_params(directive)
 
         if col < 0 or inc < 0:
             raise ValueError("negative ~t arg")
@@ -755,10 +732,7 @@ class Interpreter:
             self.output(interp.buffer)
             return
 
-        min_col = self.get_param(directive, 0, default=0)
-        col_inc = self.get_param(directive, 1, default=1)
-        min_pad = self.get_param(directive, 2, default=0)
-        pad_char = self.get_param(directive, 3, default=" ")
+        min_col, col_inc, min_pad, pad_char = self.get_params(directive)
 
         # Handle the overflow clause
         if directive.default_token:
@@ -772,9 +746,7 @@ class Interpreter:
 
             index = 1
             overflow = interp.buffer
-
-            line_pad = self.get_param(directive.default_token, 0, default=0)
-            line_width = self.get_param(directive.default_token, 1, default=72)
+            line_pad, line_width = self.get_params(directive.default_token)
 
         else:
             index = 0
@@ -812,18 +784,14 @@ class Interpreter:
 
     # FORMAT Control-Flow Operations
     def eval_goto(self, directive: Directive):
-        if directive.at_sign:
-            param = self.get_param(directive, 0, default=0)
-            if param < 0:
-                raise ValueError("negative ~@* arg")
+        param = self.get_param(directive, 0)
+        if param < 0:
+            raise ValueError(f"negative ~{directive.type} arg")
 
+        if directive.at_sign:
             self.args.goto(param)
 
         else:
-            param = self.get_param(directive, 0, default=1)
-            if param < 0:
-                raise ValueError("negative ~* arg")
-
             if directive.colon:
                 self.args.skip(-param)
 
@@ -856,7 +824,7 @@ class Interpreter:
             self.eval_clause(directive.clauses[0])
 
         else:
-            index = self.get_param(directive, 0, default=Special.V)
+            index = self.get_param(directive, 0)
 
             if not isinstance(index, (int, Special)):
                 raise TypeError("invalid index for ~[")
