@@ -25,3 +25,4 @@ If it proves unreasonable, we happily abandon CLISP's ways. Below are the known 
 - Special key sequences are not displayed by `~:@c`, making it equivalent to `~:c`.
 - Formatted floats may differ greatly in their insignificant digits compared to CLISP's output.
 - "Ordinary free-format" float output, used by `~e` and `~f` when no parameters are specified, may differ from CLISP's output.
+- Colon modifiers on float formatters besides `~$` are illegal, whereas CLISP silently ignores the modifier (because it doesn't do anything).
