@@ -391,11 +391,8 @@ class Node:
             case 'c':
                 return Range.only(1)
 
-            case 't' | '%' | '&' | '|' | '~' | '^':
+            case 't' | '%' | '&' | '|' | '~' | '<' | '^':
                 return Range.only(self.directive.params.count(Special.V))
-
-            case '?':
-                return Range(1, inf) if self.directive.at_sign else Range.only(2)
 
             case '/':
                 return Range.only(1)
@@ -403,7 +400,7 @@ class Node:
             case '[' if self.directive.at_sign or self.directive.colon:
                 return Range.only(1)
 
-            case '[' | ']' | '{' | '}' | '<' | '>' | ';':
+            case '[' | ']' | '{' | '}' | '>' | ';':
                 return Range.only(0)
 
             case _:
