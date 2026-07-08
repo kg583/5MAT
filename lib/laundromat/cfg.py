@@ -62,7 +62,7 @@ class CFG(nx.DiGraph):
                                     case _:
                                         raise InvalidNode(node.directive)
 
-                            order = [*range(max(clauses) + 1), -1]
+                            order = [*range(max(clauses, default=-1) + 1), -1]
 
                         for n in order:
                             self.sep(node, n)
