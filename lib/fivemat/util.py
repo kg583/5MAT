@@ -2,7 +2,7 @@ import codecs
 import re
 
 import lib.fourmat
-from lib.fourmat import BlockDirective
+from lib.fourmat import BlockDirective, Directive
 
 
 def decode_escapes(string: str) -> str:
@@ -64,6 +64,13 @@ class Minifier(lib.fourmat.Unparser):
 
         else:
             super().block(block)
+
+    def directive(self, directive: Directive):
+        super().directive(directive)
+
+        for index, param in enumerate(directive.params):
+            if param == directive.get_default(index):
+                self[-1].params[index] = None
 
 
 def minify(program: str) -> str:

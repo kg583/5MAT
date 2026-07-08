@@ -100,7 +100,10 @@ class Directive:
         return self.modifiers + self.kind
 
     def __str__(self) -> str:
-        prefix_params = ",".join(map(lambda x: f"'{x}" if isinstance(x, str) else str(x), self.params))
+        prefix_params = ",".join("" if x is None else f"'{x}" if isinstance(x, str) else str(x) for x in self.params)
+        if self.kind != "^":
+            prefix_params = prefix_params.rstrip(",")
+
         return f"~{prefix_params}{self.type}"
 
 
