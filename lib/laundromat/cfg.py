@@ -8,10 +8,6 @@ from lib.laundromat.node import *
 logger = logging.getLogger(__name__)
 
 
-def plural(word: str, count: int) -> str:
-    return f"{count} {word}{'s' * (count != 1)}"
-
-
 class CFG(nx.DiGraph):
     START = Node(Control.Start)
     END = Node(Control.End)
@@ -98,7 +94,7 @@ class CFG(nx.DiGraph):
             self.visit(CFG.END)
 
     def __init__(self, program=None):
-        if not isinstance(program, str):
+        if not isinstance(program, BlockDirective):
             super().__init__(program)
             return
 
@@ -221,7 +217,7 @@ class CFG(nx.DiGraph):
                 self.add_edge(node, node.closing, condition=condition)
 
         super().__init__()
-        build(parse(program).clauses[0], CFG.START)
+        build(program.clauses[0], CFG.START)
 
     def __iter__(self):
         class Walker(CFG.Walker, list):
@@ -365,57 +361,6 @@ class CFG(nx.DiGraph):
         self.add_edges_from([(t, min(subgraph, key=subgraph.in_degree)) for t in pre])
         self.add_edges_from([(min(subgraph, key=subgraph.out_degree), w) for w in succ])
 
-    def simplified(self) -> 'CFG':
-        cfg = self.copy()
-
-        while True:
-            old_nodes, old_edges = len(cfg), len(cfg.edges())
-            cfg.update_pointers()
-
-            for node in cfg:
-                if node not in cfg:
-                    break
-
-                for child, attrs in {**cfg[node]}.items():
-                    condition = attrs["condition"]
-
-                    # Crash past the end of the tape
-                    if node.pointer.from_end < Range(0, inf):
-                        cfg.crash_on(node)
-                        logger.debug(f"Crashed at    {node}")
-
-                    # Crash infinite loops
-                    if node.kind == "{" and not cfg.terminates_from(child):
-                        cfg.crash_on(child)
-                        logger.debug("Found an infinite loop!")
-
-                    # Skip known trivial edges
-                    if not condition:
-                        continue
-
-                    # Check reachability
-                    if not condition.check(node.pointer) or child.directive == Control.UB:
-                        cfg.remove_edge(node, child)
-                        logger.debug(f"Removed       {node} -> {child}")
-
-                    # Simplify condition
-                    elif condition.enforce(node.pointer) == node.pointer and not condition.queries_tape:
-                        cfg[node][child]["condition"] = Always()
-                        logger.debug(f"Simplified    {node} -> {child}")
-
-            # Prune unreachable nodes
-            cfg = cfg.reachable()
-            logger.debug("\nPruning from START node...")
-
-            removed_nodes, removed_edges = old_nodes - len(cfg), old_edges - len(cfg.edges())
-            logger.debug(f"Removed {plural('node', removed_nodes)} and {plural('edge', removed_edges)}!\n")
-
-            if removed_nodes == removed_edges == 0:
-                logger.debug("All done!")
-                return cfg
-
-            cfg = cfg.copy()
-
     def subgraph(self, nodes) -> 'CFG':
         return CFG(super().subgraph(nodes).to_directed())
 
@@ -437,8 +382,29 @@ class CFG(nx.DiGraph):
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 
     def tree(self) -> BlockDirective:
-        # TODO: Use a CFG Walker
-        return parse(str(self))
+        class Walker(CFG.Walker, list):
+            def sep(self, node: Node, index: int):
+                self[-1].clauses.append([])
+
+            def visit(self, node: Node):
+                if isinstance(node.directive, Control):
+                    return
+
+                elif isinstance(node.directive, BlockDirective):
+                    self.append(node.directive)
+                    return
+
+                elif node.directive == self[-1].closing_token:
+                    directive = self.pop()
+
+                else:
+                    directive = node.directive
+
+                self[-1].clauses[-1].append(directive)
+
+        walker = Walker([BlockDirective("{", [1], closing_token=Directive("}", []))])
+        walker.walk(self)
+        return walker.pop()
 
     def update_pointers(self):
         for node in self:
@@ -452,3 +418,6 @@ class CFG(nx.DiGraph):
 
                 child.pointer |= self[node][child]["condition"].enforce(node.pointer).step(child)
                 logger.debug(f"Updated {str(child):10}{child.pointer}")
+
+
+__all__ = ["CFG"]

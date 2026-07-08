@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 
 from lib.fivemat import *
-from lib.laundromat.cfg import *
+from lib.laundromat.optimizer import *
 from lib.sixmat.assembler import *
 
 
@@ -26,8 +26,8 @@ class SampleTests(unittest.TestCase):
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
 
             if cfg:
-                loop = re.search(r"~1?\{(.*)~}", minify(program), flags=re.DOTALL)[1]
-                self.assertEqual(loop, str(CFG(loop)))
+                loop = extract_loop(parse(minify(program)))
+                self.assertEqual(loop.clauses[0], CFG(loop).tree().clauses[0])
 
     def test_12_days_of_christmas(self):
         self.sample("12-days-of-christmas", "On the First day of Christmas\nMy true love sent to me",

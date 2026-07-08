@@ -149,5 +149,9 @@ class FunctionCallDirective(Directive):
         embedded.kind = '/'
         return FunctionCallDirective(function_name=function_name, **vars(embedded))
 
+    @property
+    def type(self) -> str:
+        return f"{super().type}{self.function_name}/"
+
 
 __all__ = ["Special", "Directive", "BlockDirective", "FunctionCallDirective"]

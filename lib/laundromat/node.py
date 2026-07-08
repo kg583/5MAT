@@ -128,9 +128,6 @@ class Pointer:
 
     def step(self, node: 'Node') -> 'Pointer':
         match node.kind:
-            case 'str':
-                return self
-
             case '*' if node.directive.at_sign:
                 match node.directive.get_param(0):
                     case Special.Hash:
