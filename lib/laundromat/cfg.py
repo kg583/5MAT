@@ -213,6 +213,9 @@ class CFG(nx.DiGraph):
                     case _:
                         node = child
 
+                if isinstance(directive, BlockDirective):
+                    child.directive.clauses = [[]]
+
             else:
                 self.add_edge(node, node.closing, condition=condition)
 
@@ -220,16 +223,16 @@ class CFG(nx.DiGraph):
         build(program.clauses[0], CFG.START)
 
     def __iter__(self):
-        class Walker(CFG.Walker, list):
+        class Iterator(CFG.Walker, list):
             def visit(self, node: Node):
                 self.append(node)
 
-        walker = Walker()
+        walker = Iterator()
         walker.walk(self)
         return iter(walker)
 
     def __str__(self) -> str:
-        class Walker(CFG.Walker, list):
+        class Stringifier(CFG.Walker, list):
             def sep(self, node: Node, index: int):
                 match index:
                     case 0:
@@ -249,9 +252,22 @@ class CFG(nx.DiGraph):
                 if node.kind != "ctrl":
                     self.append(str(node))
 
-        walker = Walker()
+        walker = Stringifier()
         walker.walk(self)
-        return encode_escapes("".join(walker))
+        return "~1{%s~}" % encode_escapes("".join(walker))
+
+    @staticmethod
+    def extract_loop(program: BlockDirective) -> BlockDirective:
+        def extractor(current: BlockDirective):
+            for clause in current.clauses:
+                for directive in clause:
+                    if isinstance(directive, BlockDirective):
+                        if directive.type == "{":
+                            yield directive
+
+                        yield from extractor(directive)
+
+        return next(extractor(program))
 
     def add_edge(self, u: Node, v: Node, **attrs):
         super().add_edge(u, v,
@@ -382,9 +398,18 @@ class CFG(nx.DiGraph):
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 
     def tree(self) -> BlockDirective:
-        class Walker(CFG.Walker, list):
+        class JohnnyAppleseed(CFG.Walker, list):
             def sep(self, node: Node, index: int):
-                self[-1].clauses.append([])
+                match index:
+                    case 0:
+                        pass
+
+                    case 1 if node.directive.at_sign:
+                        pass
+
+                    case _:
+                        if index > 0 or node.directive.default_token:
+                            self[-1].clauses.append([])
 
             def visit(self, node: Node):
                 if isinstance(node.directive, Control):
@@ -396,13 +421,13 @@ class CFG(nx.DiGraph):
 
                 elif node.directive == self[-1].closing_token:
                     directive = self.pop()
+                    if any(directive.clauses):
+                        self[-1].clauses[-1].append(directive)
 
                 else:
-                    directive = node.directive
+                    self[-1].clauses[-1].append(node.directive)
 
-                self[-1].clauses[-1].append(directive)
-
-        walker = Walker([BlockDirective("{", [1], closing_token=Directive("}", []))])
+        walker = JohnnyAppleseed([BlockDirective("{", [1], closing_token=Directive("}", []))])
         walker.walk(self)
         return walker.pop()
 

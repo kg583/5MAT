@@ -26,8 +26,12 @@ class SampleTests(unittest.TestCase):
             self.assertEqual(expected.rstrip(), buffer.read(length).rstrip())
 
             if cfg:
-                loop = extract_loop(parse(minify(program)))
-                self.assertEqual(loop.clauses[0], CFG(loop).tree().clauses[0])
+                loop = CFG.extract_loop(parse(minify(program)))
+                loop.params = [1]
+                cfg = CFG(loop)
+
+                self.assertEqual(loop.clauses[0], cfg.tree().clauses[0])
+                self.assertEqual(unparse(loop), str(cfg))
 
     def test_12_days_of_christmas(self):
         self.sample("12-days-of-christmas", "On the First day of Christmas\nMy true love sent to me",

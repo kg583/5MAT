@@ -3,6 +3,7 @@ import re
 
 from dataclasses import dataclass
 
+from lib.fivemat.util import *
 from lib.laundromat.cfg import *
 from lib.laundromat.node import *
 
@@ -13,19 +14,6 @@ def plural(word: str, count: int) -> str:
     return f"{count} {word}{'s' * (count != 1)}"
 
 
-def extract_loop(program: BlockDirective) -> BlockDirective:
-    def extractor(current: BlockDirective):
-        for clause in current.clauses:
-            for directive in clause:
-                if isinstance(directive, BlockDirective):
-                    if directive.type == "{":
-                        yield directive
-
-                    yield from extractor(directive)
-
-    return next(extractor(program))
-
-
 def cfg_optimize(cfg: CFG) -> CFG:
     cfg = cfg.copy()
 
@@ -34,6 +22,7 @@ def cfg_optimize(cfg: CFG) -> CFG:
         cfg.update_pointers()
 
         for node in cfg:
+            # Some children got pruned; best to just restart
             if node not in cfg:
                 break
 
@@ -66,7 +55,11 @@ def cfg_optimize(cfg: CFG) -> CFG:
 
         # Prune unreachable nodes
         cfg = cfg.reachable()
-        logger.debug("\nPruning from START node...")
+        logger.debug("\nPruned from START node")
+
+        # Remove empty blocks
+        cfg = CFG(cfg.tree())
+        logger.debug("\nRemoved empty blocks")
 
         removed_nodes, removed_edges = old_nodes - len(cfg), old_edges - len(cfg.edges())
         logger.debug(f"Removed {plural('node', removed_nodes)} and {plural('edge', removed_edges)}!\n")
@@ -76,3 +69,13 @@ def cfg_optimize(cfg: CFG) -> CFG:
             return cfg
 
         cfg = cfg.copy()
+
+
+if __name__ == "__main__":
+    program = parse("~1{~1[test~]~#[zero!~]~a~}")
+    loop = CFG.extract_loop(program)
+    cfg = CFG(loop)
+
+    cfg.draw()
+    optimized = cfg_optimize(cfg)
+    optimized.draw()
