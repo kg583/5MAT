@@ -29,7 +29,7 @@
 
 (defvar tape nil)
 
-; Output up to the last form feed
+; Output following the last form feed
 (defun output (string)
   (format t "~{~a~}"
     (subseq string (or (position #\ff string :from-end t) 0))))
