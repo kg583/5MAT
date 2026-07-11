@@ -8,6 +8,11 @@ from lib.laundromat.node import *
 logger = logging.getLogger(__name__)
 
 
+class InvalidCFG(TypeError):
+    def __init__(self, node: Node):
+        super().__init__(f"the CFG structure is invalid at {node}")
+
+
 class CFG(nx.DiGraph):
     START = Node(Control.Start)
     END = Node(Control.End)
@@ -27,6 +32,9 @@ class CFG(nx.DiGraph):
 
         def walk(self, cfg: 'CFG'):
             def step(node: Node):
+                if node not in cfg:
+                    return
+
                 self.visit(node)
 
                 match node.kind:
@@ -43,7 +51,7 @@ class CFG(nx.DiGraph):
                                         clauses[1] = child
 
                                     case _:
-                                        raise InvalidNode(node.directive)
+                                        raise InvalidCFG(node)
 
                             order = [0, 1] if node.directive.colon else [1]
 
@@ -60,7 +68,7 @@ class CFG(nx.DiGraph):
                                         clauses[-1] = child
 
                                     case _:
-                                        raise InvalidNode(node.directive)
+                                        raise InvalidCFG(node)
 
                             order = [*range(max(clauses, default=-1) + 1), -1]
 
@@ -99,7 +107,7 @@ class CFG(nx.DiGraph):
             return
 
         def build(clause: list[Directive | str], node: Node, *, condition: Condition = Always()):
-            for directive in clause:
+            for directive in [Control.Empty, *clause, Control.Empty]:
                 self.add_edge(node, child := node.copy(directive=directive), condition=condition)
                 condition = Always()
 
@@ -157,7 +165,7 @@ class CFG(nx.DiGraph):
                         child.entry = child.copy(directive=Control.Empty)
 
                         self.add_edge(child, child.entry, condition=Less(1, 1, Special.Hash))
-                        self.add_edge(child.closing, child.entry, condition=Less(1, 1, Special.Hash), back=True)
+                        self.add_edge(child.closing, child.entry, condition=Less(1, 1, Special.Hash))
                         build(directive.clauses[0], child.entry)
 
                         self.add_edge(child.closing, child.escape, condition=Equal(Special.Hash, 0))
@@ -270,18 +278,10 @@ class CFG(nx.DiGraph):
         return next(extractor(program))
 
     def add_edge(self, u: Node, v: Node, **attrs):
-        super().add_edge(u, v,
-                         condition=attrs.get("condition", Always()),
-                         back=attrs.get("back", False))
+        super().add_edge(u, v, condition=attrs.get("condition", Always()))
 
     def conditions(self) -> dict[tuple[Node, Node], Condition]:
         return nx.get_edge_attributes(self, "condition")
-
-    def contract_subgraph(self, u: Node, v: Node):
-        empty = nx.DiGraph()
-        empty.add_node(Node(Control.Empty))
-
-        self.replace_subgraph(u, v, empty)
 
     def crash_on(self, node: Node):
         self.remove_edges_from([*self.edges(node)])
@@ -291,7 +291,12 @@ class CFG(nx.DiGraph):
         nx.relabel_nodes(self, {node: node.copy(directive=Directive("?", []))}, copy=False)
 
     def descendants(self, node: Node) -> set[Node]:
-        return nx.descendants(self, node) | {node}
+        descendants = nx.descendants(self, node)
+        descendants |= {node}
+        descendants |= {node.closing for node in descendants}
+        descendants -= {None}
+
+        return descendants
 
     def draw(self, *, size: int = 12, layout=nx.kamada_kawai_layout):
         plt.figure(1, figsize=(size, size))
@@ -302,8 +307,10 @@ class CFG(nx.DiGraph):
             "conditional": ([], "orange"),
             "loop": ([], "khaki"),
             "directive": ([], "skyblue"),
-            "control": ([], "violet"),
-            "string": ([], "silver")
+            "crash": ([], "lightcoral"),
+            "empty": ([], "silver"),
+            "ctrl": ([], "violet"),
+            "string": ([], "palegreen")
         }
 
         # Node types
@@ -321,7 +328,15 @@ class CFG(nx.DiGraph):
                 category = "string"
 
             elif node.kind == "ctrl":
-                category = "control"
+                match node.directive:
+                    case Control.Crash:
+                        category = "crash"
+
+                    case Control.Empty:
+                        category = "empty"
+
+                    case _:
+                        category = "ctrl"
 
             else:
                 category = "directive"
@@ -367,15 +382,6 @@ class CFG(nx.DiGraph):
 
     def reachable(self) -> 'CFG':
         return self.progeny(CFG.START)
-
-    def replace_subgraph(self, u: Node, v: Node, subgraph: nx.DiGraph):
-        pre, succ = self.predecessors(u), self.successors(v)
-
-        self.remove_edges_from([(t, u) for t in pre])
-        self.remove_edges_from([(v, w) for w in succ])
-
-        self.add_edges_from([(t, min(subgraph, key=subgraph.in_degree)) for t in pre])
-        self.add_edges_from([(min(subgraph, key=subgraph.out_degree), w) for w in succ])
 
     def subgraph(self, nodes) -> 'CFG':
         return CFG(super().subgraph(nodes).to_directed())
