@@ -140,11 +140,11 @@ As stated in the topmost README, we use GNU CLISP as the canonical Lisp implemen
 Recall, for example, the following description of the parameters to `~^`:
 > If two parameters are given, termination occurs if they are equal. If three parameters are given, termination occurs if the first is less than or equal to the second and the second is less than or equal to the third.
 
-CLISP kindly permits integers *and* characters for these arguments, but this is actually rather unusual in the grand scheme of lisps. Indeed, the HyperSpec is conveniently ambiguous about which data types "less than or equal to" is a valid relation for.
+CLISP kindly permits integers *and* characters for these arguments, but this is actually rather unusual in the grand scheme of Lisps. Indeed, the HyperSpec is conveniently ambiguous about which data types "less than or equal to" is a valid relation for.
 
-*Every* implementation that we could find, besides CLISP[^2], only handles numeric parameters to `~^` (if they handle it at all). This does not hurt 5MAT's Turing completeness, but it does make many constructs discussed in the previous sections far more tedious. To check inequality with a given character, for example, we can't check against ranges on either side, and instead must check equality with *every other* character which might appear on that section of the tape.
+*Every* implementation that we could find, besides CLISP and Clozure CL[^2], only handles numeric parameters to `~^` (if it handles it at all). This does not hurt 5MAT's Turing completeness, but it does make many constructs discussed in the previous sections far more tedious. To check inequality with a given character, for example, we can't check against ranges on either side, and instead must check equality with *every other* character which might appear on that section of the tape.
 
-[^2]: Exactly one missing character in the `format` implementation in Clozure CL prevents its conformance, which we have a pending [PR](https://github.com/Clozure/ccl/pull/536) to insert.
+[^2]: Exactly one missing character in its `format` implementation meant it was (incorrectly and inconsistently) using *strict* inequalities for `~^`, which a recent PR of our own design corrected.
 
 So, while these implementations *are* HyperSpec-compliant, they will not do for our task; Steel Bank Common Lisp (SBCL) is probably the most notable member of this category. There are then, of course, implementations which are *not* HyperSpec-compliant, or don't bother with `format` at all (e.g. PicoLISP).
 
