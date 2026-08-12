@@ -469,5 +469,9 @@ class Node:
             case _:
                 return False
 
+    @property
+    def noop(self):
+        return self.kind != "ctrl" and self.consumes == self.writes == Range.only(0)
+
     def copy(self, **changes) -> 'Node':
         return replace(self, **changes)

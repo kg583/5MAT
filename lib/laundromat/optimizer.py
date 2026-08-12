@@ -29,7 +29,7 @@ def cfg_optimize(cfg: CFG) -> CFG:
                 break
 
             # Remove no-ops
-            if node.kind != "ctrl" and node.consumes == node.writes == Range.only(0):
+            if node.noop:
                 cfg.remove_node(node)
                 continue
 
