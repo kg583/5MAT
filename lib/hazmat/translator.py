@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from lib.fourmat.directives import BlockDirective, Directive, Special
-from lib.fourmat.parse import tokenize, parse
+from lib.fivemat import parse
 
 from lib.hazmat.c_writer import Writer, cstr
 
@@ -25,7 +25,7 @@ def numeric_param(directive: Directive, index):
 class Translator:
     def __init__(self, program: str | BlockDirective):
         if isinstance(program, str):
-            self.ast = parse(tokenize(program))
+            self.ast = parse(program)
         else:
             self.ast = program
 
