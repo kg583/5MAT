@@ -1,12 +1,12 @@
 from pathlib import Path
 
 from lib.fourmat.directives import BlockDirective, Directive, Special
-from lib.fourmat.parse import parse
+from lib.fourmat.parse import tokenize, parse
 
 from lib.hazmat.c_writer import Writer, cstr
 
-def numeric_param(directive, index, default=0):
-    param = directive.get_param(index, default)
+def numeric_param(directive: Directive, index):
+    param = directive.get_param(index)
 
     match param:
         case Special.V:
@@ -25,7 +25,7 @@ def numeric_param(directive, index, default=0):
 class Translator:
     def __init__(self, program: str | BlockDirective):
         if isinstance(program, str):
-            self.ast = parse(program)
+            self.ast = parse(tokenize(program))
         else:
             self.ast = program
 
@@ -143,7 +143,7 @@ class Translator:
             self.writer.function_call("buffer_append_char", "w", "*r++")
 
     def emit_repeated(self, directive: Directive, char: str):
-        match directive.get_param(0, default=1):
+        match directive.get_param(0):
             case Special.V:
                 self.emit_crash()
             case Special.Hash:
@@ -178,7 +178,7 @@ class Translator:
             return
 
         if directive.at_sign:
-            param = numeric_param(directive, 0, default=0)
+            param = numeric_param(directive, 0)
             if param == "V":
                 self.emit_crash()
                 return
@@ -186,7 +186,7 @@ class Translator:
             self.writer.write_line(f"r = start + {param};")
             self.writer.if_stmt("r > end", body="r = end;")
         else:
-            param = numeric_param(directive, 0, default=1)
+            param = numeric_param(directive, 0)
             if param == "V":
                 self.emit_crash()
                 return
@@ -203,10 +203,10 @@ class Translator:
 
     def emit_conditional(self, directive: BlockDirective):
         if not directive.at_sign and not directive.colon:
-            if directive.get_param(0, default=None) in (None, Special.V):
+            if directive.get_param(0) in (None, Special.V):
                 self.emit_crash()
                 return
-            chosen_path = numeric_param(directive, 0, default=0)
+            chosen_path = numeric_param(directive, 0)
 
             if chosen_path == "HASH":
                 # emit a switch block... it'd be nice to help clang out & collapse identical branches but it's fine
@@ -242,7 +242,7 @@ class Translator:
             self.emit_crash()
             return
 
-        use_do_while = directive.closing_token.colon and not directive.get_param(0, default=0) == Special.Hash
+        use_do_while = directive.closing_token.colon and not directive.get_param(0) == Special.Hash
         loop_generator = self.writer.do_while_loop if use_do_while else self.writer.while_loop
 
         if directive.colon or (not directive.at_sign and not self.in_outer_scope):
@@ -280,7 +280,7 @@ class Translator:
     def emit_escape_upward(self, directive: Directive):
         escape_operation = "return 0;" if self.in_outer_scope else "break;"
 
-        params = [numeric_param(directive, index, default=None) for index in range(len(directive.params))]
+        params = [numeric_param(directive, index) for index in range(len(directive.params))]
 
         match params:
             case [] if directive.colon:
