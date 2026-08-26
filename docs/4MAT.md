@@ -26,3 +26,4 @@ If it proves unreasonable, we happily abandon CLISP's ways. Below are the known 
 - Formatted floats may differ greatly in their insignificant digits compared to CLISP's output.
 - "Ordinary free-format" float output, used by `~e` and `~f` when no parameters are specified, may differ from CLISP's output.
 - Colon modifiers on float formatters besides `~$` are illegal, whereas CLISP silently ignores the modifier (because it doesn't do anything).
+- `~a,b,c^` accepts homogenous parameters of *any* type which implements `__le__`, whilst CLISP only performs the comparison for integers or characters and does not trigger an escape in any case where some other type is passed (even for floats which would otherwise satisfy `a <= b <= c`).
