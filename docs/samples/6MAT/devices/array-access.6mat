@@ -114,7 +114,6 @@ DO {
             ; We found the element
             PRINC '\a'
             PRFF
-            PRINC ';'
 
             LOOP {
                 SKIP
