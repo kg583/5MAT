@@ -1,0 +1,35 @@
+; Tape
+; | aAbBcC... | ~ |
+
+; Result
+; Prints '=' if the strings are equal, '≠' otherwise
+
+INIT {
+    PRFF
+    BACK
+    READL
+    PRFF
+    TILDE
+    PRFF
+}
+
+DO {
+    PRFF
+    GOTO 1
+
+    LOOP {
+        {
+            BREQ $V, $V
+
+            IFFF! $V {
+                PRINC '='
+                BACK
+            }
+            IFGT! $V, '\f' {
+                PRINC '≠'
+            }
+
+            SKIP $R
+        }
+    }
+}
