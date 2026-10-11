@@ -1,10 +1,14 @@
-; Whether to print data + output
+; Whether to print entire tape each loop
 (defvar *debug* t)
 
 ; Maximum number of loops; set to nil to disable
 (defvar *max-loops* 100)
 
+; Program to run (default is first command-line argument)
 (defvar *program* (car *args*))
+
+; Initial tape contents (default is empty)
+(defvar tape nil)
 
 (defun decode (string)
   (with-input-from-string (stream string)
@@ -29,17 +33,15 @@
 
 (defvar out (make-string-output-stream))
 (defvar echo (make-echo-stream *terminal-io* out))
-(defvar tape nil)
 
 (defun output(string)
   (if *debug*
       (print string)
-      (format t "~{~a~}"
-        (subseq string (or (position #\ff string :from-end t) 0)))))
+      (princ (subseq string (or (position #\ff string :from-end t) 0)))))
 
 (defun driver()
-  (format echo *program* tape)
-  (setq tape (coerce (get-output-stream-string out) 'list)))
+  (format echo *program* (coerce tape 'list))
+  (setq tape (get-output-stream-string out)))
 
 (setq *program* (decode *program*))
 
