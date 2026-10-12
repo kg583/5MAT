@@ -1,6 +1,6 @@
 from dataclasses import dataclass, replace
 from enum import StrEnum
-from math import *
+from math import inf
 
 from lib.fourmat.directives import *
 
@@ -72,6 +72,10 @@ class Range:
     @classmethod
     def only(cls, value: int) -> 'Range':
         return Range(value, value)
+
+    @property
+    def size(self) -> float:
+        return max(self.right - self.left + 1, 0)
 
 
 @dataclass(frozen=True)
@@ -360,7 +364,7 @@ class Node:
     closing: 'Node' = None
 
     def __hash__(self) -> int:
-        return id(self)
+        return object.__hash__(self)
 
     def __str__(self) -> str:
         return str(self.directive)
@@ -468,10 +472,6 @@ class Node:
 
             case _:
                 return False
-
-    @property
-    def noop(self):
-        return self.kind != "ctrl" and self.consumes == self.writes == Range.only(0)
 
     def copy(self, **changes) -> 'Node':
         return replace(self, **changes)
