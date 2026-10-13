@@ -389,17 +389,6 @@ class CFG(nx.DiGraph):
     def subgraph_between(self, u: Node, v: Node) -> 'CFG':
         return self.subgraph(self.nodes_between(u, v))
 
-    def swap_nodes(self, u: Node, v: Node):
-        pre, succ = self.predecessors(u), self.successors(v)
-
-        self.remove_edges_from([(t, u) for t in pre])
-        self.remove_edges_from([(v, w) for w in succ])
-        self.remove_edge(u, v)
-
-        self.add_edges_from([(t, v) for t in pre])
-        self.add_edges_from([(u, w) for w in succ])
-        self.add_edge(v, u)
-
     def terminates_from(self, node: Node) -> bool:
         return bool({CFG.CRASH, CFG.END} & self.descendants(node))
 

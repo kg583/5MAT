@@ -1,7 +1,6 @@
 import logging
+import networkx as nx
 import re
-
-from dataclasses import dataclass
 
 from lib.fivemat.util import *
 from lib.laundromat.cfg import *
@@ -12,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 def plural(word: str, count: int) -> str:
     return f"{count} {word}{'s' * (count != 1)}"
+
+
+def move_dist(move: Directive) -> int | Special:
+    dist = move.get_param(0)
+    return Special.Hash if dist == Special.Hash else -dist if move.colon else dist
 
 
 def cfg_optimize(cfg: CFG) -> CFG:
@@ -28,13 +32,16 @@ def cfg_optimize(cfg: CFG) -> CFG:
             if node not in cfg:
                 break
 
-            # Remove no-ops
-            if node.noop:
-                cfg.remove_node(node)
+            if node.kind == "ctrl":
                 continue
 
             for child, attrs in {**cfg[node]}.items():
                 condition = attrs["condition"]
+
+                # Remove no-ops
+                if node.writes == Range.only(0) and node.pointer == child.pointer:
+                    nx.contracted_nodes(cfg, node, child, copy=False)
+                    continue
 
                 # Crash past the end of the tape
                 if node.pointer.from_end < Range(0, inf):
