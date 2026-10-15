@@ -34,20 +34,26 @@ string: "\"" (EXPR | STRING)* "\""
 
 COMMENT: /;[^\r\n]*/
 
+INDENT = (NEWLINE WS*)+
+
 arg: POS | NEG | REMAIN | READ | READS | PEEK | PEEKS | NIL | PARAM | EXPR | char | string
 
 
 start: lines?
 
-lines: statement ((NEWLINE+ | "\\") statement)* NEWLINE*
+lines: statement ((INDENT | "\\") statement)* INDENT*
 statement: (instruction | clause | generator | group | block | RAW | COMMENT) COMMENT?
 instruction: INSTR (arg ("," arg)*)? (group | block)?
 clause: arg ("," arg)* (group | block)
 
-define: ".define" NAME (group | block)
-for: ".for" PARAM arg arg arg? group
-if: ".if" EXPR group (".elif" EXPR group)* (".else" group)?
-generator: define | for | if
+def_gen: ".def" (def_code | def_param)
+def_code: NAME (group | block)
+def_param: PARAM (POS | NEG | NIL | char | string)
+
+for_gen: ".for" PARAM arg arg arg? group
+if_gen: ".if" EXPR group (".elif" EXPR group)* (".else" group)?
+
+generator: def_gen | for_gen | if_gen
 
 group: "[" lines? "]"
 block: "{" lines? "}"
