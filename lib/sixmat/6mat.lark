@@ -1,0 +1,56 @@
+%import common.INT
+%import common.NEWLINE
+%import common.WS
+
+
+NAME: /[-_A-Z!?]+/
+PARAM: "@" NAME
+INSTR: NAME
+
+POS: "+"? INT
+NEG: "-" INT
+REMAIN: "$R"
+
+READ: "$V"
+READL: "$_"
+READS: "$" INT
+READP: "$" NAME
+
+PEEK: "?V"
+PEEKL: "?_"
+PEEKS: "?" INT
+PEEKP: "?" NAME
+
+NIL: "NIL"
+
+EXPR: /@\|.+?\|@/
+RAW: /`(\\.|[^`])+`/
+
+CHAR: /(\\x..|\\.|.)/
+char: "'" (EXPR | CHAR) "'"
+
+STRING: /\\.|[^"]/
+string: "\"" (EXPR | STRING)* "\""
+
+COMMENT: /;[^\r\n]*/
+
+arg: POS | NEG | REMAIN | READ | READS | PEEK | PEEKS | NIL | PARAM | EXPR | char | string
+
+
+start: lines?
+
+lines: statement ((NEWLINE+ | "\\") statement)* NEWLINE*
+statement: (instruction | clause | generator | group | block | RAW | COMMENT) COMMENT?
+instruction: INSTR (arg ("," arg)*)? (group | block)?
+clause: arg ("," arg)* (group | block)
+
+define: ".define" NAME (group | block)
+for: ".for" PARAM arg arg arg? group
+if: ".if" EXPR group (".elif" EXPR group)* (".else" group)?
+generator: define | for | if
+
+group: "[" lines? "]"
+block: "{" lines? "}"
+
+
+%ignore WS
