@@ -2,7 +2,7 @@
 
 6MAT is an esoteric assembly-like programming language which compiles to 5MAT, itself an esolang built off of Lisp FORMAT strings.
 
-6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh), separated by newlines or `\`. Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **tape pointer** indicates where on the tape the next character will be read.
+6MAT programs are composed of **instructions** which consume zero or more **arguments** (duh), separated by newlines or `\`. Instructions operate on the **tape**, a sequence of **characters** which serves as the program's memory. The **pointer** indicates where on the tape the next character will be read.
 
 On a single **lifetime** of execution, the tape is processed by the program, **printing** characters that become the new contents of the tape on the next cycle. Those characters on the tape which appear after the last **form feed** character (`\f`) are **output** to STDOUT once the current lifetime is completed; if none exist, the entire tape is output
 
@@ -34,7 +34,7 @@ The following variables are recognized.
 - `?V`: Peek the next tape character
 - `?n`: Peek the next `n` tape characters as a string
 
-A `?V` or `?n` argument can only be passed at the end of an argument list. Other contexts where peeking is illegal are noted in their respective sections; do note, though, that peeking is equivalent to reading then rewinding the tape pointer by `n` characters, so the same effect may be achievable directly.
+A `?V` or `?n` argument can only be passed at the end of an argument list. Other contexts where peeking is illegal are noted in their respective sections; do note, though, that peeking is equivalent to reading then rewinding the pointer by `n` characters, so the same effect may be achievable directly.
 
 Instruction arguments are denoted in this document and the instruction grammar using the following placeholders. Separate arguments using `,`.
 - `%N`: A signed decimal integer literal, or `$R`
@@ -72,19 +72,19 @@ Create a buffer block and execute it. Prints which occur inside buffer blocks do
 Breaking is the central tool for almost all control flow in 5MAT. Though 6MAT provides additional abstractions, it's mostly breaks all the way down, which dictates the legality of certain argument combinations. In particular, peeking is *not* permitted in any break instruction.
 
 #### `BREAK`
-Break out of the current scope. The tape pointer is unaltered.
+Break out of the current scope. The pointer is unaltered.
 
 #### `BRFF`
 Read a character from the tape and break if it is `\f`.
 
 #### `BRNR +N`
-Break out of the current block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+Break out of the current block if the pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `BRNZ`
-Break out of the current scope if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Break out of the current scope if the pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `BRZR`
-Break out of the current scope if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`BRNR 0`](#brnr-n).
+Break out of the current scope if the pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`BRNR 0`](#brnr-n).
 
 #### `BRxx? _I, _J`
 Break out of the current scope if condition `xx` holds for `_I` and `_J`. The following binary comparisons are supported.
@@ -111,8 +111,12 @@ Break out of the current scope if `_I <= _J <= _K` holds for numbers or characte
 
 The outermost scope may consist only of the following blocks.
 
-#### `DO { ... }`
-If the tape is non-empty, bind `$V` and `$R` and execute the block.
+The following blocks may only appear in the outermost scope. A complete program should furthermore consist *only* of these blocks in the outermost scope (but this is not required).
+
+#### `DO +N = 1 { ... }`
+If the tape is non-empty, bind `$V` and `$R` and execute the block `N` times. The pointer is *not* reset between executions.
+
+*Outside this block, `$V` is bound to the entire tape, and `$R` is either zero or one depending on whether `$V` has been read.*
 
 #### `INIT { ... }`
 If the tape is empty, set its contents by executing the block.
@@ -130,13 +134,13 @@ All outer blocks may include the following blocks, with arbitrary nesting.
 Read or peek a character from the tape and execute the block if it is `\f`.
 
 #### `IFNR! +N [{ ... }]`
-Execute the group or block if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+Execute the group or block if the pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `IFNZ [{ ... }]`
-Execute the group or block if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Execute the group or block if the pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `IFZR [{ ... }]`
-Execute the group or block if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`IFNR! 0 [{ ... }]`](#ifnr-n---).
+Execute the group or block if the pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`IFNR! 0 [{ ... }]`](#ifnr-n---).
 
 #### `IFyy! _I, _J { ... }`
 Execute the block if condition `yy` holds for `_I` and `_J`; that is, invoke [`BRxx _I, _J`](#brxx-_i-_j) at the top of the block, where `xx` is the negation of `yy`.
@@ -156,10 +160,10 @@ As such, the following calls are disallowed.
 - `IFLE! $V, !V { ... }`
 - `IFLT! $V, !V { ... }`
 
-Furthermore, peeking in the second argument is somewhat inefficient in the general case to account for the tape pointer being near the end of the tape. Prefer using `$V` and backing up manually based on prior knowledge of the tape pointer.
+Furthermore, peeking in the second argument is somewhat inefficient in the general case to account for the pointer being near the end of the tape. Prefer using `$V` and backing up manually based on prior knowledge of the pointer.
 
 #### `LOOP { ... }`
-Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the tape pointer does *not* move by default at any point, and thus failing to cause net movement of the tape pointer during execution will result in a crash.
+Repeatedly execute the block, terminating if the tape is exhausted at the top of the block. Note that the pointer does *not* move by default at any point, and thus failing to cause net movement of the pointer during execution will result in a crash.
 
 #### `LOOP +N { ... }`
 Execute the block at most `N` times, terminating if the tape is exhausted at the top of the block.
@@ -199,7 +203,7 @@ CASES! {
 }
 ```
 
-Each clause must advance the tape pointer by the same amount in all circumstances to prevent unexpected additional fallthrough. 
+Each clause must advance the pointer by the same amount in all circumstances to prevent unexpected additional fallthrough. 
 
 #### `CASEV! { ... }`
 Conditionally execute blocks based on the value of `$V`, which may be tested against any set of characters.
@@ -212,45 +216,45 @@ CASEV! {
     'Z' { ... }
 }
 ```
-Each clause must advance the tape pointer by the same amount in all circumstances to prevent unexpected fallthrough.
+Each clause must advance the pointer by the same amount in all circumstances to prevent unexpected fallthrough.
 
 
 ## Tape Movement
 
 ### Relative Tape Movement
 
-Whenever a character is read from the tape, the tape pointer automatically advances by one. The tape pointer cannot advance past the end of the tape, nor rewind past the front. Care should be taken with repeated movement which may "get stuck" at the start or end of the tape.
+Whenever a character is read from the tape, the pointer automatically advances by one. The pointer cannot advance past the end of the tape, nor rewind past the front. Care should be taken with repeated movement which may "get stuck" at the start or end of the tape.
 
 #### `BACK +N = 1`
-Move the tape pointer backward by `N` characters.
+Move the pointer backward by `N` characters.
 
 #### `BACKC! 'C, +N = 1`
-Move the tape pointer backward past the `N`th preceding appearance of `C`. Crashes if there are less than `N` preceding appearances of `C`.
+Move the pointer backward past the `N`th preceding appearance of `C`. Crashes if there are less than `N` preceding appearances of `C`.
 
 #### `BACKF! +N = 1`
-Move the tape pointer backward past the `N`th preceding appearance of `\f`. Equivalent to [`BACKC! '\f', +N`](#backc-c-n--1).
+Move the pointer backward past the `N`th preceding appearance of `\f`. Equivalent to [`BACKC! '\f', +N`](#backc-c-n--1).
 
 #### `SKIP +N = 1`
-Move the tape pointer forward by `N` characters.
+Move the pointer forward by `N` characters.
 
 #### `SKIPC! 'C, +N = 1`
-Move the tape pointer forward past the `N`th succeeding appearance of `C`.
+Move the pointer forward past the `N`th succeeding appearance of `C`.
 
 #### `SKIPF! +N = 1`
-Move the tape pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to [`SKIPC! '\f', +N`](#skipc-c-n--1).
+Move the pointer forward past the `N`th succeeding appearance of `\f`. Equivalent to [`SKIPC! '\f', +N`](#skipc-c-n--1).
 
 ### Absolute Tape Movement
 
-Absolute position of the tape pointer is counted from the front of the tape, position `0`. Negative positions count from the end, so that `-1` is the last character on the tape.
+Absolute position of the pointer is counted from the front of the tape, position `0`. Negative positions count from the end, so that `-1` is the last character on the tape.
 
 #### `GOTO %N = 1`
-Move the tape pointer to position `N`. Negative values count from the end of the tape.
+Move the pointer to position `N`.
 
 #### `GOTOC! 'C, %N = 1`
-Move the tape pointer past the `N`th appearance of `C`. Negative values count from the end of the tape.
+Move the pointer past the `N`th appearance of `C`.
 
 #### `GOTOF! %N = 1`
-Move the tape pointer past the `N`th appearance of `\f`. Negative values count from the end of the tape.
+Move the pointer past the `N`th appearance of `\f`.
 
 
 ## Crashing
@@ -266,13 +270,13 @@ Irrecoverably terminate execution immediately. All output produced during the cu
 Read or peek a character from the tape and crash if it is `\f`.
 
 #### `CRNR! +N`
-Crash if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+Crash if the pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `CRNZ`
-Crash if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Crash if the pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `CRZR`
-Crash if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to [`CRNR! 0`](#crnr-n).
+Crash if the pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to [`CRNR! 0`](#crnr-n).
 
 #### `CRyy! _I, _J`
 Crash if condition `yy` holds for `_I` and `_J`. Equivalent to [`{ BRxx _I, _J \ CRASH }`](#brxx-_i-_j), where `xx` is the negation of `yy`.
@@ -320,13 +324,13 @@ Read or peek a character from the tape and print it with `k*M + L` copies of `W`
 ### Conditional Printing
 
 #### `PRNRz! _K`
-Print `_K` using `PRINz _K` if the tape pointer is `N` characters from the end of the tape (i.e. `$R = N`).
+Print `_K` using `PRINz _K` if the pointer is `N` characters from the end of the tape (i.e. `$R = N`).
 
 #### `PRNZz _K`
-Print `_K` using `PRINz _K` if the tape pointer is not at the end of the tape (i.e. `$R /= 0`).
+Print `_K` using `PRINz _K` if the pointer is not at the end of the tape (i.e. `$R /= 0`).
 
 #### `PRZRz _K`
-Print `_K` using `PRINz _K` if the tape pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`PRNRz 0 _K`](#prnrz-_k).
+Print `_K` using `PRINz _K` if the pointer is at the end of the tape (i.e. `$R = 0`). Equivalent to (but more efficient than) [`PRNRz 0 _K`](#prnrz-_k).
 
 ### Copying
 
@@ -437,8 +441,8 @@ Capitalize the first word beginning with an alphabetical character printed withi
 #### `UPPER [ ... ]`
 Fold all characters printed within the group to uppercase.
 
-#### `|...|`
-Insert the contents of `|...|`, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.
+#### `` `...` ``
+Insert the contents of `` `...` ``, which should be some obtuse FORMAT directives, directly into the assembled 5MAT.
 
 *This syntax should be used sparingly, if at all. No checks are performed on the syntactic or semantic validity of injected code.*
 
